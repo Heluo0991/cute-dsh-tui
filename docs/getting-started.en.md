@@ -17,6 +17,15 @@ npm install -g @heluo0991/cute-dsh-tui
 cdsh
 ```
 
+Linux compiles the local terminal bridge for `node-pty`. If a minimal image reports a `pty.node` error, install the prerequisites once:
+
+```sh
+sudo apt-get install -y build-essential python3
+cdsh
+```
+
+The launcher permits and retries this native build automatically; no manual pnpm command is required.
+
 The first launch creates `$DSH_HOME/profiles/cute-dsh-tui` (normally `~/.dsh/profiles/cute-dsh-tui`) and installs the current version with the bundled DSH/pnpm runtime. Thereafter, enter a project directory and run `cdsh`; that directory is the Agent workspace.
 
 `cute-dsh-tui` remains a compatibility alias, but new documentation uses `cdsh`.

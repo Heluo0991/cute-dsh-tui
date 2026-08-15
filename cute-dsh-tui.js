@@ -12,7 +12,7 @@ import { homedir } from 'node:os'
 import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { LAUNCHER_USAGE, applyLaunchEnvironment, parseLaunchArgs, resolveLaunchWorkspace } from './launch-options.js'
-import { bundledDshInvocation, profileDirectory, runBundledPnpm } from './lib/types/profileManager.js'
+import { bundledDshInvocation, profileDirectory, profileHasNativePty, runBundledPnpm } from './lib/types/profileManager.js'
 
 const here = fileURLToPath(new URL('.', import.meta.url))
 const ownVersion = JSON.parse(readFileSync(join(here, 'package.json'), 'utf8')).version
@@ -76,6 +76,14 @@ if (probe.error || probe.status !== 0) {
 const dshHome = process.env.DSH_HOME || join(homedir(), '.dsh')
 const profileDir = profileDirectory(dshHome, PROFILE)
 const installedPackageDir = join(profileDir, 'node_modules', '@heluo0991', 'cute-dsh-tui')
+const installedProfileVersion = (() => {
+  if (!existsSync(installedPackageDir)) return undefined
+  try {
+    return JSON.parse(readFileSync(join(installedPackageDir, 'package.json'), 'utf8')).version
+  } catch {
+    return undefined
+  }
+})()
 const linkedToDevelopmentTree = (() => {
   if (!devPackagePath || !existsSync(installedPackageDir)) return false
   try {
@@ -87,8 +95,13 @@ const linkedToDevelopmentTree = (() => {
 
 // The development shim links the profile into this working tree. Normal npm
 // installs retain their exact-version behavior and never take this branch.
-if (!existsSync(installedPackageDir) || (devPackagePath && !linkedToDevelopmentTree)) {
-  console.log(`[cute-dsh-tui] initializing ${PROFILE} profile (${packageSpec})...`)
+// A global npm update must also update the isolated profile: DSH loads the
+// plugin from this profile, not from the global launcher package.
+const profileNeedsPackageInstall = !existsSync(installedPackageDir)
+  || (devPackagePath ? !linkedToDevelopmentTree : installedProfileVersion !== ownVersion)
+if (profileNeedsPackageInstall) {
+  const action = existsSync(installedPackageDir) ? 'updating' : 'initializing'
+  console.log(`[cute-dsh-tui] ${action} ${PROFILE} profile (${packageSpec})...`)
   let addCode
   try {
     addCode = runBundledPnpm(profileDir, ['add', packageSpec])
@@ -100,6 +113,32 @@ if (!existsSync(installedPackageDir) || (devPackagePath && !linkedToDevelopmentT
     console.error('[cute-dsh-tui] profile installation failed. Retry manually with:')
     console.error(`  cdsh  # then retry after checking npm registry access`)
     process.exit(addCode)
+  }
+}
+
+// Older 1.1.1 profiles were created before pnpm was explicitly permitted to
+// build node-pty.  Repair that profile before DSH loads its plugin tree, where
+// an absent pty.node would otherwise surface as an opaque shell-provider error.
+// pnpm records lifecycle scripts skipped at install time as "pending".  Build
+// that queue first, then use a forced install only as a fallback for profiles
+// created by older pnpm versions.
+if (!profileHasNativePty(profileDir)) {
+  console.log('[cute-dsh-tui] preparing the native terminal bridge...')
+  let rebuildCode
+  try {
+    rebuildCode = runBundledPnpm(profileDir, ['rebuild', 'node-pty', '--reporter=append-only'])
+    if (rebuildCode !== 0 || !profileHasNativePty(profileDir)) {
+      console.log('[cute-dsh-tui] retrying native terminal setup...')
+      rebuildCode = runBundledPnpm(profileDir, ['install', '--force', '--ignore-scripts=false', '--reporter=append-only'])
+    }
+  } catch (error) {
+    console.error(`[cute-dsh-tui] native terminal setup failed: ${error instanceof Error ? error.message : String(error)}`)
+    process.exit(1)
+  }
+  if (rebuildCode !== 0 || !profileHasNativePty(profileDir)) {
+    console.error('[cute-dsh-tui] node-pty is required for the local shell but could not be built.')
+    if (process.platform === 'linux') console.error('Run: sudo apt-get install -y build-essential python3; then run cdsh again.')
+    process.exit(rebuildCode || 1)
   }
 }
 

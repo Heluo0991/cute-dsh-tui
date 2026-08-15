@@ -46,6 +46,8 @@ npm install -g @heluo0991/cute-dsh-tui
 cdsh
 ```
 
+Linux 的 `node-pty` 需要本机 C/C++ 编译工具。大多数开发镜像已具备；若首次启动提示 `node-pty` 或 `pty.node` 构建失败，执行一次 `sudo apt-get install -y build-essential python3` 后重新运行 `cdsh`。启动器会自动重试原生模块构建。
+
 安装完成后，进入任意项目目录执行 `cdsh` 即可。首次启动会创建隔离的 `cute-dsh-tui` profile 并安装当前版本；无需复制 `.cmd` 文件、手动配置 PATH 或全局安装 pnpm。`cute-dsh-tui` 仍保留为兼容别名。
 
 ### 已有 DSH 用户

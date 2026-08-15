@@ -41,6 +41,8 @@ npm install -g @heluo0991/cute-dsh-tui
 cdsh
 ```
 
+On Linux, `node-pty` needs local C/C++ build tools. Most development images already include them; if the first launch reports a `node-pty` or `pty.node` build failure, run `sudo apt-get install -y build-essential python3` once and retry `cdsh`. The launcher automatically retries the native build.
+
 Run `cdsh` from any project thereafter. Its first launch creates the isolated `cute-dsh-tui` profile. No batch-file copying, manual PATH edits, or global pnpm install is required. `cute-dsh-tui` remains a compatibility alias.
 
 ### Existing DSH user

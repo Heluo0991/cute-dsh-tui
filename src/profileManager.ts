@@ -8,12 +8,15 @@ const require = createRequire(import.meta.url)
 const PROFILE_PATCH_TEMPLATE = `# Your patch layer for this dsh profile, applied after every bundle layer:\n# a top-level YAML array of loader patch entries (id-targeted config\n# overrides, disables, and insert lists; \`!!js\` expressions allowed).\n[]\n`
 const PROFILE_PNPM_WORKSPACE = `packages:\n  - .\n\nnodeLinker: hoisted\nautoInstallPeers: false\n`
 const DEFAULT_BUNDLES = ['@deepseek-ai/dsh-base']
+const NATIVE_PTY_PACKAGE = 'node-pty'
+const NATIVE_PTY_VERSION = '1.1.0'
 
 type ProfileManifest = {
   name?: string
   private?: boolean
   dependencies?: Record<string, string>
   dsh?: { profile?: { bundles?: string[] } }
+  pnpm?: { onlyBuiltDependencies?: string[] }
 }
 
 export interface ProcessInvocation {
@@ -50,19 +53,50 @@ export function profileDirectory(dshHome: string, profile: string): string {
 export function ensureProfile(profileDir: string): void {
   mkdirSync(profileDir, { recursive: true })
   const manifestPath = join(profileDir, 'package.json')
+  let manifest: ProfileManifest
   if (!existsSync(manifestPath)) {
-    const manifest: ProfileManifest = {
+    manifest = {
       name: `dsh-profile-${basename(profileDir)}`,
       private: true,
-      dependencies: {},
+      // Keep this direct: pnpm 10 can decline lifecycle scripts for a
+      // transitive native dependency, leaving Linux without pty.node.
+      dependencies: { [NATIVE_PTY_PACKAGE]: NATIVE_PTY_VERSION },
+      // pnpm 10 reads this build allow-list from the project manifest, not
+      // pnpm-workspace.yaml (where newer pnpm versions support allowBuilds).
+      pnpm: { onlyBuiltDependencies: [NATIVE_PTY_PACKAGE] },
       dsh: { profile: { bundles: [...DEFAULT_BUNDLES] } },
     }
     writeFileSync(manifestPath, `${JSON.stringify(manifest, null, 2)}\n`, 'utf8')
+  } else {
+    manifest = readManifest(profileDir)
+    let changed = false
+    if (manifest.dependencies?.[NATIVE_PTY_PACKAGE] === undefined) {
+      manifest.dependencies = { ...manifest.dependencies, [NATIVE_PTY_PACKAGE]: NATIVE_PTY_VERSION }
+      changed = true
+    }
+    if (!manifest.pnpm?.onlyBuiltDependencies?.includes(NATIVE_PTY_PACKAGE)) {
+      manifest.pnpm = {
+        ...manifest.pnpm,
+        onlyBuiltDependencies: [...new Set([...(manifest.pnpm?.onlyBuiltDependencies ?? []), NATIVE_PTY_PACKAGE])],
+      }
+      changed = true
+    }
+    if (changed) writeManifest(profileDir, manifest)
   }
   const patchPath = join(profileDir, 'cordis.patch.yml')
   if (!existsSync(patchPath)) writeFileSync(patchPath, PROFILE_PATCH_TEMPLATE, 'utf8')
   const workspacePath = join(profileDir, 'pnpm-workspace.yaml')
   if (!existsSync(workspacePath)) writeFileSync(workspacePath, PROFILE_PNPM_WORKSPACE, 'utf8')
+}
+
+/** The profile uses pnpm's hoisted linker, so this covers both a prebuilt
+ * platform module and Linux's node-gyp output. */
+export function profileHasNativePty(profileDir: string): boolean {
+  const packageDir = join(profileDir, 'node_modules', 'node-pty')
+  return [
+    join(packageDir, 'build', 'Release', 'pty.node'),
+    join(packageDir, 'prebuilds', `${process.platform}-${process.arch}`, 'pty.node'),
+  ].some(existsSync)
 }
 
 function readManifest(profileDir: string): ProfileManifest {

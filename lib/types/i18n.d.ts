@@ -512,12 +512,12 @@ declare const dict: {
         readonly en: "official endpoint";
     };
     readonly 'login-source-hint': {
-        readonly zh: "来源：环境变量 → 工作区 .env（run.ts 兜底读取）";
-        readonly en: "Source: env var → workspace .env (run.ts fallback)";
+        readonly zh: "来源：启动环境变量 → DSH 加密凭证存储";
+        readonly en: "Source: launch environment → DSH credential store";
     };
     readonly 'login-logout-hint': {
-        readonly zh: "DSH 凭证来自环境变量 DEEPSEEK_API_KEY — 删除该环境变量后重启 cute-dsh-tui 即登出";
-        readonly en: "DSH credentials come from the DEEPSEEK_API_KEY env var — remove it and restart cute-dsh-tui to log out";
+        readonly zh: "DSH 凭证可来自环境变量或已保存的凭证存储。/logout 只会移除 CuteDshTui 保存的凭证。";
+        readonly en: "DSH credentials may come from the environment or saved credential store. /logout removes only credentials saved by CuteDshTui.";
     };
     readonly 'permissions-root-hint': {
         readonly zh: "当前文件系统策略以工作目录为根：{{cwd}}";
