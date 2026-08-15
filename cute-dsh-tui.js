@@ -106,11 +106,13 @@ if (!existsSync(installedPackageDir) || (devPackagePath && !linkedToDevelopmentT
 // Older 1.1.1 profiles were created before pnpm was explicitly permitted to
 // build node-pty.  Repair that profile before DSH loads its plugin tree, where
 // an absent pty.node would otherwise surface as an opaque shell-provider error.
+// `rebuild` can skip a lifecycle script that pnpm previously marked ignored;
+// a forced install reliably re-evaluates the new allowBuilds policy.
 if (!profileHasNativePty(profileDir)) {
   console.log('[cute-dsh-tui] preparing the native terminal bridge...')
   let rebuildCode
   try {
-    rebuildCode = runBundledPnpm(profileDir, ['rebuild', 'node-pty'])
+    rebuildCode = runBundledPnpm(profileDir, ['install', '--force'])
   } catch (error) {
     console.error(`[cute-dsh-tui] native terminal setup failed: ${error instanceof Error ? error.message : String(error)}`)
     process.exit(1)
