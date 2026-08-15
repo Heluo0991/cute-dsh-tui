@@ -10,6 +10,8 @@ const PROFILE_PNPM_WORKSPACE = `packages:\n  - .\n\nnodeLinker: hoisted\nautoIns
 # requires explicit consent before it may run that native install script.
 allowBuilds:\n  node-pty: true\n`
 const DEFAULT_BUNDLES = ['@deepseek-ai/dsh-base']
+const NATIVE_PTY_PACKAGE = 'node-pty'
+const NATIVE_PTY_VERSION = '1.1.0'
 
 type ProfileManifest = {
   name?: string
@@ -52,14 +54,23 @@ export function profileDirectory(dshHome: string, profile: string): string {
 export function ensureProfile(profileDir: string): void {
   mkdirSync(profileDir, { recursive: true })
   const manifestPath = join(profileDir, 'package.json')
+  let manifest: ProfileManifest
   if (!existsSync(manifestPath)) {
-    const manifest: ProfileManifest = {
+    manifest = {
       name: `dsh-profile-${basename(profileDir)}`,
       private: true,
-      dependencies: {},
+      // Keep this direct: pnpm 10 can decline lifecycle scripts for a
+      // transitive native dependency, leaving Linux without pty.node.
+      dependencies: { [NATIVE_PTY_PACKAGE]: NATIVE_PTY_VERSION },
       dsh: { profile: { bundles: [...DEFAULT_BUNDLES] } },
     }
     writeFileSync(manifestPath, `${JSON.stringify(manifest, null, 2)}\n`, 'utf8')
+  } else {
+    manifest = readManifest(profileDir)
+    if (manifest.dependencies?.[NATIVE_PTY_PACKAGE] === undefined) {
+      manifest.dependencies = { ...manifest.dependencies, [NATIVE_PTY_PACKAGE]: NATIVE_PTY_VERSION }
+      writeManifest(profileDir, manifest)
+    }
   }
   const patchPath = join(profileDir, 'cordis.patch.yml')
   if (!existsSync(patchPath)) writeFileSync(patchPath, PROFILE_PATCH_TEMPLATE, 'utf8')
