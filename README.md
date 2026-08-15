@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="https://raw.githubusercontent.com/Heluo0991/cute-dsh-tui/personal/customization/docs/assets/readme-terminal-banner.svg" alt="CuteDshTui 终端像素角色与 DeepSeek Harness 艺术字" width="100%">
+  <img src="https://raw.githubusercontent.com/Heluo0991/cute-dsh-tui/e75fc5d/docs/assets/readme-terminal-banner.svg" alt="CuteDshTui 终端像素角色与 DeepSeek Harness 艺术字" width="100%">
 </p>
 
 <h1 align="center">CuteDshTui</h1>
