@@ -1492,6 +1492,20 @@ export function Chat({
       setHistoryOpen(true)
       return
     }
+    if (key.ctrl && input === 'f' && expanded) {
+      // The prompt is always visible, including in transcript mode. Binding
+      // transcript search to `/` therefore raced PromptInput's slash-command
+      // handler and produced two live input rows on the first slash. Keep
+      // `/` exclusively for commands and use the conventional Ctrl+F here.
+      searchAnchorRef.current = handle?.getScrollTop() ?? 0
+      setSearchQuery('')
+      setSearchCursor(0)
+      setSearchCurrent(0)
+      setSearchCount(0)
+      setSearchOpen(true)
+      event.stopImmediatePropagation()
+      return
+    }
     if (key.shift && key.upArrow && !selectionActive) {
       enterSelection()
     } else if (selectionActive) {
@@ -1522,18 +1536,6 @@ export function Chat({
     } else if (key.ctrl && input === 'o') {
       // Leaving transcript mode (Ctrl+O) — search was already handled above.
       setExpanded(previous => !previous)
-    } else if (input === '/' && !key.ctrl && !key.meta) {
-      // `/` in transcript mode (Ctrl+O expanded, CC's REPL semantics:
-      // search is active on the transcript screen where `/` isn't a command).
-      if (expanded) {
-        searchAnchorRef.current = handle?.getScrollTop() ?? 0
-        setSearchQuery('')
-        setSearchCursor(0)
-        setSearchCurrent(0)
-        setSearchCount(0)
-        setSearchOpen(true)
-        event.stopImmediatePropagation()
-      }
     } else if (key.ctrl && (input === 'c' || input === 'd')) {
       // CC's app:exit — ctrl+c interrupts a running turn; idle ctrl+c
       // CLEARS a non-empty prompt (single press) and only arms the
