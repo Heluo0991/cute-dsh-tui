@@ -57,8 +57,8 @@ export const LOCAL_COMMANDS: LocalCommand[] = [
   { name: 'thinking', description: 'Toggle extended thinking display' },
   { name: 'tokens', description: 'Show session token usage' },
   // Account / policy
-  { name: 'login', description: 'Show API credential status' },
-  { name: 'logout', description: 'Clear the API credential' },
+  { name: 'login', description: 'Enter a DeepSeek API key for this session or future cdsh launches' },
+  { name: 'logout', description: 'Clear this session key and optionally forget CuteDshTui’s saved key' },
   { name: 'permission', description: 'Switch sandbox and approval policy' },
   { name: 'permissions', description: 'Show current sandbox and approval policy' },
   { name: 'add-dir', description: 'Show the filesystem policy scope' },

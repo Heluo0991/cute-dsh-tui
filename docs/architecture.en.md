@@ -85,7 +85,7 @@ ConPTY.
 | Path | Contents |
 | --- | --- |
 | `$DSH_HOME/sessions` | DSH SQLite session events from the profile patch |
-| `~/.cute-dsh-tui/resume.txt` | Recent session ID used by `cute-dsh-tui --resume` and the exit hint |
+| `~/.cute-dsh-tui/resume.txt` | Recent session ID used by `cdsh --resume` and the exit hint |
 | `~/.cute-dsh-tui/last-used.json` | `/resume` recency metadata |
 | `~/.cute-dsh-tui/theme.json` | Current theme selection |
 | `~/.cute-dsh-tui/themes/` | User theme JSON files |

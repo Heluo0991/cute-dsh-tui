@@ -50,7 +50,7 @@ Profile 启动按顺序叠加 `dsh-base`、已安装 bundle、`@heluo0991/cute-d
 | `contextBar` | `true` | 输入框下方的分段上下文进度条；`false` 隐藏该行 |
 | `fullscreen` | `false` | `true` 使用 alternate screen、应用内滚动和鼠标选区；`false` 使用 inline 模式 |
 | `preset` | 名册默认 `standard` | 新会话 Agent preset；显式配置优先于持久化偏好 |
-| `sessionId` | 未设置 | 要恢复的会话 ID，通常由 `cute-dsh-tui --resume` 注入 |
+| `sessionId` | 未设置 | 要恢复的会话 ID，通常由 `cdsh --resume` 注入 |
 
 ## 工作状态行
 

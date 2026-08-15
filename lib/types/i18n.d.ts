@@ -468,8 +468,8 @@ declare const dict: {
         readonly en: "User config  {{path}}";
     };
     readonly 'doctor-launch-hint': {
-        readonly zh: "启动方式  cute-dsh-tui.cmd / dsh --profile cute-dsh-tui";
-        readonly en: "Launch      cute-dsh-tui.cmd / dsh --profile cute-dsh-tui";
+        readonly zh: "启动方式  cdsh（官方 dsh 保持可用）";
+        readonly en: "Launch      cdsh (official dsh remains available)";
     };
     readonly 'doctor-route-hint': {
         readonly zh: "模型路由  由 cordis.yml 或持久化选择决定（/model 通过会话 fork 切换）";

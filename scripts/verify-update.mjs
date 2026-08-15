@@ -24,10 +24,11 @@ function check(name, ok, extra = '') {
   if (!ok) failed += 1
 }
 
-const { installedTuiVersion, resolveRegistryBase, isVersionNewer, resolveDshProfileName, shellQuote } = await import(
+const { installedTuiVersion, resolveRegistryBase, isVersionNewer, resolveDshProfileName } = await import(
   '../lib/types/update.js'
 )
 const compiledModulePath = fileURLToPath(new URL('../lib/types/update.js', import.meta.url))
+const compiledProfileManagerPath = fileURLToPath(new URL('../lib/types/profileManager.js', import.meta.url))
 const repoRoot = fileURLToPath(new URL('..', import.meta.url))
 
 // ---- installedTuiVersion: compiled layout is this module's own real layout
@@ -48,6 +49,7 @@ try {
   const sourceRoot = join(scratch, 'source')
   mkdirSync(join(sourceRoot, 'src'), { recursive: true })
   cpSync(compiledModulePath, join(sourceRoot, 'src', 'update.js'))
+  cpSync(compiledProfileManagerPath, join(sourceRoot, 'src', 'profileManager.js'))
   writeFileSync(join(sourceRoot, 'package.json'), JSON.stringify({ name: '@heluo0991/cute-dsh-tui', version: '1.2.3', type: 'module' }))
   const sourceMod = await import(`${pathToFileURL(join(sourceRoot, 'src', 'update.js'))}?probe=1`)
   check(
@@ -61,8 +63,9 @@ try {
   const pkgRoot = join(scratch, 'pkg')
   mkdirSync(join(pkgRoot, 'lib', 'types'), { recursive: true })
   cpSync(compiledModulePath, join(pkgRoot, 'lib', 'types', 'update.js'))
+  cpSync(compiledProfileManagerPath, join(pkgRoot, 'lib', 'types', 'profileManager.js'))
   writeFileSync(join(pkgRoot, 'package.json'), JSON.stringify({ name: '@heluo0991/cute-dsh-tui', version: '0.9.9', type: 'module' }))
-  writeFileSync(join(pkgRoot, 'lib', 'package.json'), JSON.stringify({ name: 'other-pkg', version: '9.9.9' }))
+  writeFileSync(join(pkgRoot, 'lib', 'package.json'), JSON.stringify({ name: 'other-pkg', version: '9.9.9', type: 'module' }))
   const pkgMod = await import(`${pathToFileURL(join(pkgRoot, 'lib', 'types', 'update.js'))}?probe=2`)
   check(
     'installedTuiVersion prefers the matching root manifest over a foreign near one',
@@ -74,8 +77,9 @@ try {
   const foreignRoot = join(scratch, 'foreign')
   mkdirSync(join(foreignRoot, 'lib', 'types'), { recursive: true })
   cpSync(compiledModulePath, join(foreignRoot, 'lib', 'types', 'update.js'))
+  cpSync(compiledProfileManagerPath, join(foreignRoot, 'lib', 'types', 'profileManager.js'))
   writeFileSync(join(foreignRoot, 'package.json'), JSON.stringify({ name: 'other-pkg', version: '9.9.9' }))
-  writeFileSync(join(foreignRoot, 'lib', 'package.json'), JSON.stringify({ name: 'third-pkg', version: '8.8.8' }))
+  writeFileSync(join(foreignRoot, 'lib', 'package.json'), JSON.stringify({ name: 'third-pkg', version: '8.8.8', type: 'module' }))
   const foreignMod = await import(`${pathToFileURL(join(foreignRoot, 'lib', 'types', 'update.js'))}?probe=3`)
   check(
     'installedTuiVersion rejects foreign manifests entirely',
@@ -169,20 +173,6 @@ check(
   resolveDshProfileName(['node', 'dsh', '--profile', 'cute-dsh-tui', '--resume', 'sid', '--model', 'x']) === 'cute-dsh-tui',
 )
 
-// ---- shellQuote: cmd.exe safety for the .cmd path (P1 companion)
-check(
-  'shellQuote: plain tokens pass through',
-  shellQuote(['plugin', '--profile', 'cute-dsh-tui']).join(' ') === 'plugin --profile cute-dsh-tui',
-)
-check(
-  'shellQuote: spaces get quoted',
-  shellQuote(['C:\\Program Files\\nodejs\\node.exe']).join(' ') === '"C:\\Program Files\\nodejs\\node.exe"',
-)
-check(
-  'shellQuote: embedded quotes are doubled',
-  shellQuote(['a"b c']).join(' ') === '"a""b c"',
-)
-
 // ---- pnpm args include --latest (must-fix: cross-minor update capability)
 const compiledSource = readFileSync(compiledModulePath, 'utf8')
 check(
@@ -195,17 +185,17 @@ check(
 )
 // P1: the node restart must NOT go through a shell — assert the compiled
 // restart spawn call has no shell option while the dsh call does.
-const dshSpawn = compiledSource.indexOf("runProcess(dsh")
+const dshSpawn = compiledSource.indexOf('runBundledPnpmAsync')
 const nodeSpawn = compiledSource.indexOf('runProcess(process.execPath')
 const dshSegment = compiledSource.slice(dshSpawn, nodeSpawn)
 const nodeSegment = compiledSource.slice(nodeSpawn)
 check(
-  'P1: dsh.cmd spawn requests a shell',
-  /\{\s*shell:\s*true\s*\}/.test(dshSegment),
+  'profile mutation uses bundled pnpm instead of dsh.cmd',
+  dshSegment.includes('runBundledPnpmAsync'),
 )
 check(
-  'P1: node restart spawn has no shell (space-safe exec path)',
-  !/shell/.test(nodeSegment.replace(/shellQuote/g, '')),
+  'P1: profile mutation and node restart have no shell option',
+  !/shell\s*:/.test(dshSegment) && !/shell\s*:/.test(nodeSegment),
 )
 
 if (failed > 0) {

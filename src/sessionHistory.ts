@@ -1,5 +1,5 @@
 /**
- * Launcher contract for `cute-dsh-tui --resume`: the TUI writes the chosen session
+ * Launcher contract for `cdsh --resume`: the TUI writes the chosen session
  * id to `~/.cute-dsh-tui/resume.txt`, and the launcher feeds it back as
  * `CUTE_DSH_TUI_RESUME_SESSION`. Session *records* live in DSH's own persistence
  * backend (dsh-session-persistence-jsonl) — `/resume` lists those via
@@ -35,7 +35,7 @@ function ensureDir(): void {
 
 /**
  * Store the session to resume and report the launcher invocation.
- * @param sessionId - Session id for `cute-dsh-tui --resume` on the next launch.
+ * @param sessionId - Session id for `cdsh --resume` on the next launch.
  */
 export function writeResumeTarget(sessionId: string): void {
   ensureDir()

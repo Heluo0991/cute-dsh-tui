@@ -51,7 +51,7 @@ A complete common override looks like this:
 | `contextBar` | `true` | Segmented context-usage bar below the input box; `false` hides the row |
 | `fullscreen` | `false` | `true` uses the alternate screen, app scrolling, and mouse selection; `false` uses inline mode |
 | `preset` | roster default `standard` | Agent preset for new sessions; explicit configuration wins over persisted preference |
-| `sessionId` | unset | Session to resume, normally injected by `cute-dsh-tui --resume` |
+| `sessionId` | unset | Session to resume, normally injected by `cdsh --resume` |
 
 ## Live activity row
 
