@@ -106,20 +106,25 @@ if (!existsSync(installedPackageDir) || (devPackagePath && !linkedToDevelopmentT
 // Older 1.1.1 profiles were created before pnpm was explicitly permitted to
 // build node-pty.  Repair that profile before DSH loads its plugin tree, where
 // an absent pty.node would otherwise surface as an opaque shell-provider error.
-// `rebuild` can skip a lifecycle script that pnpm previously marked ignored;
-// a forced install reliably re-evaluates the new allowBuilds policy.
+// pnpm records lifecycle scripts skipped at install time as "pending".  Build
+// that queue first, then use a forced install only as a fallback for profiles
+// created by older pnpm versions.
 if (!profileHasNativePty(profileDir)) {
   console.log('[cute-dsh-tui] preparing the native terminal bridge...')
   let rebuildCode
   try {
-    rebuildCode = runBundledPnpm(profileDir, ['install', '--force'])
+    rebuildCode = runBundledPnpm(profileDir, ['rebuild', '--pending', '--reporter=append-only'])
+    if (rebuildCode !== 0 || !profileHasNativePty(profileDir)) {
+      console.log('[cute-dsh-tui] retrying native terminal setup...')
+      rebuildCode = runBundledPnpm(profileDir, ['install', '--force', '--reporter=append-only'])
+    }
   } catch (error) {
     console.error(`[cute-dsh-tui] native terminal setup failed: ${error instanceof Error ? error.message : String(error)}`)
     process.exit(1)
   }
   if (rebuildCode !== 0 || !profileHasNativePty(profileDir)) {
     console.error('[cute-dsh-tui] node-pty is required for the local shell but could not be built.')
-    if (process.platform === 'linux') console.error('Install Linux build tools, then retry: sudo apt-get install -y build-essential python3')
+    if (process.platform === 'linux') console.error('Run: sudo apt-get install -y build-essential python3; then run cdsh again.')
     process.exit(rebuildCode || 1)
   }
 }
