@@ -472,8 +472,8 @@ declare const dict: {
         readonly en: "Launch      dsh-tui.cmd / dsh --profile dsh-tui";
     };
     readonly 'doctor-route-hint': {
-        readonly zh: "模型路由  由 cordis.yml 的 llm-deepseek 段决定（/model 仅提示重启生效）";
-        readonly en: "Model route  set by the llm-deepseek block in cordis.yml (/model only hints at restart)";
+        readonly zh: "模型路由  由 cordis.yml 或持久化选择决定（/model 通过会话 fork 切换）";
+        readonly en: "Model route  set by cordis.yml or persisted selection (/model switches through a session fork)";
     };
     readonly 'export-failed': {
         readonly zh: "导出失败（无法写入工作目录）";
@@ -519,14 +519,6 @@ declare const dict: {
         readonly zh: "DSH 凭证来自环境变量 DEEPSEEK_API_KEY — 删除该环境变量后重启 dsh-tui 即登出";
         readonly en: "DSH credentials come from the DEEPSEEK_API_KEY env var — remove it and restart dsh-tui to log out";
     };
-    readonly 'permissions-policy-hint': {
-        readonly zh: "DSH 权限策略由 fs-policy / bash-sandbox 配置决定（当前 leaf：workspace 内读写、写入需已读文件）。";
-        readonly en: "DSH permission policy is set by fs-policy / bash-sandbox config (current leaf: read/write in workspace, writes need a prior read).";
-    };
-    readonly 'permissions-approval-hint': {
-        readonly zh: "DSH 的 /permission 预设切换需要 approval 服务 + 审批 UI，dsh-tui 未挂载。";
-        readonly en: "DSH /permission preset switching needs the approval service + approval UI, not mounted in dsh-tui.";
-    };
     readonly 'permissions-root-hint': {
         readonly zh: "当前文件系统策略以工作目录为根：{{cwd}}";
         readonly en: "Current filesystem policy is rooted at the working directory: {{cwd}}";
@@ -534,22 +526,6 @@ declare const dict: {
     readonly 'permissions-path-hint': {
         readonly zh: "模型工具相对路径均解析自该目录；跨目录访问由 fs-policy 拦截。";
         readonly en: "Relative paths of model tools resolve from this directory; cross-directory access is blocked by fs-policy.";
-    };
-    readonly 'hooks-not-mounted': {
-        readonly zh: "DSH hooks（dsh-hooks-claude / dsh-hooks-codex）未在本 leaf 挂载。";
-        readonly en: "DSH hooks (dsh-hooks-claude / dsh-hooks-codex) are not mounted in this leaf.";
-    };
-    readonly 'hooks-mount-hint': {
-        readonly zh: "需要时可在 cordis.yml 挂载对应 hooks 插件。";
-        readonly en: "Mount the matching hooks plugin in cordis.yml when needed.";
-    };
-    readonly 'memory-none': {
-        readonly zh: "DSH 暂无持久记忆服务。";
-        readonly en: "DSH has no persistent memory service yet.";
-    };
-    readonly 'memory-hint': {
-        readonly zh: "长期约定可写入 AGENTS.md（工作区上下文）或技能（~/.dsh/skills）。";
-        readonly en: "Long-term conventions can go into AGENTS.md (workspace context) or skills (~/.dsh/skills).";
     };
     readonly 'update-unavailable': {
         readonly zh: "当前运行方式不支持自动更新（需经 dsh --profile 启动），请在终端执行 dsh plugin --profile <name> update @deepseek-harness-tui/dsh-tui";
@@ -575,10 +551,6 @@ declare const dict: {
         readonly zh: "无法确认新版本（网络或 registry 不可达），已尝试直接更新……";
         readonly en: "Could not confirm a newer version (network or registry unreachable); attempting the update anyway…";
     };
-    readonly 'vim-not-implemented': {
-        readonly zh: "vim 模式暂未实现";
-        readonly en: "vim mode not implemented yet";
-    };
     readonly 'terminal-setup-hint': {
         readonly zh: "推荐 Windows Terminal（≥110 列、等宽字体、TrueColor）。";
         readonly en: "Recommended: Windows Terminal (≥110 columns, monospace, TrueColor).";
@@ -586,10 +558,6 @@ declare const dict: {
     readonly 'terminal-paste-hint': {
         readonly zh: "Ctrl+V 粘贴文本/文件路径；Ctrl+Shift+V 终端原生粘贴；右键粘贴同样可用。";
         readonly en: "Ctrl+V pastes text/file paths; Ctrl+Shift+V is native terminal paste; right-click paste also works.";
-    };
-    readonly 'connect-none': {
-        readonly zh: "DSH 暂无远程连接机制（CC 的 /connect 对应能力未适配）。";
-        readonly en: "DSH has no remote connection mechanism (CC's /connect equivalent is not adapted).";
     };
     readonly 'theme-switch-failed': {
         readonly zh: "主题「{{name}}」切换失败（无法写入 ~/.dsh-cc/theme.json）";

@@ -6,8 +6,9 @@
 # A patch replaces the targeted row's whole `config`, so each row below
 # restates every key it owns (see the dsh-base patch for the shared
 # defaults). The dsh-base core rows that need no dsh-tui value — tools,
-# sandbox/approval policy, skills, goal, plan mode, workspace context,
-# telemetry — are inherited unchanged.
+# skills, goal, plan mode, workspace context, telemetry — are inherited
+# unchanged. Sandbox and approval defaults are overridden below so the TUI
+# can offer the same permission model on every platform.
 
 # ── surface-specific values over the dsh-base layer ─────────────────────────
 
@@ -126,19 +127,22 @@
 - id: workflow-worker-thread
   disabled: true
 
-# Windows has no sandbox confinement backend yet (sandbox-local's win32
-# chain is empty); use danger-full-access on Windows so bash commands can
-# run. Other platforms keep the base workspace-write default.
+# DSH rc.6 provides a Windows PowerShell sandbox through the Windows ACL
+# restricted-token runner. Keep the same safe default on every platform:
+# workspace writes are allowed, while operations that require escalation ask
+# through dsh-tui's approval panel. `dsh --yolo` is the explicit full-trust
+# opt-in and disables prompts for a new session.
 - id: sandbox-policy
   config:
-    mode: !!js "process.platform === 'win32' ? 'danger-full-access' : (process.env.DSH_PERMISSION_MODE ?? 'workspace-write')"
+    mode: !!js "process.env.DSH_CC_YOLO === '1' ? 'danger-full-access' : (process.env.DSH_PERMISSION_MODE ?? 'workspace-write')"
     workspaceRoot: !!js process.cwd()
 
-# On Windows, skip approval prompts (no sandbox = the user's terminal trust
-# model, matching every other terminal coding agent).
+# A non-yolo explicit DSH_PERMISSION_MODE=danger-full-access has the same
+# no-prompt semantics. Other modes retain `ask`, allowing the terminal UI to
+# answer one-shot escalation requests.
 - id: approval
   config:
-    policy: !!js "process.platform === 'win32' ? 'never' : ((process.env.DSH_PERMISSION_MODE ?? 'workspace-write') === 'danger-full-access' ? 'never' : 'ask')"
+    policy: !!js "(process.env.DSH_CC_YOLO === '1' || (process.env.DSH_PERMISSION_MODE ?? 'workspace-write') === 'danger-full-access') ? 'never' : 'ask'"
 
 # Sessions live in the shared JSONL store (~/.dsh/sessions) — the same
 # backend dsh web writes — so /resume here and the web session list see each

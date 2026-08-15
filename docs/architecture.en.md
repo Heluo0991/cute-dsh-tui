@@ -100,16 +100,18 @@ startup.
 
 ## Permissions and security boundary
 
-`dsh-TUI` does not provide a separate sandbox and does not implement the
-approval UI for `/permission`. Effective capability comes from the DSH services
-mounted by `cordis.patch.yml`:
+`dsh-TUI` does not provide a separate sandbox. Effective capability comes from
+the DSH services mounted by `cordis.patch.yml`. It consumes `permissionPresets`
+and `dsh-user-approval`: `/permission` invokes the native DSH command for the
+current session, while escalation requests wait for a one-shot allow, deny, or
+cancel decision in the terminal.
 
-- On non-Windows platforms, `DSH_PERMISSION_MODE` defaults to `workspace-write`;
-  the filesystem policy requires observed files and the approval policy is
-  normally `ask`.
-- Windows has no usable local sandbox backend in the current composition, so it
-  uses `danger-full-access` and `never` approval to match the terminal trust
-  model.
+- On every platform, `DSH_PERMISSION_MODE` defaults to `workspace-write` and
+  approval defaults to `ask`.
+- Windows DSH RC6 uses its PowerShell/Windows ACL sandbox rather than falling
+  back to full access automatically.
+- `dsh --yolo` explicitly selects `danger-full-access + never`. When it
+  restores an older session, the TUI asks before upgrading that session.
 - `DEEPSEEK_API_KEY` should come from the environment or controlled runtime
   injection. Status output only reports presence or a redacted fragment.
 - MCP, shell, filesystem tools, and custom presets expand what the model can
@@ -119,20 +121,19 @@ mounted by `cordis.patch.yml`:
 Inspect the active profile patch before running in an untrusted repository; the
 visual TUI alone does not describe the effective policy.
 
-## Known limitations
+## Runtime behavior
 
-- Plugin-source context injected into the system prompt is not shown as a
-  separate UI segment; it is included in the system/context meter.
+- Dynamic plugin-source context is shown as its own expandable transcript row
+  with producer attribution; its tokens count in the prompt segment.
 - `/model` switches through a session fork rather than an in-place update; the
   old session remains in `/resume`.
 - Windows `Ctrl+V` depends on PowerShell `Get-Clipboard`; another process can
   lock the clipboard and make the operation appear empty.
 - Exit restores the terminal and ends the process without waiting for the
   Agent's asynchronous flush; the persistence plugin is the fallback.
-- DSH `/permission` sandbox switching is not connected because this TUI has no
-  approval UI.
-- `/vim`, `/connect`, `/hooks`, and `/memory` are compatibility placeholders,
-  not evidence that those DSH capabilities are mounted.
+
+## Known limitations
+
 - There is no automated full-flow suite that requires real model credentials;
   CI uses headless rendering and fake services, while live model integration
   still needs a manual check in the target terminal.
@@ -141,7 +142,7 @@ visual TUI alone does not describe the effective policy.
 
 | Goal | Method |
 | --- | --- |
-| Environment and profile | Run `/doctor`, `/config`, and `/permissions` inside the TUI |
+| Environment and profile | Run `/doctor`, `/config`, `/permissions`, and `/permission` inside the TUI |
 | stderr diagnostics | `CC_TUI_DEBUG=1 dsh --profile dsh-tui` |
 | Raw ANSI frames | `DSH_CC_RENDER_LOG=/path/to/render.log dsh --profile dsh-tui` |
 | Theme regression | `node --import tsx/esm scripts/verify-themes.mjs` |

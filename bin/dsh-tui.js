@@ -1,95 +1,94 @@
 #!/usr/bin/env node
 /**
- * dsh-tui — dsh-tui profile 的一键直达启动器。
+ * Portable dsh-TUI launcher.
  *
- * 全局安装 @deepseek-harness-tui/dsh-tui 后获得 `dsh-tui` 命令，免去手工
- * 输入 `dsh --profile dsh-tui`：
- *
- *   1. 检测 dsh CLI（缺失时提示安装 @deepseek-ai/dsh）；
- *   2. 检测 $DSH_HOME/profiles/dsh-tui 是否已初始化，未初始化则自动执行
- *      `dsh plugin --profile dsh-tui add @deepseek-harness-tui/dsh-tui@<本包版本>`
- *      自举——版本号与本包对齐，避免 pnpm store 缓存带来的旧版漂移；
- *   3. 透传全部参数启动 `dsh --profile dsh-tui`。
- *
- * `--resume` 由本启动器拦截：读取 TUI 保留的兼容路径 ~/.dsh-cc/resume.txt，
- * 以 DSH_CC_RESUME_SESSION 环境变量喂回（见 src/sessionHistory.ts 的
- * 启动器契约），该 flag 本身不再传给 dsh。
+ * It verifies the DSH CLI, creates the dsh-tui profile on first use, handles
+ * TUI-owned launch flags, then forwards the remaining arguments to
+ * `dsh --profile dsh-tui`.
  */
 import { spawn, spawnSync } from 'node:child_process'
 import { existsSync, readFileSync } from 'node:fs'
 import { homedir } from 'node:os'
 import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
+import { LAUNCHER_USAGE, applyLaunchEnvironment, parseLaunchArgs } from './launch-options.js'
 
 const here = fileURLToPath(new URL('.', import.meta.url))
 const ownVersion = JSON.parse(readFileSync(join(here, '..', 'package.json'), 'utf8')).version
 const PACKAGE = '@deepseek-harness-tui/dsh-tui'
 const PROFILE = 'dsh-tui'
 
-// React 开发构建会把每次渲染的 performance.measure() 堆进无界缓冲区导致
-// 长会话 OOM——与仓库根 dsh-tui.cmd 保持一致，强制 production。
+// React's development renderer retains unbounded performance measures during
+// long sessions, so production is the safe default for every entry point.
 process.env.NODE_ENV ??= 'production'
 
 const isWin = process.platform === 'win32'
-// Windows 上 .cmd shim 必须经 shell 启动（Node ≥18.20.2 的安全限制）；
-// 其余平台直接 spawn 无后缀的 dsh。
 const shellOpt = isWin ? { shell: true } : {}
+// The local G:\DSH command shim pins this to its isolated RC6 runtime. A
+// normal package installation keeps the portable `dsh` default.
+const dshBin = process.env.DSH_TUI_DSH_BIN || 'dsh'
 
-// --- 1. dsh CLI 预检 ---------------------------------------------------------
-const probe = spawnSync('dsh', ['--version'], { stdio: 'pipe', ...shellOpt })
+const launch = parseLaunchArgs(process.argv.slice(2))
+if (launch.showHelp) {
+  process.stdout.write(LAUNCHER_USAGE)
+  process.exit(0)
+}
+if (launch.error !== undefined) {
+  console.error(`[dsh-tui] ${launch.error}`)
+  process.exit(2)
+}
+if (launch.showVersion) {
+  const version = spawnSync(dshBin, ['--version'], { stdio: 'inherit', ...shellOpt })
+  if (version.error) {
+    console.error(`[dsh-tui] failed to run dsh: ${version.error.message}`)
+    process.exit(1)
+  }
+  process.exit(version.status ?? 1)
+}
+applyLaunchEnvironment(launch.environment)
+
+// Verify the DSH CLI before attempting profile bootstrap.
+const probe = spawnSync(dshBin, ['--version'], { stdio: 'pipe', ...shellOpt })
 if (probe.error || probe.status !== 0) {
-  console.error('[dsh-tui] 未检测到 dsh CLI。请先安装官方客户端：')
+  console.error('[dsh-tui] dsh CLI was not found. Install it first:')
   console.error('  npm install -g @deepseek-ai/dsh')
   process.exit(1)
 }
 
-// --- 2. profile 自举 ----------------------------------------------------------
+// Ensure the profile exists. This keeps the published `dsh-tui` command
+// self-contained while the local wrapper uses the same isolated profile.
 const dshHome = process.env.DSH_HOME || join(homedir(), '.dsh')
 const profileDir = join(dshHome, 'profiles', PROFILE)
 if (!existsSync(join(profileDir, 'node_modules', '@deepseek-harness-tui', 'dsh-tui'))) {
   const pnpmProbe = spawnSync('pnpm', ['--version'], { stdio: 'pipe', ...shellOpt })
   if (pnpmProbe.error || pnpmProbe.status !== 0) {
-    console.error('[dsh-tui] 首次安装需要 pnpm（dsh plugin 会把安装转发给它）：')
-    console.error('  npm install -g pnpm   （或启用 corepack：corepack enable pnpm）')
+    console.error('[dsh-tui] pnpm is required for the first profile install:')
+    console.error('  npm install -g pnpm')
     process.exit(1)
   }
-  console.log(`[dsh-tui] 首次运行，正在初始化 ${PROFILE} profile（${PACKAGE}@${ownVersion}）…`)
-  const add = spawnSync('dsh', ['plugin', '--profile', PROFILE, 'add', `${PACKAGE}@${ownVersion}`], { stdio: 'inherit', ...shellOpt })
+  console.log(`[dsh-tui] initializing ${PROFILE} profile (${PACKAGE}@${ownVersion})...`)
+  const add = spawnSync(
+    dshBin,
+    ['plugin', '--profile', PROFILE, 'add', `${PACKAGE}@${ownVersion}`],
+    { stdio: 'inherit', ...shellOpt },
+  )
   if (add.status !== 0) {
-    console.error('[dsh-tui] 插件安装失败。可稍后手工重试：')
+    console.error('[dsh-tui] profile installation failed. Retry manually with:')
     console.error(`  dsh plugin --profile ${PROFILE} add ${PACKAGE}@${ownVersion}`)
     process.exit(add.status ?? 1)
   }
 }
 
-// --- 3. --resume 拦截 ---------------------------------------------------------
-const args = []
-for (const a of process.argv.slice(2)) {
-  if (a === '--resume') {
-    try {
-      process.env.DSH_CC_RESUME_SESSION = readFileSync(join(homedir(), '.dsh-cc', 'resume.txt'), 'utf8').trim()
-    } catch {
-      // 没有历史会话可恢复——静默忽略，正常冷启动。
-    }
-  } else {
-    args.push(a)
-  }
-}
-
-// --- 4. 启动 ------------------------------------------------------------------
-const child = spawn('dsh', ['--profile', PROFILE, ...args], {
+const child = spawn(dshBin, ['--profile', PROFILE, ...launch.dshArgs], {
   stdio: 'inherit',
   env: process.env,
   ...shellOpt,
 })
-child.on('error', (err) => {
-  console.error(`[dsh-tui] 启动失败：${err.message}`)
+child.on('error', (error) => {
+  console.error(`[dsh-tui] launch failed: ${error.message}`)
   process.exit(1)
 })
 child.on('exit', (code, signal) => {
-  if (signal) {
-    process.kill(process.pid, signal)
-  } else {
-    process.exit(code ?? 0)
-  }
+  if (signal) process.kill(process.pid, signal)
+  else process.exit(code ?? 0)
 })

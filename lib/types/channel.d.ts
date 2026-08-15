@@ -113,7 +113,7 @@ export interface ToolViewPresenter {
  */
 export interface ChatRow {
     id: number;
-    kind: 'user' | 'assistant' | 'tool' | 'notice' | 'reasoning' | 'interrupt' | 'local' | 'local-output' | 'compact';
+    kind: 'user' | 'context' | 'assistant' | 'tool' | 'notice' | 'reasoning' | 'interrupt' | 'local' | 'local-output' | 'compact';
     /** Extra label for non-human user rows (e.g. `steering`). */
     label?: string;
     text: string;
@@ -335,6 +335,8 @@ export interface Channel {
      * nothing here; locals win on name collisions.
      */
     readonly commandList: readonly LocalCommand[];
+    /** Effective DSH sandbox/approval preset for the live session. */
+    readonly permissions: PermissionState | undefined;
     /**
      * Run a plugin-registered slash command against the live agent (DSH
      * `dsh-commands` registry): logs `command/run`/`command/done` and returns
@@ -343,6 +345,8 @@ export interface Channel {
      * back to sending the line to the model).
      */
     runExternalCommand(name: string, rawInput: string): Promise<string | undefined>;
+    /** Apply a DSH permission preset to the current idle session. */
+    switchPermission(presetId: string): Promise<boolean>;
     /** Estimated context segments by content type (pi-nano-context style bar). */
     readonly contextSegments: {
         system: number;
@@ -450,6 +454,17 @@ export interface PresetOption {
     broken?: string;
     isDefault: boolean;
 }
+/** One selectable DSH permission preset. */
+export interface PermissionOption {
+    readonly id: string;
+    readonly name: string;
+    readonly description: string;
+}
+/** Current-session permission selection surfaced by the picker and status view. */
+export interface PermissionState {
+    readonly current: string;
+    readonly options: readonly PermissionOption[];
+}
 /** @internal */
 /** One user message submitted while the model was working, not yet claimed
  *  by a turn. `steer` lands at the next step boundary of the running turn;
@@ -522,6 +537,8 @@ export interface ChannelState {
     commandList: readonly LocalCommand[];
     /** Run a plugin-registered command (see the public Channel type). */
     runExternalCommand(name: string, rawInput: string): Promise<string | undefined>;
+    /** Effective permission state (see the public Channel type). */
+    permissions: PermissionState | undefined;
     /** Estimated context segments by content type (pi-nano-context style bar). */
     contextSegments: {
         system: number;
@@ -558,6 +575,8 @@ export interface ChannelState {
     listPresets(): Promise<readonly PresetOption[]>;
     /** Switch the agent preset (see the public Channel type). */
     switchPreset(presetId: string): Promise<boolean>;
+    /** Apply a DSH permission preset to the idle session. */
+    switchPermission(presetId: string): Promise<boolean>;
     clear(): void;
     /** @internal older-row restoration (see the public Channel.loadOlder). */
     loadOlder(): number;

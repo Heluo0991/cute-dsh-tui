@@ -76,7 +76,7 @@ Bracketed paste（右键或终端原生粘贴）会原样插入，包括换行�
 `/resume` 显示当前工作目录下最近使用的可恢复会话。标题取第一条用户消息，列表
 按最近使用时间排序。确认后会切换 Agent 并回放持久化事件。
 
-Windows `dsh-tui.cmd --resume` 使用 `~/.dsh-cc/resume.txt` 中最后选择的会话 ID。
+命令行也可在启动时使用完整恢复流程：`dsh --resume` 打开当前目录选择器，`dsh --resume <session-id>` 精确恢复，`dsh --resume --last`（或 `dsh -c`）恢复最近会话。
 
 ### Rewind
 
@@ -94,6 +94,19 @@ Windows `dsh-tui.cmd --resume` 使用 `~/.dsh-cc/resume.txt` 中最后选择的�
 
 `/preset` 只允许空白会话原地切换。已经开始的会话会把选择保存为下一次 `/new`
 或启动时的默认值。详细规则见[配置参考](configuration.md#agent-preset)。
+
+### 权限与审批
+
+`/permission` 打开 DSH 原生权限预设选择器，或用 `/permission <id>` 直接切换；变更
+只作用于当前会话及其后续工具调用，`/permissions` 显示当前预设。选择
+`danger-full-access` 前必须按 `Enter` 明确确认。新会话默认是
+`workspace-write + ask`。
+
+当工具请求一次性升级时，审批面板会暂时接管键盘：`Enter` 允许本次、`D` 拒绝、`Esc`
+或 `Ctrl+C` 取消。不会在 TUI 中保存“始终允许”决定。
+
+plugin source 在会话中注入的动态上下文会显示为带来源名的可展开 transcript 行；它不是
+用户消息，但会计入 prompt token 分段。
 
 ## Fullscreen 与鼠标
 
@@ -136,9 +149,9 @@ transcript。
 | 会话 | `/new`、`/resume`、`/clear`、`/compact`、`/export` |
 | 状态 | `/status`、`/cost`、`/config`、`/doctor`、`/init`、`/agents` |
 | 模型与显示 | `/model`、`/thinking`、`/tokens`、`/activity`、`/preset`、`/theme`、`/lang` |
-| 账号与策略 | `/login`、`/logout`、`/permissions`、`/add-dir`、`/hooks`、`/mcp`、`/memory` |
+| 账号与策略 | `/login`、`/logout`、`/permission`、`/permissions`、`/add-dir`、`/mcp` |
 | 打包 Skills | `/audit`、`/bug`、`/practice`、`/review`、`/pr_comments`、`/release-notes`、`/vuln-check` |
-| 其他 | `/update`、`/vim`、`/terminal-setup`、`/connect`、`/help`、`/exit` |
+| 其他 | `/update`、`/terminal-setup`、`/help`、`/exit` |
 | 注册表 | `/plan`、`/goal`，以及当前 DSH 组合注册的其他命令 |
 
 补充语法：
@@ -146,6 +159,8 @@ transcript。
 - `/activity` 打开动画选择器；`/activity frames <name>` 直接设置；
   `/activity status` 查看状态。
 - `/preset <id>` 与 `/preset status` 见配置文档。
+- `/permission` 打开当前会话的权限预设；`/permission <id>` 直接选择，`/permissions`
+  查看当前策略。
 - `/theme <name>` 与 `/theme status` 见主题文档。
 - `/lang` 切换中英界面语言（见「界面语言」）。
 - 启动后会后台检查 npm 新版本；发现更新时会提示。检测遵循 npm registry
@@ -157,6 +172,3 @@ transcript。
 - `/plan [off|message]` 与 `/goal ...` 由 DSH 命令插件处理并写入会话事件。
 - Skill 命令只发送激活提示；实际 skill 通过 DSH skill 注册表加载。包内
   `skills/` 会在插件启动时自动注册，也可用项目或用户目录中的同名 skill 覆盖。
-
-`/vim`、`/connect`、`/hooks` 与 `/memory` 当前是兼容占位命令；当 DSH 组合没有
-对应能力时会给出明确说明，而不是静默执行。

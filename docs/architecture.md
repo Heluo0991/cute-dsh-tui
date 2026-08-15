@@ -88,13 +88,14 @@ profile 可通过 `DSH_CC_SESSION_ROOT` 改写 SQLite 路径；直接运行根�
 
 ## 权限与安全边界
 
-`dsh-TUI` 本身不提供独立沙箱，也不实现 `/permission` 的审批 UI。实际能力由
-`cordis.patch.yml` 挂载的 DSH 服务决定：
+`dsh-TUI` 本身不提供独立沙箱；实际能力由 `cordis.patch.yml` 挂载的 DSH 服务决定。
+它消费 `permissionPresets` 与 `dsh-user-approval`：`/permission` 调用 DSH 原生命令来
+切换当前会话预设，工具升级请求则在 TUI 中等待一次性允许、拒绝或取消。
 
-- 非 Windows 默认 `DSH_PERMISSION_MODE` 为 `workspace-write`，文件策略要求先观察
-  文件，审批策略通常为 `ask`。
-- Windows 当前没有可用的本地 sandbox 链，组合使用 `danger-full-access`，并将审批
-  策略设为 `never`，以匹配终端信任模型。
+- 所有平台默认 `DSH_PERMISSION_MODE=workspace-write`，审批策略为 `ask`。
+- Windows DSH RC6 使用 PowerShell/Windows ACL sandbox，而不是自动退回全权限。
+- `dsh --yolo` 是显式 `danger-full-access + never` 选择。恢复旧会话时，TUI 不会静默
+  改写会话策略，而会显示确认面板。
 - `DEEPSEEK_API_KEY` 只应来自环境变量或受控的运行时注入；状态命令只显示是否设置
   或脱敏片段。
 - MCP、Shell、文件工具和自定义 preset 都会扩展模型可见能力，应当视为同一权限域
@@ -102,16 +103,17 @@ profile 可通过 `DSH_CC_SESSION_ROOT` 改写 SQLite 路径；直接运行根�
 
 在不可信仓库中运行前，检查实际 profile patch，而不是只看 TUI 的视觉界面。
 
-## 已知限制
+## 运行行为
 
-- 注入到 system prompt 的插件上下文不会在 UI 中单独列出，而是计入 system/context
-  分段。
+- plugin source 写入的动态模型上下文显示为独立、可展开的 transcript 行，并保留插件
+  来源；其 token 计入 prompt 分段。
 - `/model` 通过 session fork 切换，不是原位修改；旧会话会留在 `/resume`。
 - Windows `Ctrl+V` 依赖 PowerShell `Get-Clipboard`；剪贴板被其他程序锁定时可能静默
   失败并显示为空。
 - 退出路径优先恢复终端并结束进程，不等待 Agent 异步落盘；持久化插件负责兜底。
-- `/permission` 的沙箱预设切换没有接入，因为当前 TUI 没有 approval UI。
-- `/vim`、`/connect`、`/hooks`、`/memory` 是兼容占位命令，不代表对应 DSH 能力已挂载。
+
+## 已知限制
+
 - 没有一套需要真实模型凭证的自动化全流程测试；CI 使用 headless renderer 与假服务，
   真实模型集成仍需要在目标终端手动验证。
 
@@ -119,7 +121,7 @@ profile 可通过 `DSH_CC_SESSION_ROOT` 改写 SQLite 路径；直接运行根�
 
 | 目的 | 方式 |
 | --- | --- |
-| 环境与 profile | TUI 内运行 `/doctor`、`/config`、`/permissions` |
+| 环境与 profile | TUI 内运行 `/doctor`、`/config`、`/permissions`、`/permission` |
 | stderr 调试 | `CC_TUI_DEBUG=1 dsh --profile dsh-tui` |
 | 原始 ANSI 帧 | `DSH_CC_RENDER_LOG=/path/to/render.log dsh --profile dsh-tui` |
 | 主题回归 | `node --import tsx/esm scripts/verify-themes.mjs` |

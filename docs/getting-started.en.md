@@ -110,9 +110,19 @@ dsh-tui.cmd
 dsh-tui.cmd --resume
 ```
 
-`--resume` reads `%USERPROFILE%\.dsh-cc\resume.txt` and restores the session
-last selected by the TUI. Set `DSH_CC_WORKSPACE` to override the working
-directory used by the batch launcher.
+The launcher mirrors the complete session workflow:
+
+```text
+dsh --resume                  open the current-directory session picker
+dsh --resume <session-id>     resume one exact session
+dsh --resume --last           resume the most recently used session
+dsh --continue  (or dsh -c)   alias for --resume --last
+dsh --yolo                    request danger-full-access with no approvals
+```
+
+`--resume` and `/resume` both use DSH's durable session index. Set
+`DSH_CC_WORKSPACE` to override the working directory used by the batch
+launcher.
 
 ## Update to the latest version
 

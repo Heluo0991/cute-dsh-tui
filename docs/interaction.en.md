@@ -78,10 +78,10 @@ redelivers them immediately.
 
 `/resume` lists recent resumable sessions for the current working directory.
 Titles come from the first user message, and entries are ordered by most recent
-use. Confirming switches the Agent and replays persisted events.
-
-On Windows, `dsh-tui.cmd --resume` uses the session ID last written to
-`~/.dsh-cc/resume.txt`.
+use. Confirming switches the Agent and replays persisted events. The same
+picker opens immediately with `dsh --resume`; use `dsh --resume <session-id>`
+for an exact session, or `dsh --resume --last` (or `dsh -c`) for the previous
+session.
 
 ### Rewind
 
@@ -101,6 +101,22 @@ DSH has no in-place model-switch API. The old session remains in `/resume`.
 `/preset` switches in place only for a blank session. In a started session,
 the choice becomes the default for the next `/new` or launch. See
 [Configuration](configuration.en.md#agent-presets).
+
+### Permissions and approvals
+
+`/permission` opens the native DSH permission-preset picker, or
+`/permission <id>` selects one directly. The change applies only to the
+current session and its future tool calls; `/permissions` reports the current
+preset. Selecting `danger-full-access` requires an explicit `Enter`
+confirmation. New sessions default to `workspace-write + ask`.
+
+When a tool requests one-shot escalation, the approval panel owns the keyboard:
+`Enter` allows once, `D` denies, and `Esc` or `Ctrl+C` cancels. The TUI never
+persists an “always allow” decision.
+
+Dynamic context injected by a plugin source appears as an expandable
+transcript row with source attribution. It is not a human message, but it does
+count in the prompt-token segment.
 
 ## Fullscreen and mouse
 
@@ -146,9 +162,9 @@ to inspect the complete surface available in the current composition.
 | Sessions | `/new`, `/resume`, `/clear`, `/compact`, `/export` |
 | Status | `/status`, `/cost`, `/config`, `/doctor`, `/init`, `/agents` |
 | Model and display | `/model`, `/thinking`, `/tokens`, `/activity`, `/preset`, `/theme`, `/lang` |
-| Account and policy | `/login`, `/logout`, `/permissions`, `/add-dir`, `/hooks`, `/mcp`, `/memory` |
+| Account and policy | `/login`, `/logout`, `/permission`, `/permissions`, `/add-dir`, `/mcp` |
 | Packaged skills | `/audit`, `/bug`, `/practice`, `/review`, `/pr_comments`, `/release-notes`, `/vuln-check` |
-| Other | `/update`, `/vim`, `/terminal-setup`, `/connect`, `/help`, `/exit` |
+| Other | `/update`, `/terminal-setup`, `/help`, `/exit` |
 | Registry | `/plan`, `/goal`, and any other command registered by the DSH composition |
 
 Additional forms:
@@ -156,6 +172,8 @@ Additional forms:
 - `/activity` opens the animation picker; `/activity frames <name>` selects
   directly; `/activity status` reports the current choice.
 - `/preset <id>` and `/preset status` are described in the configuration guide.
+- `/permission` opens the current-session permission presets;
+  `/permission <id>` chooses one directly and `/permissions` reports policy.
 - `/theme <name>` and `/theme status` are described in the theme guide.
 - `/lang` toggles the interface language (see “Interface language”).
 - After startup, the TUI checks npm for a newer version in the background and
@@ -172,7 +190,3 @@ Additional forms:
 - Skill commands submit activation prompts. The actual skill is loaded through
   the DSH skill registry. Packaged `skills/` register at startup and may be
   overridden by same-name project or user skills.
-
-`/vim`, `/connect`, `/hooks`, and `/memory` are currently compatibility
-placeholders. When the DSH composition has no matching capability, each
-command explains that explicitly rather than silently doing nothing.
