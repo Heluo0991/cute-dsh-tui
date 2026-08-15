@@ -113,10 +113,10 @@ if (!profileHasNativePty(profileDir)) {
   console.log('[cute-dsh-tui] preparing the native terminal bridge...')
   let rebuildCode
   try {
-    rebuildCode = runBundledPnpm(profileDir, ['rebuild', '--pending', '--reporter=append-only'])
+    rebuildCode = runBundledPnpm(profileDir, ['rebuild', '--pending', '--ignore-scripts=false', '--reporter=append-only'])
     if (rebuildCode !== 0 || !profileHasNativePty(profileDir)) {
       console.log('[cute-dsh-tui] retrying native terminal setup...')
-      rebuildCode = runBundledPnpm(profileDir, ['install', '--force', '--reporter=append-only'])
+      rebuildCode = runBundledPnpm(profileDir, ['install', '--force', '--ignore-scripts=false', '--reporter=append-only'])
     }
   } catch (error) {
     console.error(`[cute-dsh-tui] native terminal setup failed: ${error instanceof Error ? error.message : String(error)}`)
