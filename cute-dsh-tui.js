@@ -12,7 +12,7 @@ import { homedir } from 'node:os'
 import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { LAUNCHER_USAGE, applyLaunchEnvironment, parseLaunchArgs, resolveLaunchWorkspace } from './launch-options.js'
-import { bundledDshInvocation, profileDirectory, runBundledPnpm } from './lib/types/profileManager.js'
+import { bundledDshInvocation, profileDirectory, profileHasNativePty, runBundledPnpm } from './lib/types/profileManager.js'
 
 const here = fileURLToPath(new URL('.', import.meta.url))
 const ownVersion = JSON.parse(readFileSync(join(here, 'package.json'), 'utf8')).version
@@ -100,6 +100,25 @@ if (!existsSync(installedPackageDir) || (devPackagePath && !linkedToDevelopmentT
     console.error('[cute-dsh-tui] profile installation failed. Retry manually with:')
     console.error(`  cdsh  # then retry after checking npm registry access`)
     process.exit(addCode)
+  }
+}
+
+// Older 1.1.1 profiles were created before pnpm was explicitly permitted to
+// build node-pty.  Repair that profile before DSH loads its plugin tree, where
+// an absent pty.node would otherwise surface as an opaque shell-provider error.
+if (!profileHasNativePty(profileDir)) {
+  console.log('[cute-dsh-tui] preparing the native terminal bridge...')
+  let rebuildCode
+  try {
+    rebuildCode = runBundledPnpm(profileDir, ['rebuild', 'node-pty'])
+  } catch (error) {
+    console.error(`[cute-dsh-tui] native terminal setup failed: ${error instanceof Error ? error.message : String(error)}`)
+    process.exit(1)
+  }
+  if (rebuildCode !== 0 || !profileHasNativePty(profileDir)) {
+    console.error('[cute-dsh-tui] node-pty is required for the local shell but could not be built.')
+    if (process.platform === 'linux') console.error('Install Linux build tools, then retry: sudo apt-get install -y build-essential python3')
+    process.exit(rebuildCode || 1)
   }
 }
 

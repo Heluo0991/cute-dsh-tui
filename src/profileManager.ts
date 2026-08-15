@@ -6,7 +6,9 @@ import { basename, dirname, join } from 'node:path'
 const require = createRequire(import.meta.url)
 
 const PROFILE_PATCH_TEMPLATE = `# Your patch layer for this dsh profile, applied after every bundle layer:\n# a top-level YAML array of loader patch entries (id-targeted config\n# overrides, disables, and insert lists; \`!!js\` expressions allowed).\n[]\n`
-const PROFILE_PNPM_WORKSPACE = `packages:\n  - .\n\nnodeLinker: hoisted\nautoInstallPeers: false\n`
+const PROFILE_PNPM_WORKSPACE = `packages:\n  - .\n\nnodeLinker: hoisted\nautoInstallPeers: false\n\n# node-pty has prebuilds on macOS/Windows and compiles on Linux.  pnpm 10
+# requires explicit consent before it may run that native install script.
+allowBuilds:\n  node-pty: true\n`
 const DEFAULT_BUNDLES = ['@deepseek-ai/dsh-base']
 
 type ProfileManifest = {
@@ -63,6 +65,34 @@ export function ensureProfile(profileDir: string): void {
   if (!existsSync(patchPath)) writeFileSync(patchPath, PROFILE_PATCH_TEMPLATE, 'utf8')
   const workspacePath = join(profileDir, 'pnpm-workspace.yaml')
   if (!existsSync(workspacePath)) writeFileSync(workspacePath, PROFILE_PNPM_WORKSPACE, 'utf8')
+  else ensureNodePtyBuildPermission(workspacePath)
+}
+
+/** Preserve a user workspace configuration while granting the one native build
+ * required by DSH's local shell provider. */
+function ensureNodePtyBuildPermission(workspacePath: string): void {
+  const current = readFileSync(workspacePath, 'utf8')
+  if (/^\s*node-pty\s*:/m.test(current)) return
+
+  const allowBuilds = /^allowBuilds:\s*\r?\n(?:^[ \t]+[^\r\n]*(?:\r?\n|$))*/m.exec(current)
+  if (allowBuilds !== null) {
+    const block = allowBuilds[0]
+    const ending = block.endsWith('\n') ? '' : '\n'
+    writeFileSync(workspacePath, current.replace(block, `${block}${ending}  node-pty: true\n`), 'utf8')
+    return
+  }
+
+  writeFileSync(workspacePath, `${current.trimEnd()}\n\nallowBuilds:\n  node-pty: true\n`, 'utf8')
+}
+
+/** The profile uses pnpm's hoisted linker, so this covers both a prebuilt
+ * platform module and Linux's node-gyp output. */
+export function profileHasNativePty(profileDir: string): boolean {
+  const packageDir = join(profileDir, 'node_modules', 'node-pty')
+  return [
+    join(packageDir, 'build', 'Release', 'pty.node'),
+    join(packageDir, 'prebuilds', `${process.platform}-${process.arch}`, 'pty.node'),
+  ].some(existsSync)
 }
 
 function readManifest(profileDir: string): ProfileManifest {

@@ -17,6 +17,15 @@ npm install -g @heluo0991/cute-dsh-tui
 cdsh
 ```
 
+Linux 会为 `node-pty` 编译本机终端桥接模块。若最小化镜像缺少编译工具并报 `pty.node` 错误，执行：
+
+```sh
+sudo apt-get install -y build-essential python3
+cdsh
+```
+
+启动器已允许并自动重试该原生构建；不需要手动运行 pnpm。
+
 第一次执行会在 `$DSH_HOME/profiles/cute-dsh-tui`（默认 `~/.dsh/profiles/cute-dsh-tui`）创建 profile，并使用包内 DSH/pnpm 运行时安装本版本。之后进入项目目录后运行 `cdsh` 即可；当前目录会成为 Agent 工作区。
 
 `cute-dsh-tui` 仍可用作兼容命令，但新文档和支持流程一律使用 `cdsh`。

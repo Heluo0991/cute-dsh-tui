@@ -9,6 +9,9 @@ export declare function bundledPnpmInvocation(args: readonly string[]): ProcessI
 export declare function profileDirectory(dshHome: string, profile: string): string;
 /** Create exactly the profile scaffold DSH's plugin command would create. */
 export declare function ensureProfile(profileDir: string): void;
+/** The profile uses pnpm's hoisted linker, so this covers both a prebuilt
+ * platform module and Linux's node-gyp output. */
+export declare function profileHasNativePty(profileDir: string): boolean;
 /**
  * Reconcile bundle layers after a pnpm mutation. This mirrors DSH's public
  * `plugin` subcommand while avoiding its Windows shell invocation.
