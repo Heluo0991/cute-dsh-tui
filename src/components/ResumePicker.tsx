@@ -64,9 +64,9 @@ export function ResumePicker({
             key={session.id}
             isFocused={session.id === sessions[focusIndex]?.id}
             isSelected={session.id === currentSessionId}
-            description={formatTimestamp(session.updatedAt)}
+            description={`${formatTimestamp(session.updatedAt)}${session.isLeaf ? '' : ' · earlier fork version'}`}
           >
-            {session.title || session.id}
+            {session.isLeaf ? '' : '↳ '}{session.title || session.id}
           </ListItem>
         ))}
         {below > 0 && (
@@ -78,6 +78,7 @@ export function ResumePicker({
       <Text dimColor italic>
         <Byline>
           <KeyboardShortcutHint shortcut="Enter" action="confirm" bold />
+          <KeyboardShortcutHint shortcut="→/←" action="expand/collapse fork group" />
           <KeyboardShortcutHint shortcut="Esc" action="exit" />
         </Byline>
       </Text>

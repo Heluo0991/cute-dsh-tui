@@ -1,5 +1,5 @@
 /**
- * leak-hunt.mts — reproduce the dsh-cc long-session heap growth.
+ * leak-hunt.mts — reproduce the cute-dsh-tui long-session heap growth.
  *
  * Two phases:
  *   A) core runtime only (agent-loop + session, no channel/TUI)
@@ -17,7 +17,7 @@ import { readFileSync, writeFileSync } from 'node:fs'
 import { randomUUID } from 'node:crypto'
 import v8 from 'node:v8'
 
-process.env.DSH_HOME = resolve(homedir(), '.dsh-cc')
+process.env.DSH_HOME = resolve(homedir(), '.cute-dsh-tui')
 const workspace = resolve(import.meta.dirname, '../../../..')
 const dshHome = process.env.DSH_HOME
 const phase = process.argv[2] ?? 'A'
@@ -38,13 +38,13 @@ const patches = [
   ...loadOverlayPatches('dsh', resolve(workspace, 'packages/bundle/base/cordis.patch.yml')),
   ...loadOverlayPatches('dsh', resolve(workspace, 'packages/activity/working-activity/cordis.patch.yml')),
   ...loadOverlayPatches('dsh', resolve(workspace, 'packages/ui/cc-tui/cordis.patch.yml')),
-  { id: 'dsh-tui', disabled: true },
+  { id: 'cute-dsh-tui', disabled: true },
 ]
 healProfilesModuleFallback(resolve(workspace, 'apps/cli/package.json'))
-writeFileSync(join(dshHome, 'profiles/dsh-tui/cordis.yml'), '[]\n')
+writeFileSync(join(dshHome, 'profiles/cute-dsh-tui/cordis.yml'), '[]\n')
 
 console.error(`[leak] phase=${phase} rounds=${ROUNDS} booting...`)
-const ctx = await boot('dsh', join(dshHome, 'profiles/dsh-tui/cordis.yml'), patches, async () => {})
+const ctx = await boot('dsh', join(dshHome, 'profiles/cute-dsh-tui/cordis.yml'), patches, async () => {})
 const agents = ctx.get('agents')
 
 const snapshotDir = join(dshHome, 'leak-snapshots')

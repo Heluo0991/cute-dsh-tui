@@ -1,0 +1,31 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1440" height="900" viewBox="0 0 1440 900" role="img" aria-labelledby="title desc">
+  <title id="title">CuteDshTui first screen</title>
+  <desc id="desc">CuteDshTui running in an interactive terminal, with its Messages wordmark and pixel mascot.</desc>
+  <defs>
+    <linearGradient id="panel" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#111a31"/><stop offset="1" stop-color="#080d1c"/></linearGradient>
+    <linearGradient id="rule" x1="0" x2="1"><stop stop-color="#5d95e8" stop-opacity="0"/><stop offset=".22" stop-color="#72b7f3"/><stop offset=".78" stop-color="#d6efff"/><stop offset="1" stop-color="#5d95e8" stop-opacity="0"/></linearGradient>
+    <filter id="glow"><feGaussianBlur stdDeviation="6" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+  </defs>
+  <rect width="1440" height="900" fill="#070b16"/>
+  <rect x="34" y="34" width="1372" height="832" rx="18" fill="url(#panel)" stroke="#283a61" stroke-width="2"/>
+  <circle cx="76" cy="74" r="9" fill="#ff7184"/><circle cx="105" cy="74" r="9" fill="#ffd46b"/><circle cx="134" cy="74" r="9" fill="#6edaa5"/>
+  <text x="720" y="81" text-anchor="middle" fill="#92a9c9" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="20">cute-dsh-tui · interactive terminal</text>
+  <image href="Cutedeepseek-pixelart.png" x="82" y="136" width="300" height="300" preserveAspectRatio="xMidYMid meet"/>
+  <g font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" filter="url(#glow)">
+    <text x="440" y="174" fill="#9abfe8" font-size="28" letter-spacing="4">✦ CuteDshTui</text>
+    <text x="440" y="254" fill="#f8fbff" font-size="66" font-weight="700" letter-spacing="5">DEEPSEEK</text>
+    <text x="440" y="326" fill="#aeb6c9" font-size="66" font-weight="700" letter-spacing="5">HARNESS</text>
+  </g>
+  <text x="444" y="380" fill="#ecf5ff" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="24">deepseek-v4-pro  ·  Max effort</text>
+  <text x="444" y="419" fill="#8fa2c2" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="21">~/projects/cute-dsh-tui</text>
+  <text x="444" y="458" fill="#b9c9e1" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="21">Tip: /model switch model  ·  /help commands  ·  Tab complete</text>
+  <text x="115" y="500" fill="#9fc8ff" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="24">探索未至之境！</text>
+  <rect x="76" y="538" width="1288" height="2" fill="url(#rule)"/>
+  <text x="94" y="588" fill="#94c8f4" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="22">∴ Thinking</text>
+  <text x="94" y="640" fill="#e7eefb" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="25">你好！我是你的 CuteDshTui 编码助手。有什么想做的吗？</text>
+  <text x="94" y="686" fill="#9cadc8" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="22">输入 /help 查看命令，或直接描述你的任务。</text>
+  <rect x="76" y="738" width="1288" height="74" rx="10" fill="#101d36" stroke="#75bdf3" stroke-width="2"/>
+  <text x="105" y="783" fill="#c7e8ff" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="29">❯</text>
+  <rect x="137" y="758" width="3" height="34" fill="#eaf7ff"/>
+  <text x="1080" y="783" fill="#91a9c9" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="19">free · ctx 0 / 1.0M</text>
+</svg>

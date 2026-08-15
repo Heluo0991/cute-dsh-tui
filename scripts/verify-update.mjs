@@ -48,7 +48,7 @@ try {
   const sourceRoot = join(scratch, 'source')
   mkdirSync(join(sourceRoot, 'src'), { recursive: true })
   cpSync(compiledModulePath, join(sourceRoot, 'src', 'update.js'))
-  writeFileSync(join(sourceRoot, 'package.json'), JSON.stringify({ name: '@deepseek-harness-tui/dsh-tui', version: '1.2.3', type: 'module' }))
+  writeFileSync(join(sourceRoot, 'package.json'), JSON.stringify({ name: '@heluo0991/cute-dsh-tui', version: '1.2.3', type: 'module' }))
   const sourceMod = await import(`${pathToFileURL(join(sourceRoot, 'src', 'update.js'))}?probe=1`)
   check(
     'installedTuiVersion reads the source-checkout layout',
@@ -61,7 +61,7 @@ try {
   const pkgRoot = join(scratch, 'pkg')
   mkdirSync(join(pkgRoot, 'lib', 'types'), { recursive: true })
   cpSync(compiledModulePath, join(pkgRoot, 'lib', 'types', 'update.js'))
-  writeFileSync(join(pkgRoot, 'package.json'), JSON.stringify({ name: '@deepseek-harness-tui/dsh-tui', version: '0.9.9', type: 'module' }))
+  writeFileSync(join(pkgRoot, 'package.json'), JSON.stringify({ name: '@heluo0991/cute-dsh-tui', version: '0.9.9', type: 'module' }))
   writeFileSync(join(pkgRoot, 'lib', 'package.json'), JSON.stringify({ name: 'other-pkg', version: '9.9.9' }))
   const pkgMod = await import(`${pathToFileURL(join(pkgRoot, 'lib', 'types', 'update.js'))}?probe=2`)
   check(
@@ -88,6 +88,7 @@ try {
 
 // ---- resolveRegistryBase: env (both spellings) over npmrc over default
 const HOME_BACKUP = process.env.HOME
+const USERPROFILE_BACKUP = process.env.USERPROFILE
 const scratch2 = mkdtempSync(join(tmpdir(), 'verify-update2-'))
 try {
   writeFileSync(join(scratch2, '.npmrc'), 'registry=https://mirror.example.com/\n')
@@ -95,6 +96,7 @@ try {
   delete process.env.NPM_CONFIG_REGISTRY
   delete process.env.npm_config_registry
   process.env.HOME = scratch2
+  process.env.USERPROFILE = scratch2
   check(
     'resolveRegistryBase reads ~/.npmrc',
     resolveRegistryBase() === 'https://mirror.example.com',
@@ -121,6 +123,7 @@ try {
   const emptyHome = mkdtempSync(join(tmpdir(), 'verify-update3-'))
   try {
     process.env.HOME = emptyHome
+    process.env.USERPROFILE = emptyHome
     check(
       'resolveRegistryBase defaults to npmjs.org',
       resolveRegistryBase() === 'https://registry.npmjs.org',
@@ -132,6 +135,8 @@ try {
 } finally {
   if (HOME_BACKUP === undefined) delete process.env.HOME
   else process.env.HOME = HOME_BACKUP
+  if (USERPROFILE_BACKUP === undefined) delete process.env.USERPROFILE
+  else process.env.USERPROFILE = USERPROFILE_BACKUP
   rmSync(scratch2, { recursive: true, force: true })
 }
 
@@ -161,13 +166,13 @@ check(
 )
 check(
   'profile: inner app args do not shadow the launcher flag',
-  resolveDshProfileName(['node', 'dsh', '--profile', 'dsh-tui', '--resume', 'sid', '--model', 'x']) === 'dsh-tui',
+  resolveDshProfileName(['node', 'dsh', '--profile', 'cute-dsh-tui', '--resume', 'sid', '--model', 'x']) === 'cute-dsh-tui',
 )
 
 // ---- shellQuote: cmd.exe safety for the .cmd path (P1 companion)
 check(
   'shellQuote: plain tokens pass through',
-  shellQuote(['plugin', '--profile', 'dsh-tui']).join(' ') === 'plugin --profile dsh-tui',
+  shellQuote(['plugin', '--profile', 'cute-dsh-tui']).join(' ') === 'plugin --profile cute-dsh-tui',
 )
 check(
   'shellQuote: spaces get quoted',
@@ -186,7 +191,7 @@ check(
 )
 check(
   'update command keeps the scoped package name',
-  compiledSource.includes('@deepseek-harness-tui/dsh-tui'),
+  compiledSource.includes('@heluo0991/cute-dsh-tui'),
 )
 // P1: the node restart must NOT go through a shell — assert the compiled
 // restart spawn call has no shell option while the dsh call does.

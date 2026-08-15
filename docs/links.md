@@ -8,5 +8,5 @@
 | --- | --- | --- |
 | **dshfind** | <https://dshfind.com> | DeepSeek Harness 的中文学习与分享社区 |
 | **deepseek-harness-ux** | <https://github.com/ayuanwong/deepseek-harness-ux> | 让你的 DeepSeek Harness 工作过程一目了然！ |
-| **dsh-tianshu-tui** | <https://github.com/huiliyi37/dsh-tianshu-tui> | Tianshu 风格的 dsh-tui |
+| **dsh-tianshu-tui** | <https://github.com/huiliyi37/dsh-tianshu-tui> | Tianshu 风格的 cute-dsh-tui |
 | **dsh-data-agent** | <https://github.com/omdsh-dev/dsh-data-agent> | 让 AI 帮你连数据库 |

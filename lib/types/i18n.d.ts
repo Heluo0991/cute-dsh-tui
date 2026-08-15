@@ -1,12 +1,12 @@
 /**
- * dsh-tui localization — UI strings for Chinese (`zh`, the default) and
+ * cute-dsh-tui localization — UI strings for Chinese (`zh`, the default) and
  * English (`en`).
  *
  * Resolution order mirrors the `/theme` mechanism (see themePrefs.ts):
  *
- *   1. `CC_TUI_LANG` env var (`en` / `zh`) — pinned at process start
+ *   1. `CUTE_DSH_TUI_LANG` env var (`en` / `zh`) — pinned at process start
  *   2. `lang` cordis.yml config key (see Config in index.ts)
- *   3. the persisted `/lang` choice in `~/.dsh-cc/lang.json`
+ *   3. the persisted `/lang` choice in `~/.cute-dsh-tui/lang.json`
  *   4. the OS locale guess (`LC_ALL` / `LC_MESSAGES` / `LANG`)
  *   5. `zh` (the original hard-coded language)
  *
@@ -28,12 +28,12 @@ declare const dict: {
         readonly en: "Indicator switched: {{name}} (saved)";
     };
     readonly 'activity-pref-write-failed': {
-        readonly zh: "无法写入 ~/.dsh-cc/working-activity.json，切换未保存";
-        readonly en: "Cannot write ~/.dsh-cc/working-activity.json, switch not saved";
+        readonly zh: "无法写入 ~/.cute-dsh-tui/working-activity.json，切换未保存";
+        readonly en: "Cannot write ~/.cute-dsh-tui/working-activity.json, switch not saved";
     };
     readonly 'model-pref-write-failed': {
-        readonly zh: "无法写入 ~/.dsh-cc/model.json，模型选择不会保存到重启后";
-        readonly en: "Cannot write ~/.dsh-cc/model.json, the model choice will not survive a restart";
+        readonly zh: "无法写入 ~/.cute-dsh-tui/model.json，模型选择不会保存到重启后";
+        readonly en: "Cannot write ~/.cute-dsh-tui/model.json, the model choice will not survive a restart";
     };
     readonly 'model-route-invalid': {
         readonly zh: "持久化的模型路由 {{provider}}/{{model}} 不在该 provider 的模型列表中，已整体回退到 {{fallback}}";
@@ -64,8 +64,8 @@ declare const dict: {
         readonly en: "Current preset already: {{id}}";
     };
     readonly 'preset-pref-write-failed': {
-        readonly zh: "无法写入 ~/.dsh-cc/agent-preset.json，选择未保存";
-        readonly en: "Cannot write ~/.dsh-cc/agent-preset.json, selection not saved";
+        readonly zh: "无法写入 ~/.cute-dsh-tui/agent-preset.json，选择未保存";
+        readonly en: "Cannot write ~/.cute-dsh-tui/agent-preset.json, selection not saved";
     };
     readonly 'preset-locked-saved-default': {
         readonly zh: "会话已开始，preset 已锁定（当前：{{current}}）· 已保存为默认：{{id}}（/new 或下次启动生效）";
@@ -88,8 +88,8 @@ declare const dict: {
         readonly en: "No MCP servers configured.";
     };
     readonly 'mcp-insert-hint': {
-        readonly zh: "在 profile 补丁层（~/.dsh/profiles/dsh-tui/cordis.patch.yml）insert 一行即可，例：";
-        readonly en: "Insert one line in the profile patch layer (~/.dsh/profiles/dsh-tui/cordis.patch.yml), e.g.:";
+        readonly zh: "在 profile 补丁层（~/.dsh/profiles/cute-dsh-tui/cordis.patch.yml）insert 一行即可，例：";
+        readonly en: "Insert one line in the profile patch layer (~/.dsh/profiles/cute-dsh-tui/cordis.patch.yml), e.g.:";
     };
     readonly 'mcp-readme-hint': {
         readonly zh: "详见仓库 README 的 MCP 章节。";
@@ -108,8 +108,8 @@ declare const dict: {
         readonly en: "Subprocess stderr: {{line}} (repeated {{count}}×)";
     };
     readonly 'export-title': {
-        readonly zh: "# dsh-tui 会话导出";
-        readonly en: "# dsh-tui session export";
+        readonly zh: "# cute-dsh-tui 会话导出";
+        readonly en: "# cute-dsh-tui session export";
     };
     readonly 'export-time': {
         readonly zh: "- 导出时间: {{time}}";
@@ -344,8 +344,8 @@ declare const dict: {
         readonly en: "Switch      /activity (picker) or /activity frames <name>";
     };
     readonly 'activity-persist-hint': {
-        readonly zh: "持久化    ~/.dsh-cc/working-activity.json（重启后仍生效）";
-        readonly en: "Persisted    ~/.dsh-cc/working-activity.json (survives restart)";
+        readonly zh: "持久化    ~/.cute-dsh-tui/working-activity.json（重启后仍生效）";
+        readonly en: "Persisted    ~/.cute-dsh-tui/working-activity.json (survives restart)";
     };
     readonly 'activity-current-direct': {
         readonly zh: "当前预设：{{name}} · /activity frames <名> 直接切换：";
@@ -376,8 +376,8 @@ declare const dict: {
         readonly en: "Switch        /preset (picker) or /preset <id>";
     };
     readonly 'preset-persist-hint': {
-        readonly zh: "持久化      ~/.dsh-cc/agent-preset.json（重启后仍生效；cordis.yml preset 优先）";
-        readonly en: "Persisted      ~/.dsh-cc/agent-preset.json (survives restart; cordis.yml preset wins)";
+        readonly zh: "持久化      ~/.cute-dsh-tui/agent-preset.json（重启后仍生效；cordis.yml preset 优先）";
+        readonly en: "Persisted      ~/.cute-dsh-tui/agent-preset.json (survives restart; cordis.yml preset wins)";
     };
     readonly 'preset-lock-hint': {
         readonly zh: "锁定规则    已开始的会话不可切换（官方 blank-only 规则）";
@@ -400,12 +400,12 @@ declare const dict: {
         readonly en: "Switch      /theme (picker) or /theme <name>";
     };
     readonly 'theme-persist-hint': {
-        readonly zh: "持久化    ~/.dsh-cc/theme.json（重启后仍生效；CC_TUI_THEME 优先）";
-        readonly en: "Persisted    ~/.dsh-cc/theme.json (survives restart; CC_TUI_THEME wins)";
+        readonly zh: "持久化    ~/.cute-dsh-tui/theme.json（重启后仍生效；CUTE_DSH_TUI_THEME 优先）";
+        readonly en: "Persisted    ~/.cute-dsh-tui/theme.json (survives restart; CUTE_DSH_TUI_THEME wins)";
     };
     readonly 'theme-custom-hint': {
-        readonly zh: "自定义    ~/.dsh-cc/themes/<名字>.json（见 README「自定义主题」）";
-        readonly en: "Custom      ~/.dsh-cc/themes/<name>.json (see README \"Custom themes\")";
+        readonly zh: "自定义    ~/.cute-dsh-tui/themes/<名字>.json（见 README「自定义主题」）";
+        readonly en: "Custom      ~/.cute-dsh-tui/themes/<name>.json (see README \"Custom themes\")";
     };
     readonly 'theme-switched-saved': {
         readonly zh: "主题已切换：{{name}}（已保存）";
@@ -468,8 +468,8 @@ declare const dict: {
         readonly en: "User config  {{path}}";
     };
     readonly 'doctor-launch-hint': {
-        readonly zh: "启动方式  dsh-tui.cmd / dsh --profile dsh-tui";
-        readonly en: "Launch      dsh-tui.cmd / dsh --profile dsh-tui";
+        readonly zh: "启动方式  cute-dsh-tui.cmd / dsh --profile cute-dsh-tui";
+        readonly en: "Launch      cute-dsh-tui.cmd / dsh --profile cute-dsh-tui";
     };
     readonly 'doctor-route-hint': {
         readonly zh: "模型路由  由 cordis.yml 或持久化选择决定（/model 通过会话 fork 切换）";
@@ -516,8 +516,8 @@ declare const dict: {
         readonly en: "Source: env var → workspace .env (run.ts fallback)";
     };
     readonly 'login-logout-hint': {
-        readonly zh: "DSH 凭证来自环境变量 DEEPSEEK_API_KEY — 删除该环境变量后重启 dsh-tui 即登出";
-        readonly en: "DSH credentials come from the DEEPSEEK_API_KEY env var — remove it and restart dsh-tui to log out";
+        readonly zh: "DSH 凭证来自环境变量 DEEPSEEK_API_KEY — 删除该环境变量后重启 cute-dsh-tui 即登出";
+        readonly en: "DSH credentials come from the DEEPSEEK_API_KEY env var — remove it and restart cute-dsh-tui to log out";
     };
     readonly 'permissions-root-hint': {
         readonly zh: "当前文件系统策略以工作目录为根：{{cwd}}";
@@ -528,16 +528,16 @@ declare const dict: {
         readonly en: "Relative paths of model tools resolve from this directory; cross-directory access is blocked by fs-policy.";
     };
     readonly 'update-unavailable': {
-        readonly zh: "当前运行方式不支持自动更新（需经 dsh --profile 启动），请在终端执行 dsh plugin --profile <name> update @deepseek-harness-tui/dsh-tui";
-        readonly en: "Automatic update is unavailable in this launch mode (needs dsh --profile). Run dsh plugin --profile <name> update @deepseek-harness-tui/dsh-tui in a terminal.";
+        readonly zh: "当前运行方式不支持自动更新（需经 dsh --profile 启动），请在终端执行 dsh plugin --profile <name> update @heluo0991/cute-dsh-tui";
+        readonly en: "Automatic update is unavailable in this launch mode (needs dsh --profile). Run dsh plugin --profile <name> update @heluo0991/cute-dsh-tui in a terminal.";
     };
     readonly 'update-working': {
         readonly zh: "当前回合仍在运行，请等待完成后再更新 TUI。";
         readonly en: "The current turn is still running. Wait for it to finish before updating the TUI.";
     };
     readonly 'update-starting': {
-        readonly zh: "正在更新 @deepseek-harness-tui/dsh-tui，完成后会自动重启并恢复当前会话……";
-        readonly en: "Updating @deepseek-harness-tui/dsh-tui. The TUI will restart and resume this session when finished…";
+        readonly zh: "正在更新 @heluo0991/cute-dsh-tui，完成后会自动重启并恢复当前会话……";
+        readonly en: "Updating @heluo0991/cute-dsh-tui. The TUI will restart and resume this session when finished…";
     };
     readonly 'update-available': {
         readonly zh: "发现新版本：v{{latest}}（当前 v{{current}}）· 输入 /update 更新 TUI";
@@ -560,8 +560,8 @@ declare const dict: {
         readonly en: "Ctrl+V pastes text/file paths; Ctrl+Shift+V is native terminal paste; right-click paste also works.";
     };
     readonly 'theme-switch-failed': {
-        readonly zh: "主题「{{name}}」切换失败（无法写入 ~/.dsh-cc/theme.json）";
-        readonly en: "Theme \"{{name}}\" switch failed (cannot write ~/.dsh-cc/theme.json)";
+        readonly zh: "主题「{{name}}」切换失败（无法写入 ~/.cute-dsh-tui/theme.json）";
+        readonly en: "Theme \"{{name}}\" switch failed (cannot write ~/.cute-dsh-tui/theme.json)";
     };
     readonly 'interrupt-delivered': {
         readonly zh: "已打断当前回合，{{n}} 条消息立即处理";
@@ -728,8 +728,8 @@ declare const dict: {
         readonly en: "Built-in · {{name}} base";
     };
     readonly 'theme-user-base': {
-        readonly zh: "{{base}} 基底 · ~/.dsh-cc/themes/{{name}}.json";
-        readonly en: "{{base}} base · ~/.dsh-cc/themes/{{name}}.json";
+        readonly zh: "{{base}} 基底 · ~/.cute-dsh-tui/themes/{{name}}.json";
+        readonly en: "{{base}} base · ~/.cute-dsh-tui/themes/{{name}}.json";
     };
     readonly 'context-panel-collapse': {
         readonly zh: "折叠";
@@ -832,8 +832,8 @@ declare const dict: {
         readonly en: "Switch      /lang en | /lang zh";
     };
     readonly 'lang-persist-hint': {
-        readonly zh: "持久化    ~/.dsh-cc/lang.json（重启后仍生效；CC_TUI_LANG 优先）";
-        readonly en: "Persisted    ~/.dsh-cc/lang.json (survives restart; CC_TUI_LANG wins)";
+        readonly zh: "持久化    ~/.cute-dsh-tui/lang.json（重启后仍生效；CUTE_DSH_TUI_LANG 优先）";
+        readonly en: "Persisted    ~/.cute-dsh-tui/lang.json (survives restart; CUTE_DSH_TUI_LANG wins)";
     };
     readonly 'lang-switched': {
         readonly zh: "语言已切换：{{lang}}（已保存）";
@@ -844,8 +844,8 @@ declare const dict: {
         readonly en: "Unknown language \"{{lang}}\" · /lang to view all (en / zh)";
     };
     readonly 'lang-switch-failed': {
-        readonly zh: "语言「{{lang}}」切换失败（无法写入 ~/.dsh-cc/lang.json）";
-        readonly en: "Language \"{{lang}}\" switch failed (cannot write ~/.dsh-cc/lang.json)";
+        readonly zh: "语言「{{lang}}」切换失败（无法写入 ~/.cute-dsh-tui/lang.json）";
+        readonly en: "Language \"{{lang}}\" switch failed (cannot write ~/.cute-dsh-tui/lang.json)";
     };
 };
 export type I18nKey = keyof typeof dict;

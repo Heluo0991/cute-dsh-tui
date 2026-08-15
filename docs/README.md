@@ -1,4 +1,4 @@
-# dsh-TUI 文档 / Documentation
+# CuteDshTui 文档 / Documentation
 
 这里保存根 README 之外的完整使用与实现文档。中文文档使用无后缀文件名，
 英文文档使用 `.en.md` 后缀。
@@ -20,7 +20,7 @@ the `.en.md` suffix.
 
 - 中文项目首页：[README.md](../README.md)
 - English project page: [README_EN.md](../README_EN.md)
-- npm package: [`@deepseek-harness-tui/dsh-tui`](https://www.npmjs.com/package/@deepseek-harness-tui/dsh-tui)
+- npm package: [`@heluo0991/cute-dsh-tui`](https://www.npmjs.com/package/@heluo0991/cute-dsh-tui)
 - DeepSeek Harness configuration catalog:
   [official reference](https://deepseek-harness.github.io/deepseek-harness/reference/config-catalog)
 

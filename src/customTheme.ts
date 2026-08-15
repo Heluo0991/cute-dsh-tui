@@ -1,7 +1,7 @@
 /**
- * User-defined color themes for dsh-tui.
+ * User-defined color themes for cute-dsh-tui.
  *
- * A theme is a JSON file in `~/.dsh-cc/themes/<name>.json`:
+ * A theme is a JSON file in `~/.cute-dsh-tui/themes/<name>.json`:
  *
  * ```json
  * { "name": "sakura", "displayName": "Sakura Pink", "base": "dark",
@@ -29,8 +29,8 @@ import { getTheme, THEME_NAMES, type Theme } from './theme.js'
 export const THEME_BASE_NAMES = ['light', 'dark', 'dark-ansi'] as const
 export type ThemeBase = (typeof THEME_BASE_NAMES)[number]
 
-/** The directory user theme files live in (~/.dsh-cc/themes). */
-export const CUSTOM_THEME_DIR = join(homedir(), '.dsh-cc', 'themes')
+/** The directory user theme files live in (~/.cute-dsh-tui/themes). */
+export const CUSTOM_THEME_DIR = join(homedir(), '.cute-dsh-tui', 'themes')
 
 /** A validated user theme file. `colors` only carries accepted overrides. */
 export type CustomThemeSpec = {
@@ -77,7 +77,7 @@ const cache = new Map<string, Theme>()
 
 /**
  * `spec.name` → load key (file name), so a theme whose `name` field differs
- * from its file name still resolves (CC_TUI_THEME, /theme, persistence all
+ * from its file name still resolves (CUTE_DSH_TUI_THEME, /theme, persistence all
  * speak the display name). Filled lazily on the first name miss.
  */
 const nameIndex = new Map<string, string>()
@@ -89,7 +89,7 @@ function isThemeBase(value: string): value is ThemeBase {
 
 /**
  * Whether a name is safe to use as a file name (no path separators or dot
- * traversal). Theme names are user input from CC_TUI_THEME and /theme, so
+ * traversal). Theme names are user input from CUTE_DSH_TUI_THEME and /theme, so
  * they must never escape the themes directory.
  */
 export function isSafeThemeName(name: string): boolean {
@@ -122,7 +122,7 @@ export function isValidThemeColor(value: unknown): value is string {
 }
 
 function warn(message: string): void {
-  console.warn(`[dsh-tui] ${message}`)
+  console.warn(`[cute-dsh-tui] ${message}`)
 }
 
 /**
@@ -290,7 +290,7 @@ function indexCustomThemeNames(): void {
 
 /**
  * Whether a name selects a usable theme: a built-in palette or a valid user
- * theme file. Used for CC_TUI_THEME / persisted-preference validation and
+ * theme file. Used for CUTE_DSH_TUI_THEME / persisted-preference validation and
  * the runtime /theme switch.
  * @param name - Candidate theme name.
  * @returns True when the theme resolves.

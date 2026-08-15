@@ -12,6 +12,7 @@ import {
 } from '@deepseek-ai/dsh-llm'
 import { SessionId, type SessionEvent, type SessionHeader } from '@deepseek-ai/dsh-session'
 import { renderContextSections, renderPrompt } from '@deepseek-ai/dsh-system-prompt'
+import { defineTool } from '@deepseek-ai/dsh-tools'
 import { discoverBaselineInstructionFiles } from '@deepseek-ai/dsh-agent-instructions'
 import type { Context } from '@deepseek-ai/cordis'
 import { isAbsolute, join } from 'node:path'
@@ -88,7 +89,7 @@ export type ToolResultView =
     }
   | { readonly card: 'search'; readonly shape: 'paths'; readonly title?: string; readonly paths: readonly string[]; readonly truncated: boolean; readonly total: number }
 
-/** The dsh-tools registry seam dsh-tui reads presentations through. The
+/** The dsh-tools registry seam cute-dsh-tui reads presentations through. The
  *  registry lives on the host plane; `get` takes the live agent as the
  *  scope so a preset's own tool definitions resolve (dsh-host-apiproxy's
  *  presenter pattern). */
@@ -138,6 +139,16 @@ export interface ChatRow {
   restored?: boolean
 }
 
+/** One independently rendered `/btw` child conversation. */
+export interface BtwThread {
+  readonly id: string
+  readonly parentSessionId: string
+  readonly question: string
+  readonly rows: readonly ChatRow[]
+  readonly working: boolean
+  readonly createdAt: number
+}
+
 /** Running token totals across the session's assistant messages. */
 export interface TokenUsage {
   input: number
@@ -147,7 +158,7 @@ export interface TokenUsage {
 /**
  * Latest `activity/status` snapshot (the log-only event appended by
  * `@deepseek-ai/dsh-working-activity` for any UI consumer): the model's
- * live working line — thinking copy, running tool, turn summary. dsh-tui
+ * live working line — thinking copy, running tool, turn summary. cute-dsh-tui
  * renders it on the status line; nothing here requires the plugin (absent
  * events simply leave the slot empty).
  */
@@ -340,6 +351,8 @@ export interface Channel {
   readonly commandList: readonly LocalCommand[]
   /** Effective DSH sandbox/approval preset for the live session. */
   readonly permissions: PermissionState | undefined
+  /** In-process `/btw` child conversations; never merged into the main transcript. */
+  readonly btwThreads: readonly BtwThread[]
   /**
    * Run a plugin-registered slash command against the live agent (DSH
    * `dsh-commands` registry): logs `command/run`/`command/done` and returns
@@ -350,6 +363,12 @@ export interface Channel {
   runExternalCommand(name: string, rawInput: string): Promise<string | undefined>
   /** Apply a DSH permission preset to the current idle session. */
   switchPermission(presetId: string): Promise<boolean>
+  /** Start an isolated side conversation without pausing the main agent. */
+  startBtw(question: string): Promise<string | undefined>
+  /** Cancel one BTW child only; the main agent keeps running. */
+  cancelBtw(id: string): void
+  /** Continue one existing BTW child without sending text to the main agent. */
+  submitBtw(id: string, text: string): void
   /** Estimated context segments by content type (pi-nano-context style bar). */
   readonly contextSegments: {
     system: number
@@ -385,10 +404,10 @@ export interface Channel {
   /** Switch the live model (`/model` picker): forks the conversation at its
    *  current end and continues it with a new agent routed to `provider`/`model`.
    *  The history replays unchanged; only the request route changes. */
-  switchModel(provider: string, model: string): Promise<boolean>
-  /** Cycle the live route's reasoning effort (Shift+Tab) through the
-   *  adapter's own level list (dsh parity: deepseek Off→High→Max), taking
-   *  effect on the next request and persisting across restarts. */
+  switchModel(provider: string, model: string, effort?: string): Promise<boolean>
+  /** Cycle the live route's reasoning effort through the adapter's own level
+   *  list. This remains available for programmatic callers; interactive
+   *  selection is handled by the second stage of `/model`. */
   cycleEffort(): Promise<void>
   /** The preset the CURRENT session runs under (issue #8), resolved from its
    *  log at create/resume time; undefined when no roster is mounted. */
@@ -413,17 +432,19 @@ export interface Channel {
   /** Push a transient notification above the prompt input. */
   notify(text: string, options?: { color?: NotificationItem['color']; timeoutMs?: number }): void
   /** Switch the working-activity indicator preset (`/activity`): validates
-   *  the name, persists it to `~/.dsh-cc/working-activity.json`, and
+   *  the name, persists it to `~/.cute-dsh-tui/working-activity.json`, and
    *  re-renders the indicator immediately; false when the name is unknown
    *  or the preference cannot be written. */
   setActivityFrames(name: string): boolean
   /** Advertised models across every registered provider route (empty when the LLM service is absent). */
   listModels(): Promise<readonly LlmModelInfo[]>
+  /** Adapter-advertised reasoning depths for one exact model route. */
+  listModelEfforts(provider: string, model: string): Promise<readonly ReasoningEffortOption[]>
   /** Top-level entries of the session cwd for `@` file completion. */
   listFiles(): Promise<readonly string[]>
   /** Recent sessions recorded by the DSH persistence backend (for `/resume`). */
   listSessions(): Promise<readonly SessionRecord[]>
-  /** Mark a session for `dsh-tui --resume` on the next launch. */
+  /** Mark a session for `cute-dsh-tui --resume` on the next launch. */
   setResumeTarget(sessionId: string): void
   /** Manually compact the session history (CC's /compact); no-op notify when the leaf lacks a compaction service. */
   compact(): void
@@ -432,7 +453,7 @@ export interface Channel {
   pushLocal(title: string, lines: readonly string[]): void
   /** MCP server/tool status for /mcp: one line per server, or setup guidance. */
   mcpStatus(): string[]
-  /** Write the conversation transcript to `dsh-tui-export-<ts>.md` in the
+  /** Write the conversation transcript to `cute-dsh-tui-export-<ts>.md` in the
    *  session cwd; returns the written path, or null on failure. */
   exportSession(): string | null
   /** Create `AGENTS.md` in the session cwd (DSH workspace-context file);
@@ -443,6 +464,8 @@ export interface Channel {
   /** Subagent rows for `/agents` (DSH subagent service; empty message when
    *  the service is absent). */
   listSubagents(): Promise<string[]>
+  /** Current non-group Cordis Loader entries, read-only. */
+  listLoadedPlugins(): string[]
 }
 
 /** @internal */
@@ -454,6 +477,13 @@ export interface PresetOption {
   /** Present when the roster marked this preset unloadable (shown verbatim). */
   broken?: string
   isDefault: boolean
+}
+
+/** One adapter-advertised reasoning depth for an exact provider/model route. */
+export interface ReasoningEffortOption {
+  id: string
+  name: string
+  description?: string | undefined
 }
 
 /** One selectable DSH permission preset. */
@@ -538,6 +568,7 @@ export interface ChannelState {
   runExternalCommand(name: string, rawInput: string): Promise<string | undefined>
   /** Effective permission state (see the public Channel type). */
   permissions: PermissionState | undefined
+  btwThreads: BtwThread[]
   /** Estimated context segments by content type (pi-nano-context style bar). */
   contextSegments: {
     system: number
@@ -565,8 +596,8 @@ export interface ChannelState {
   /** Start a fresh conversation (`/new`). */
   newSession(): Promise<boolean>
   /** Switch the live model (`/model` picker). */
-  switchModel(provider: string, model: string): Promise<boolean>
-  /** Cycle reasoning effort (see the public Channel type). */
+  switchModel(provider: string, model: string, effort?: string): Promise<boolean>
+  /** Cycle reasoning effort (programmatic compatibility surface). */
   cycleEffort(): Promise<void>
   /** The preset the current session runs under (see the public Channel type). */
   agentPreset: string | undefined
@@ -576,6 +607,9 @@ export interface ChannelState {
   switchPreset(presetId: string): Promise<boolean>
   /** Apply a DSH permission preset to the idle session. */
   switchPermission(presetId: string): Promise<boolean>
+  startBtw(question: string): Promise<string | undefined>
+  cancelBtw(id: string): void
+  submitBtw(id: string, text: string): void
   clear(): void
   /** @internal older-row restoration (see the public Channel.loadOlder). */
   loadOlder(): number
@@ -583,6 +617,7 @@ export interface ChannelState {
   /** Switch the working-activity indicator preset (see the public Channel). */
   setActivityFrames(name: string): boolean
   listModels(): Promise<readonly LlmModelInfo[]>
+  listModelEfforts(provider: string, model: string): Promise<readonly ReasoningEffortOption[]>
   listFiles(): Promise<readonly string[]>
   listSessions(): Promise<readonly SessionRecord[]>
   setResumeTarget(sessionId: string): void
@@ -600,6 +635,7 @@ export interface ChannelState {
   doctorInfo(): string[]
   /** Subagent rows (CC's /agents). */
   listSubagents(): Promise<string[]>
+  listLoadedPlugins(): string[]
 }
 
 const ARGS_PREVIEW_LIMIT = 160
@@ -1060,9 +1096,9 @@ export function createChannel(
     }
   }
 
-  /** Shift+Tab: cycle the live route's adapter-owned reasoning efforts in
-   *  the adapter's own display order (dsh parity — deepseek: Off→High→Max).
-   *  The choice persists to ~/.dsh-cc/effort.json and follows future agents
+  /** Programmatically cycle the live route's adapter-owned reasoning efforts
+   *  in the adapter's own display order (dsh parity — deepseek: Off→High→Max).
+   *  The choice persists to ~/.cute-dsh-tui/effort.json and follows future agents
    *  on this channel (resume/model switch re-validate it per route). */
   const cycleEffort = async (): Promise<void> => {
     if (llmRuntime === undefined) {
@@ -1108,7 +1144,36 @@ export function createChannel(
     state.emit()
   }
 
-  const state: ChannelState = {
+  type MutableBtwThread = Omit<BtwThread, 'rows' | 'working'> & {
+    rows: ChatRow[]
+    working: boolean
+  }
+  const btwHandles = new Map<string, { handle: AgentHandle; dispose: () => void }>()
+  let state!: ChannelState
+
+  /** A current, bounded view of the main agent for BTW prompt assembly. */
+  const mainProgress = (): string => {
+    const tail = agent.session.events.slice(-24).map(event => {
+      if (event.type === 'tool/call') return `tool started: ${event.data.name} ${event.data.arguments.slice(0, 600)}`
+      if (event.type === 'tool/result') return 'tool settled'
+      if (event.type === 'assistant/chunk') {
+        const chunk = event.data.chunk
+        return chunk.type === 'text-delta' || chunk.type === 'reasoning-delta'
+          ? `${chunk.type}: ${chunk.text.slice(0, 600)}`
+          : `assistant chunk: ${chunk.type}`
+      }
+      if (event.type === 'user/message') return 'main user message is in progress'
+      return event.type
+    })
+    return [
+      'Read-only live status of the main conversation. Do not try to alter it.',
+      `Main agent status: ${state.working ? 'working' : 'idle'}.`,
+      `Current task: ${state.lastUserText.slice(0, 2000) || '(none yet)'}.`,
+      tail.length === 0 ? 'No recent main events.' : tail.join('\n'),
+    ].join('\n')
+  }
+
+  state = {
     version: 0,
     rows: [],
     status: 'starting',
@@ -1127,7 +1192,7 @@ export function createChannel(
     lastUserText: '',
     notifications: [],
     contextWindow: undefined,
-    // Explicit cordis.yml `effort` wins; otherwise the persisted Shift+Tab
+    // Explicit cordis.yml `effort` wins; otherwise the persisted reasoning-depth
     // choice; the first request/header event re-asserts the adapter's truth.
     reasoningEffort: options.effort ?? readEffortPref(),
     workingActivity: undefined,
@@ -1141,6 +1206,7 @@ export function createChannel(
     pending: [],
     commandList: LOCAL_COMMANDS,
     permissions: permissionStateFor(agent),
+    btwThreads: [],
     lastUsage: undefined,
     tps: undefined,
     tpsSamples: [],
@@ -1407,7 +1473,7 @@ export function createChannel(
     async resumeTo(sessionId: string): Promise<boolean> {
       // Switch the live agent to a persisted session: /resume picker Enter
       // loads the history immediately (the `--resume` launcher path keeps
-      // resolving through DSH_CC_RESUME_SESSION at boot).
+      // resolving through CUTE_DSH_TUI_RESUME_SESSION at boot).
       if (state.working) {
         state.notify('Cannot resume while a turn is running', { color: 'warning' })
         return false
@@ -1632,7 +1698,7 @@ export function createChannel(
       void oldHandle?.dispose().catch(() => {})
       return true
     },
-    async switchModel(provider: string, model: string): Promise<boolean> {
+    async switchModel(provider: string, model: string, effort?: string): Promise<boolean> {
       // `/model` picker Enter — switch the live model by forking the
       // conversation at its current end and continuing with a new agent
       // routed to the chosen model. Same reset shape as rewindTo/resumeTo;
@@ -1710,6 +1776,10 @@ export function createChannel(
       state.agentPreset = modelComposed.agentPreset
       state.model = model
       state.provider = provider
+      if (effort !== undefined) {
+        preferredEffort = effort
+        state.reasoningEffort = effort
+      }
       state.tps = undefined
       state.tpsSamples = []
       state.lastUsage = undefined
@@ -1733,15 +1803,21 @@ export function createChannel(
       void refreshLoadedContext()
       // The model-switched fork becomes the most recently used.
       touchSession(childId)
+      // Keep crash recovery and update handoff on the newest leaf, not the
+      // superseded parent session that this fork continues from.
+      writeResumeTarget(childId)
       state.emit()
       void oldHandle?.dispose().catch(() => {})
       // Persist the choice so the next boot and `/new` start on it (same
-      // contract as /preset and Shift+Tab effort; issues #14/#30). A failed
+      // contract as /preset and persisted reasoning depth; issues #14/#30). A failed
       // write keeps the live switch but warns it will not survive a restart.
       if (!writeModelPref(provider, model)) {
         state.notify(t('model-pref-write-failed'), {
           color: 'warning',
         })
+      }
+      if (effort !== undefined && !writeEffortPref(effort)) {
+        state.notify('Reasoning depth changed, but the preference could not be saved', { color: 'warning' })
       }
       return true
     },
@@ -1885,6 +1961,233 @@ export function createChannel(
       state.notify(t('preset-switched-saved', { id: target.id }), { color: 'success' })
       return true
     },
+    async startBtw(question) {
+      const prompt = question.trim()
+      if (!prompt) return undefined
+      const sessions = ctx.get('sessions') as
+        | { fork(source: unknown, boundary?: number): { events: readonly SessionEvent[] } }
+        | undefined
+      const agents = ctx.get('agents') as
+        | { create(options: CreateAgentOptions): Promise<AgentHandle> }
+        | undefined
+      if (sessions === undefined || agents === undefined) {
+        state.notify('BTW is unavailable: session services are not loaded', { color: 'error' })
+        return undefined
+      }
+      let seed: readonly SessionEvent[]
+      try {
+        // A running main turn is deliberately excluded: DSH validates that a
+        // fork seed is balanced. The scoped prompt context below gives the
+        // child a fresh read-only view of that in-flight work.
+        const boundary = state.working
+          ? [...agent.session.events].reverse().find(event => event.type === 'turn/end')?.seq
+          : undefined
+        if (state.working && boundary === undefined) {
+          state.notify('BTW needs one completed main turn before it can run in parallel', { color: 'warning' })
+          return undefined
+        }
+        seed = sessions.fork(agent.session, boundary).events
+      } catch (error) {
+        state.notify(`BTW could not fork this conversation: ${error instanceof Error ? error.message : String(error)}`, { color: 'error' })
+        return undefined
+      }
+      const id = randomUUID()
+      const thread: MutableBtwThread = {
+        id,
+        parentSessionId: String(agent.session.id),
+        question: prompt,
+        // Rows remain event-derived, just like the main transcript. This is
+        // important for a child session: optimistic rows duplicate the first
+        // follow-up when DSH publishes its durable user/message event.
+        rows: [],
+        working: true,
+        createdAt: Date.now(),
+      }
+      state.btwThreads = [...state.btwThreads, thread]
+      state.emit()
+      const composed = await composePreset(ctx, runningPresetOf(agent.session))
+      let handle: AgentHandle
+      try {
+        handle = await agents.create({
+          sessionId: SessionId(id),
+          seed,
+          meta: {
+            cwd: options.cwd,
+            parentSession: agent.session.id,
+            seedLength: seed.length,
+            origin: 'subagent',
+            ...(composed.agentPreset === undefined ? {} : { agentPreset: composed.agentPreset }),
+          },
+          agentOptions: { provider: state.provider, model: state.model },
+          setup: async agentCtx => {
+            if (composed.setup !== undefined) await composed.setup(agentCtx)
+            // This provider is recomputed for each BTW request, so the child
+            // can inspect main-agent progress without mutating its log.
+            agentCtx.systemPrompt.context({
+              name: 'cute-dsh-tui:btw-main-progress',
+              order: 95,
+              text: mainProgress,
+            })
+            // The explicit tool lets the BTW model refresh its view mid-turn
+            // after a long tool call. It is registered only in this child
+            // scope, so the main agent neither sees nor can invoke it.
+            agentCtx.tools.register(defineTool({
+              name: 'get_main_progress',
+              description: 'Read the current status, tool activity, streamed output, and reasoning summary of the parallel main conversation. This is read-only.',
+              parameters: {},
+              output: {
+                schema: {
+                  type: 'object',
+                  additionalProperties: false,
+                  properties: {
+                    status: { type: 'string', required: true },
+                    progress: { type: 'string', required: true },
+                  },
+                },
+                render: (_args, value) => [{ type: 'text', text: (value as { progress: string }).progress }],
+              },
+              execute: async () => ({
+                status: state.working ? 'working' : 'idle',
+                progress: mainProgress(),
+              }),
+            }))
+          },
+        })
+      } catch (error) {
+        thread.working = false
+        thread.rows.push({ id: 1, kind: 'notice', text: `BTW failed to start: ${error instanceof Error ? error.message : String(error)}` })
+        state.emit()
+        return undefined
+      }
+      let nextId = 0
+      let streaming: ChatRow | undefined
+      let reasoning: ChatRow | undefined
+      const toolCards = new Map<string, ChatRow>()
+      const textOfChild = (content: readonly ContentBlock[] | undefined): string =>
+        (content ?? []).map(block => block.type === 'text' ? block.text : '').join('').trim()
+      const firstTextOfChild = (content: readonly ContentBlock[] | undefined): string =>
+        (content ?? []).find(block => block.type === 'text')?.text.trim() ?? ''
+      const dispose = ctx.on('session/event', (session, event) => {
+        if (session !== handle.agent.session) return
+        if (event.type === 'user/message') {
+          if (event.data.source.kind === 'user') {
+            const text = firstTextOfChild(event.data.content)
+            if (text) thread.rows.push({ id: nextId++, kind: 'user', text })
+          }
+        } else if (event.type === 'assistant/chunk') {
+          const chunk = event.data.chunk
+          if (chunk.type === 'text-delta' && chunk.text) {
+            if (streaming === undefined) {
+              streaming = { id: nextId++, kind: 'assistant', text: '', streaming: true }
+              thread.rows.push(streaming)
+            }
+            streaming.text += chunk.text
+          } else if (chunk.type === 'reasoning-delta' && chunk.text) {
+            if (reasoning === undefined) {
+              reasoning = { id: nextId++, kind: 'reasoning', text: '', streaming: true }
+              thread.rows.push(reasoning)
+            }
+            reasoning.text += chunk.text
+          }
+        } else if (event.type === 'assistant/message') {
+          const text = textOfChild(event.data.message.content)
+          if (text) {
+            if (streaming === undefined) {
+              streaming = { id: nextId++, kind: 'assistant', text: '', streaming: false }
+              thread.rows.push(streaming)
+            }
+            streaming.text = text
+            streaming.streaming = false
+            streaming = undefined
+          }
+        } else if (event.type === 'tool/call') {
+          if (event.data.name !== 'ask_user_question') {
+            const card: ChatRow = {
+              id: nextId++,
+              kind: 'tool',
+              text: '',
+              tool: {
+                callId: event.data.callId,
+                name: event.data.name,
+                argsText: preview(event.data.arguments, ARGS_PREVIEW_LIMIT),
+                argsFull: event.data.arguments,
+                status: 'running',
+                startedAt: Date.now(),
+              },
+            }
+            toolCards.set(event.data.callId, card)
+            thread.rows.push(card)
+          }
+        } else if (event.type === 'tool/result') {
+          const card = toolCards.get(event.data.message.source.callId)
+          if (card?.tool !== undefined) {
+            card.tool.durationMs = Math.max(0, Date.now() - card.tool.startedAt)
+            if (event.data.error !== undefined) {
+              card.tool.status = 'error'
+              card.tool.errorText = `${event.data.error.name}: ${event.data.error.code}`
+            } else {
+              card.tool.status = 'ok'
+              const result = textOfChild(event.data.message.content[0]?.type === 'tool-result'
+                ? event.data.message.content[0].content
+                : [])
+              card.tool.resultFull = result || undefined
+              card.tool.resultText = result ? preview(result, RESULT_PREVIEW_LIMIT) : undefined
+            }
+            toolCards.delete(event.data.message.source.callId)
+          }
+        } else if (event.type === 'turn/end') {
+          if (streaming !== undefined) streaming.streaming = false
+          if (reasoning !== undefined) reasoning.streaming = false
+          streaming = undefined
+          reasoning = undefined
+          thread.working = false
+          if (event.data.reason.kind !== 'completed') {
+            thread.rows.push({ id: nextId++, kind: 'notice', text: `BTW ${event.data.reason.kind}` })
+          }
+        }
+        state.emitStream()
+      })
+      btwHandles.set(id, { handle, dispose })
+      try {
+        handle.agent.followup(createUserMessage({
+          content: [{ type: 'text', text: prompt }],
+          source: { kind: 'user' },
+        }))
+      } catch (error) {
+        thread.working = false
+        thread.rows.push({ id: nextId++, kind: 'notice', text: `BTW send failed: ${error instanceof Error ? error.message : String(error)}` })
+        state.emit()
+      }
+      return id
+    },
+    cancelBtw(id) {
+      const entry = btwHandles.get(id)
+      if (entry === undefined) return
+      entry.handle.agent.cancel({ kind: 'user' })
+      const thread = state.btwThreads.find(item => item.id === id) as MutableBtwThread | undefined
+      if (thread !== undefined) {
+        thread.working = false
+        thread.rows.push({ id: thread.rows.length + 1, kind: 'notice', text: 'BTW cancelled' })
+      }
+      state.emit()
+    },
+    submitBtw(id, text) {
+      const prompt = text.trim()
+      const entry = btwHandles.get(id)
+      const thread = state.btwThreads.find(item => item.id === id) as MutableBtwThread | undefined
+      if (entry === undefined || thread === undefined || prompt === '') return
+      thread.working = true
+      try {
+        entry.handle.agent.followup(createUserMessage({
+          content: [{ type: 'text', text: prompt }],
+          source: { kind: 'user' },
+        }))
+      } catch (error) {
+        thread.working = false
+        thread.rows.push({ id: thread.rows.length + 1, kind: 'notice', text: `BTW send failed: ${error instanceof Error ? error.message : String(error)}` })
+      }
+      state.emit()
+    },
     async switchPermission(presetId) {
       if (state.working) {
         state.notify('Cannot switch permissions while a turn is running', { color: 'warning' })
@@ -1942,6 +2245,19 @@ export function createChannel(
       return Promise.all(providers.map(provider => llm.listModels(provider.id).catch(() => [])))
         .then(lists => lists.flat())
     },
+    async listModelEfforts(provider, model) {
+      if (llmRuntime === undefined) return []
+      try {
+        const info = await llmRuntime.resolveModelInfo(provider, model)
+        return (info.reasoning?.efforts ?? []).map(effort => ({
+          id: effort.id,
+          name: effort.name,
+          ...(effort.description === undefined ? {} : { description: effort.description }),
+        }))
+      } catch {
+        return []
+      }
+    },
     listFiles() {
       const fs = ctx.get('fs') as
         | {
@@ -1973,12 +2289,33 @@ export function createChannel(
         // created from this exact working directory only.
         const cwd = state.cwd.replace(/\/+$/, '')
         const scoped = headers.filter(header =>
-          (header.cwd ?? '').replace(/\/+$/, '') === cwd,
+          (header.cwd ?? '').replace(/\/+$/, '') === cwd
+          // BTW and other child-agent logs remain durable, but are not
+          // primary conversations users should resume from this picker.
+          && header.origin !== 'subagent',
         )
-        // MRU ordering: DSH headers carry only createdAt, so dsh-tui keeps its
+        // MRU ordering: DSH headers carry only createdAt, so cute-dsh-tui keeps its
         // own last-used timestamps (touchSession on resume/submit/new) and
         // falls back to createdAt for sessions never touched in this install.
         const lastUsed = readLastUsed()
+        const scopedIds = new Set(scoped.map(header => String(header.id)))
+        const children = new Set<string>()
+        for (const header of scoped) {
+          if (header.parentSession !== undefined && scopedIds.has(String(header.parentSession))) {
+            children.add(String(header.parentSession))
+          }
+        }
+        const rootOf = (header: SessionHeader): string => {
+          let current = header
+          const seen = new Set<string>()
+          while (current.parentSession !== undefined && !seen.has(String(current.id))) {
+            seen.add(String(current.id))
+            const parent = scoped.find(candidate => String(candidate.id) === String(current.parentSession))
+            if (parent === undefined) break
+            current = parent
+          }
+          return String(current.id)
+        }
         const records = scoped
           .map(header => ({
             id: header.id,
@@ -1989,6 +2326,9 @@ export function createChannel(
             cwd: header.cwd ?? '',
             createdAt: header.createdAt,
             updatedAt: lastUsed[header.id] ?? header.createdAt,
+            ...(header.parentSession === undefined ? {} : { parentSessionId: String(header.parentSession) }),
+            lineageRoot: rootOf(header),
+            isLeaf: !children.has(String(header.id)),
           }))
           .sort((a, b) => b.updatedAt - a.updatedAt)
         // Title = the session's FIRST user message — the picker's most
@@ -2005,7 +2345,7 @@ export function createChannel(
                 // Launch artifact — a session with no user message holds no
                 // conversation to resume, so drop it from the picker (its
                 // createdAt-only updatedAt would otherwise pin it near the
-                // top forever, one per dsh-tui launch).
+                // top forever, one per cute-dsh-tui launch).
                 empty.add(record.id)
                 return
               }
@@ -2173,7 +2513,7 @@ export function createChannel(
             break
         }
       }
-      const fileName = `dsh-tui-export-${Date.now()}.md`
+      const fileName = `cute-dsh-tui-export-${Date.now()}.md`
       try {
         const target = join(state.cwd, fileName)
         writeFileSync(target, parts.join('\n'), 'utf8')
@@ -2215,13 +2555,13 @@ export function createChannel(
       lines.push(`${t('doctor-session', { id: state.agentId })}${state.sessionTitle ? ' · ' + state.sessionTitle : ''}`)
       const userHome = process.env.USERPROFILE ?? homedir()
       const configCandidates = [
-        join(userHome, '.dsh-cc/cordis.yml'),
-        join(userHome, '.dsh/profiles/dsh-tui/cordis.patch.yml'),
+        join(userHome, '.cute-dsh-tui/cordis.yml'),
+        join(userHome, '.dsh/profiles/cute-dsh-tui/cordis.patch.yml'),
       ]
       for (const candidate of configCandidates) {
         lines.push(`${t('doctor-config', { candidate, state: existsSync(candidate) ? '✓' : t('doctor-config-missing') })}`)
       }
-      const sessionsDir = join(userHome, '.dsh-cc/sessions')
+      const sessionsDir = join(process.env.DSH_HOME ?? join(userHome, '.dsh'), 'sessions')
       lines.push(`${t('doctor-storage', { dir: sessionsDir, state: existsSync(sessionsDir) ? '✓' : t('doctor-storage-uninit') })}`)
       return lines
     },
@@ -2255,6 +2595,19 @@ export function createChannel(
         })
       } catch (error) {
         return [t('subagent-query-failed', { err: error instanceof Error ? error.message : String(error) })]
+      }
+    },
+    listLoadedPlugins() {
+      const loader = ctx.get('loader') as
+        | { entries(): Iterable<{ options: { name?: string; group?: boolean }; disabled?: boolean }> }
+        | undefined
+      if (loader === undefined) return []
+      try {
+        return [...loader.entries()]
+          .filter(entry => entry.options.group !== true)
+          .map(entry => `${entry.options.name ?? '(anonymous)'}${entry.disabled === true ? ' (disabled)' : ''}`)
+      } catch {
+        return []
       }
     },
   }
@@ -2419,11 +2772,6 @@ ${output}
   let streaming: ChatRow | undefined
   /** The in-progress reasoning row; `undefined` when no reasoning is streaming. */
   let reasoning: ChatRow | undefined
-  /** Reasoning rows sealed by an assistant/message this turn. They stay
-   *  `streaming: true` — expanded in the transcript — until turn/end folds
-   *  them (WebUI AssistantMarkdown keepOpen parity: thinking holds open
-   *  through the whole in-flight turn, tool-call steps included). */
-  const sealedReasoning: ChatRow[] = []
   /** Wall-clock start of the current reasoning row (durationMs on settle). */
   let reasoningStart = 0
   /** Decode-throughput fold for the current turn. DSH defines one step as
@@ -2511,22 +2859,25 @@ ${output}
       reasoning = { id: nextRowId, kind: 'reasoning', text: '', streaming: true, ...seq !== undefined ? { seq } : {} }
       nextRowId += 1
       state.rows.push(reasoning)
-      logForDebugging('thinking: reasoning row open (expanded)')
+      logForDebugging('thinking: reasoning row open (folded)')
     }
     return reasoning
+  }
+
+  /** Finalize the live one-line Thinking row before later transcript content. */
+  const settleReasoning = (): number | undefined => {
+    if (reasoning === undefined) return undefined
+    reasoning.streaming = false
+    reasoning.durationMs = Math.max(0, Date.now() - reasoningStart)
+    const durationMs = reasoning.durationMs
+    reasoning = undefined
+    return durationMs
   }
 
   const settleStreaming = (): void => {
     if (streaming !== undefined) streaming.streaming = false
     streaming = undefined
-    const folded = sealedReasoning.length + (reasoning !== undefined ? 1 : 0)
-    for (const row of sealedReasoning) row.streaming = false
-    sealedReasoning.length = 0
-    if (reasoning !== undefined) {
-      reasoning.streaming = false
-      reasoning.durationMs = Math.max(0, Date.now() - reasoningStart)
-    }
-    reasoning = undefined
+    const folded = settleReasoning() === undefined ? 0 : 1
     if (folded > 0) logForDebugging(`thinking: folded ${folded} reasoning row(s) at turn settle`)
   }
 
@@ -2535,8 +2886,7 @@ ${output}
     if (state.activeToolCount > 0) {
       state.spinnerMode = 'tool-use'
     } else if (reasoning !== undefined) {
-      // Only LIVE reasoning counts — sealed rows stay streaming=true for
-      // transcript expansion until turn/end but the model is past thinking.
+      // Only the active reasoning row is animated as thinking.
       state.spinnerMode = 'thinking'
     } else if (streaming !== undefined) {
       state.spinnerMode = 'responding'
@@ -2726,15 +3076,13 @@ ${output}
         if (text) row.text = text
         row.streaming = false
         streaming = undefined
-        if (reasoning !== undefined) {
-          // Seal, don't fold: the per-step duration settles here, but the
-          // row keeps streaming=true (expanded) until turn/end — WebUI
-          // keepOpen parity. The next step's reasoning opens a fresh row.
-          reasoning.durationMs = Math.max(0, Date.now() - reasoningStart)
-          sealedReasoning.push(reasoning)
-          logForDebugging(`thinking: step sealed (${reasoning.durationMs}ms), expanded until turn/end`)
+        const reasoningDuration = settleReasoning()
+        if (reasoningDuration !== undefined) {
+          // Stop the one-line Thinking animation as soon as this model step
+          // settles. Its full text remains available through Ctrl+O, but we
+          // never keep a live-height reasoning block above later tool rows.
+          logForDebugging(`thinking: step settled (${reasoningDuration}ms), folded`)
         }
-        reasoning = undefined
         updateSpinnerMode()
         const usage = event.data.usage
         if (usage !== undefined) {
@@ -2801,6 +3149,10 @@ ${output}
         // by the TUI once the batch is answered; tool/result for a call with
         // no card is a no-op below.
         if (event.data.name === 'ask_user_question') break
+        const reasoningDuration = settleReasoning()
+        if (reasoningDuration !== undefined) {
+          logForDebugging(`thinking: tool boundary settled (${reasoningDuration}ms), folded`)
+        }
         const card: ChatRow = {
           id: nextRowId,
           kind: 'tool',

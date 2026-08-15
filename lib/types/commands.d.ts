@@ -1,6 +1,6 @@
 /**
- * Local slash commands for the dsh-tui TUI. Claude Code's command system is
- * deeply wired into its engine; dsh-tui ships a small built-in set with the
+ * Local slash commands for the cute-dsh-tui TUI. Claude Code's command system is
+ * deeply wired into its engine; cute-dsh-tui ships a small built-in set with the
  * same `/name — description` suggestion chrome, and merges plugin-registered
  * commands (plan/goal/…) from the DSH command registry (`dsh-commands`) —
  * `runCommand` in the Chat screen dispatches either kind, with the registry
@@ -15,6 +15,15 @@ export interface LocalCommand {
     tag?: string;
     /** True when a DSH plugin registered this command (not built in). */
     external?: boolean;
+    /** Optional second-level actions, shown after the command name is complete. */
+    subcommands?: readonly CommandSubcommand[];
+}
+/** One continuation offered below a built-in slash command. */
+export interface CommandSubcommand {
+    /** The action token, without the parent command. */
+    name: string;
+    /** One-line description shown in the suggestion overlay. */
+    description: string;
 }
 /**
  * The built-in slash commands (name + description pairs). Plugin-registered
@@ -52,4 +61,6 @@ export declare function isLocalCommandName(input: string, list?: readonly LocalC
  * @returns Commands whose name starts with the prefix, in list order.
  */
 export declare function filterCommands(input: string, list?: readonly LocalCommand[]): LocalCommand[];
+/** True while an autocomplete item can safely replace the typed command. */
+export declare function canAcceptCommandSuggestion(input: string, command: LocalCommand): boolean;
 //# sourceMappingURL=commands.d.ts.map

@@ -19,7 +19,9 @@ import type { ModelRoute } from './modelRoute.js'
 import { readPresetPref } from './presetPrefs.js'
 import { composePreset, resolvePersistedPreset, runningPresetOf } from './presets.js'
 import { writeResumeTarget } from './sessionHistory.js'
-import { checkForTuiUpdate, installedTuiVersion, isVersionNewer, resolveDshProfileName, resolveTuiUpdateTarget, updateTuiAndRestart } from './update.js'
+import { migrateLegacyPreferences } from './preferences.js'
+import { checkForTuiUpdate, installedTuiVersion, isVersionNewer, resolveDshProfileName, resolveTuiUpdateTarget, runProfilePluginAndRestart, updateTuiAndRestart } from './update.js'
+import { pluginArgs, type PluginAction } from './pluginManager.js'
 import { isLang, resolveStartupLang, setLang, t } from './i18n.js'
 import { Chat } from './screens/Chat.js'
 import { render, ThemeProvider, AlternateScreen } from './ui.js'
@@ -35,14 +37,16 @@ import { render, ThemeProvider, AlternateScreen } from './ui.js'
  */
 export async function apply(ctx: Context, config: Config): Promise<void> {
   if (!process.stdout.isTTY) {
-    throw new Error('dsh-tui requires an interactive terminal (stdout must be a TTY).')
+    throw new Error('cute-dsh-tui requires an interactive terminal (stdout must be a TTY).')
   }
 
-  // UI language resolution: CC_TUI_LANG env var wins, then cordis.yml
+  migrateLegacyPreferences()
+
+  // UI language resolution: CUTE_DSH_TUI_LANG env var wins, then cordis.yml
   // `lang`, then the persisted `/lang` choice, then `zh`. Must settle
   // before the first render so every module resolves strings in the same
   // language.
-  const envLang = process.env.CC_TUI_LANG
+  const envLang = process.env.CUTE_DSH_TUI_LANG
   setLang(isLang(envLang) ? envLang : isLang(config.lang) ? config.lang : resolveStartupLang())
 
   // /update restart verification: the pre-update process stamps the version
@@ -51,19 +55,19 @@ export async function apply(ctx: Context, config: Config): Promise<void> {
   // lag, cached manifest, wrong profile). Say so instead of silently
   // pretending the update landed.
   {
-    const updatedFrom = process.env.DSH_CC_UPDATED_FROM
+    const updatedFrom = process.env.CUTE_DSH_TUI_UPDATED_FROM
     if (updatedFrom !== undefined) {
       // Assigning undefined would stringify to "undefined" and leak the
       // marker into every child process; remove it for real.
-      delete process.env.DSH_CC_UPDATED_FROM
+      delete process.env.CUTE_DSH_TUI_UPDATED_FROM
       const now = installedTuiVersion()
       if (now === undefined || !isVersionNewer(now, updatedFrom)) {
         ctx.logger.warn(
-          `dsh-tui: /update restarted but the version did not advance (still ${now ?? 'unknown'}, was ${updatedFrom})`,
+          `cute-dsh-tui: /update restarted but the version did not advance (still ${now ?? 'unknown'}, was ${updatedFrom})`,
         )
         if (process.stderr.isTTY) {
           process.stderr.write(
-            `\ndsh-tui: 更新后版本未变化（仍为 ${now ?? 'unknown'}，原为 ${updatedFrom}）；` +
+            `\ncute-dsh-tui: 更新后版本未变化（仍为 ${now ?? 'unknown'}，原为 ${updatedFrom}）；` +
               `可能是镜像 registry 未同步，请稍后重试或检查 registry 配置。\n`,
           )
         }
@@ -193,6 +197,7 @@ export async function apply(ctx: Context, config: Config): Promise<void> {
   let instance: Awaited<ReturnType<typeof render>> | undefined
   let exited = false
   let updateRequested = false
+  let pluginAction: PluginAction | undefined
   // The profile this process was booted with (`dsh --profile <name>`); dsh
   // exposes it nowhere else, and /update must update the installation the
   // user is actually running, not a hard-coded one.
@@ -224,23 +229,23 @@ export async function apply(ctx: Context, config: Config): Promise<void> {
         // A success code + resume hint here would tell wrappers/CI the
         // session ended cleanly while the TUI actually crashed.
         const message = error instanceof Error ? error.message : String(error)
-        ctx.logger.error(`dsh-tui: exit after error: ${message}`)
+        ctx.logger.error(`cute-dsh-tui: exit after error: ${message}`)
         if (process.stderr.isTTY) {
-          process.stderr.write(`\ndsh-tui crashed: ${message}\n`)
+          process.stderr.write(`\ncute-dsh-tui crashed: ${message}\n`)
         }
         disposeRootAndExit(ctx, 1)
         return
       }
       if (updateRequested) {
         if (process.stdout.isTTY) {
-          process.stdout.write('\nUpdating @deepseek-harness-tui/dsh-tui and restarting…\n')
+          process.stdout.write('\nUpdating @heluo0991/cute-dsh-tui and restarting…\n')
         }
         disposeRootAndThen(ctx, () => {
           // updateRequested only flips when onUpdate exists, which itself
           // requires a resolved profile — narrow for the call below.
           const updateProfile = profile
           if (updateProfile === undefined) {
-            process.stderr.write('\ndsh-tui update aborted: no dsh profile resolved.\n')
+            process.stderr.write('\ncute-dsh-tui update aborted: no dsh profile resolved.\n')
             process.exit(1)
           }
           void updateTuiAndRestart(channel.agentId, updateProfile).then(
@@ -250,7 +255,7 @@ export async function apply(ctx: Context, config: Config): Promise<void> {
                 // resume.txt was already written. A bare non-zero exit would
                 // drop the user into a shell with no way back in.
                 process.stderr.write(
-                  `\ndsh-tui update failed (exit ${updateCode}). Your session is preserved — resume with:\n` +
+                  `\ncute-dsh-tui update failed (exit ${updateCode}). Your session is preserved — resume with:\n` +
                     `${resumeCommand(profile, channel.agentId)}\n\n`,
                 )
               }
@@ -259,9 +264,35 @@ export async function apply(ctx: Context, config: Config): Promise<void> {
             updateError => {
               const message = updateError instanceof Error ? updateError.message : String(updateError)
               process.stderr.write(
-                `\ndsh-tui update failed: ${message}. Your session is preserved — resume with:\n` +
+                `\ncute-dsh-tui update failed: ${message}. Your session is preserved — resume with:\n` +
                   `${resumeCommand(profile, channel.agentId)}\n\n`,
               )
+              process.exit(1)
+            },
+          )
+        })
+        return
+      }
+      if (pluginAction !== undefined) {
+        const action = pluginAction
+        if (profile === undefined) {
+          process.stderr.write('\ncute-dsh-tui plugin action aborted: no dsh profile resolved.\n')
+          disposeRootAndExit(ctx, 1)
+          return
+        }
+        if (process.stdout.isTTY) {
+          process.stdout.write(`\nRunning dsh plugin --profile ${profile} ${pluginArgs(action).join(' ')} and restarting…\n`)
+        }
+        disposeRootAndThen(ctx, () => {
+          void runProfilePluginAndRestart(channel.agentId, profile, pluginArgs(action)).then(
+            ({ pluginCode, restartCode }) => {
+              if (pluginCode !== 0) {
+                process.stderr.write(`\ncute-dsh-tui plugin command failed (exit ${pluginCode}). Your session is preserved — resume with:\n${resumeCommand(profile, channel.agentId)}\n\n`)
+              }
+              process.exit(restartCode)
+            },
+            pluginError => {
+              process.stderr.write(`\ncute-dsh-tui plugin command failed: ${pluginError instanceof Error ? pluginError.message : String(pluginError)}\n`)
               process.exit(1)
             },
           )
@@ -275,7 +306,7 @@ export async function apply(ctx: Context, config: Config): Promise<void> {
     },
   })
   const handleExit = funnel.handleExit
-  const openResumePickerOnStart = process.env.DSH_CC_OPEN_RESUME_PICKER === '1'
+  const openResumePickerOnStart = process.env.CUTE_DSH_TUI_OPEN_RESUME_PICKER === '1'
 
   const chat = React.createElement(Chat, {
     channel,
@@ -287,8 +318,8 @@ export async function apply(ctx: Context, config: Config): Promise<void> {
     // picker after a temporary fresh agent has mounted. Both paths must ask
     // before a restored restricted session is upgraded by --yolo.
     yoloResumeUpgrade:
-      process.env.DSH_CC_YOLO === '1' &&
-      (config.sessionId !== undefined || process.env.DSH_CC_OPEN_RESUME_PICKER === '1'),
+      process.env.CUTE_DSH_TUI_YOLO === '1' &&
+      (config.sessionId !== undefined || process.env.CUTE_DSH_TUI_OPEN_RESUME_PICKER === '1'),
     // Only a `dsh --profile <name>` launch has a profile installation for
     // `/update` to act on; source checkouts and `--config` overlays get the
     // unavailable notice instead.
@@ -310,6 +341,13 @@ export async function apply(ctx: Context, config: Config): Promise<void> {
         updateRequested = true
         instance?.unmount()
       })
+    },
+    profile,
+    fullscreen: config.fullscreen,
+    onPluginAction: profile === undefined ? undefined : action => {
+      if (exited || updateRequested || pluginAction !== undefined) return
+      pluginAction = action
+      instance?.unmount()
     },
   })
   // fullscreen: wrap the tree in <AlternateScreen> (DEC 1049 + SGR mouse
@@ -352,7 +390,7 @@ export async function apply(ctx: Context, config: Config): Promise<void> {
 }
 
 /**
- * Attach to an existing agent, resume a persisted session (`dsh-tui --resume`
+ * Attach to an existing agent, resume a persisted session (`cute-dsh-tui --resume`
  * feeds the id through `config.sessionId`), or create a fresh one. Resume
  * goes through the DSH persistence seam (`ctx.agents.resume` reads the
  * session log written by dsh-session-persistence-jsonl); a missing artifact
@@ -414,7 +452,7 @@ async function resolveAgent(
       // No artifact (first run / cleared storage) or persistence not
       // mounted: fall through to a fresh session, but stay loud in the log.
       ctx.logger.warn(
-        `dsh-tui: resume of "${requestedSessionId}" failed: ${error instanceof Error ? error.message : String(error)}`,
+        `cute-dsh-tui: resume of "${requestedSessionId}" failed: ${error instanceof Error ? error.message : String(error)}`,
       )
     }
   }
@@ -431,7 +469,7 @@ async function resolveAgent(
   const { route, rejected } = await validateModelRoute(llm, startupRoute)
   if (rejected !== undefined) {
     ctx.logger.warn(
-      `dsh-tui: model route ${rejected.provider}/${rejected.model} is not advertised by provider "${rejected.provider}"; falling back to ${route.provider}/${route.model}`,
+      `cute-dsh-tui: model route ${rejected.provider}/${rejected.model} is not advertised by provider "${rejected.provider}"; falling back to ${route.provider}/${route.model}`,
     )
   }
   const created = await ctx.agents.create({
@@ -448,7 +486,7 @@ async function resolveAgent(
     // the worst outcome for a misconfigured leaf (unknown provider/model).
     const message = error instanceof Error ? error.message : String(error)
     throw new Error(
-      `dsh-tui: failed to create agent (provider=${route.provider}, model=${route.model}): ${message}`,
+      `cute-dsh-tui: failed to create agent (provider=${route.provider}, model=${route.model}): ${message}`,
     )
   })
   return { agent: created.agent, handle: created, agentPreset: composed.agentPreset, route }
@@ -489,7 +527,7 @@ export function createExitFunnel(deps: { onUserExit: (error?: unknown) => void }
 
 /**
  * Dispose the whole application before process exit, with a bounded fallback.
- * Mirrors the deleted dsh-tui front-door exit semantics.
+ * Mirrors the deleted cute-dsh-tui front-door exit semantics.
  */
 function disposeRootAndExit(ctx: Context, code: number): void {
   disposeRootAndThen(ctx, () => process.exit(code), code)
@@ -497,16 +535,16 @@ function disposeRootAndExit(ctx: Context, code: number): void {
 
 /**
  * The real way back into a session after the TUI process is gone. The
- * package ships no `dsh-tui` bin — resuming means feeding the session id
- * through `DSH_CC_RESUME_SESSION` (what cordis.patch.yml's `sessionId` reads)
- * and booting the same profile; on Windows the repo's dsh-tui.cmd wrapper
- * does this via --resume + ~/.dsh-cc/resume.txt.
+ * package ships no `cute-dsh-tui` bin — resuming means feeding the session id
+ * through `CUTE_DSH_TUI_RESUME_SESSION` (what cordis.patch.yml's `sessionId` reads)
+ * and booting the same profile; on Windows the repo's cute-dsh-tui.cmd wrapper
+ * does this via --resume + ~/.cute-dsh-tui/resume.txt.
  */
 function resumeCommand(profile: string | undefined, sessionId: string): string {
   const boot = profile === undefined ? 'dsh --config cordis.yml' : `dsh --profile ${profile}`
   return process.platform === 'win32'
-    ? `dsh-tui --resume ${sessionId}`
-    : `DSH_CC_RESUME_SESSION=${sessionId} ${boot}`
+    ? `cute-dsh-tui --resume ${sessionId}`
+    : `CUTE_DSH_TUI_RESUME_SESSION=${sessionId} ${boot}`
 }
 
 /**

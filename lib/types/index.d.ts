@@ -1,17 +1,17 @@
 /**
- * dsh-tui plugin entry. The TUI implementation lives in `./plugin.tsx` (its
+ * cute-dsh-tui plugin entry. The TUI implementation lives in `./plugin.tsx` (its
  * render path is JSX); this module owns the plugin surface (`name`/`inject`/
  * `Config`/`apply`) at the canonical `src/index.ts` location and delegates
  * `apply` through a dynamic import so entry-scanning tooling and the Loader
  * resolve a plain `.ts` module.
- * @module @deepseek-harness-tui/dsh-tui
+ * @module @heluo0991/cute-dsh-tui
  */
 import type { Context } from '@deepseek-ai/cordis';
 import Schema from '@deepseek-ai/schemastery';
-export declare const name = "dsh-tui";
+export declare const name = "cute-dsh-tui";
 export declare const inject: string[];
 /**
- * dsh-tui plugin configuration: session attachment, model route, working
+ * cute-dsh-tui plugin configuration: session attachment, model route, working
  * directory, and display preferences.
  */
 export interface Config {
@@ -19,7 +19,7 @@ export interface Config {
     sessionId?: string;
     /** LLM provider route. The route resolves atomically (issue #67): when
      *  cordis.yml names BOTH `provider` and `model`, that pair wins; otherwise
-     *  the `/model` choice persisted in `~/.dsh-cc/model.json` wins whole;
+     *  the `/model` choice persisted in `~/.cute-dsh-tui/model.json` wins whole;
      *  otherwise the harness defaults (`deepseek-official`). A provider-only
      *  pin never half-overrides the persisted choice. */
     provider?: string;
@@ -31,7 +31,7 @@ export interface Config {
     cwd?: string;
     /** Reasoning effort applied to every request, validated against the live
      *  route's adapter levels (an unlisted level is ignored and the adapter
-     *  default applies). Wins over the persisted Shift+Tab choice; also seeds
+     *  default applies). Wins over the reasoning depth persisted by `/model`; also seeds
      *  the startup status line until the first request header reports the
      *  live value. */
     effort?: string;
@@ -40,7 +40,7 @@ export interface Config {
     activity?: boolean;
     /** Working-activity indicator preset: `claude`/`moon`/`comet`/`dots`/…
      *  or `random` (see activityFrames.ts). When absent, the `/activity`
-     *  choice persisted in `~/.dsh-cc/working-activity.json` wins, then the
+     *  choice persisted in `~/.cute-dsh-tui/working-activity.json` wins, then the
      *  `claude` default. */
     activityFrames?: string;
     /** Show the segmented context bar (the band under the input with the
@@ -49,12 +49,12 @@ export interface Config {
     contextBar?: boolean;
     /** Run in the terminal's alternate screen (Claude Code fullscreen layout). */
     fullscreen?: boolean;
-    /** UI language: `en` / `zh`. When absent, the `CC_TUI_LANG` env var wins,
-     *  then the `/lang` choice persisted in `~/.dsh-cc/lang.json`, then `zh`. */
+    /** UI language: `en` / `zh`. When absent, the `CUTE_DSH_TUI_LANG` env var wins,
+     *  then the `/lang` choice persisted in `~/.cute-dsh-tui/lang.json`, then `zh`. */
     lang?: string;
     /** Agent preset id new sessions compose from (standard/code/minimal/
      *  cordis/… when the roster is mounted). When absent, the `/preset` choice
-     *  persisted in `~/.dsh-cc/agent-preset.json` wins, then the roster
+     *  persisted in `~/.cute-dsh-tui/agent-preset.json` wins, then the roster
      *  default (`standard`). */
     preset?: string;
 }
@@ -63,7 +63,7 @@ export declare const Config: Schema<Config>;
  * Start the interactive TUI front door, delegating to the JSX implementation
  * in `./plugin.tsx` (see its module doc for the full contract).
  * @param ctx - the plugin context.
- * @param config - the validated dsh-tui configuration.
+ * @param config - the validated cute-dsh-tui configuration.
  * @returns a promise settling when the TUI teardown completes.
  */
 export declare function apply(ctx: Context, config: Config): Promise<void>;

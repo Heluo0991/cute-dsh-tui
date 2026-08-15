@@ -3,7 +3,7 @@
  * - pre-seeded "resumed" history (~2.5 viewports) with cold height cache
  * - working spinner ticking during the whole stream (independent dirty frames)
  * - status metrics ticking (~10/s channel bumps without content change)
- * - reasoning rows streaming expanded then folding (height shrink mid-stream)
+ * - reasoning rows streaming in their fixed-height folded presentation
  * - tool cards running->ok with long multi-line results
  * - final assistant message with markdown table streamed chunk-wise
  * Dumps the emulated screen after each phase; look for two fragments sharing

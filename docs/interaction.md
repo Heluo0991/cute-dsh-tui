@@ -10,7 +10,7 @@
 | `Tab` | 补全 `/` 命令或 `@` 文件；模型工作且输入非空时排入当前回合之后的 follow-up |
 | `Ctrl+Enter` | 打断当前回合并立即处理输入消息 |
 | `Shift+Enter` | 在光标处插入换行 |
-| `Shift+Tab` | 按当前模型适配器声明的等级循环推理 effort，例如 Off -> High -> Max |
+| `Shift+Tab` | 循环当前会话的权限级别；切到 `danger-full-access` 时仍会要求确认 |
 | `Alt/Option+Up` | 把最后一条尚未处理的消息取回输入框编辑 |
 | `Up/Down` | 菜单选择；普通输入中浏览历史或在多行文本间移动 |
 | `Ctrl+V` | 从系统剪贴板插入文本；Windows Explorer 复制的文件/图片会插入路径 |
@@ -26,6 +26,8 @@
 
 `/` 有两种语义：普通输入模式中打开 slash command 补全；`Ctrl+O` 的
 transcript 模式中打开会话全文搜索。全文搜索使用 `n`/`N` 在结果间前后跳转。
+
+`/model` 会先选择模型路线（例如 Flash 或 Pro），然后显示此路线可用的推理深度。只在确认第二级后才创建新的会话 fork；选择 `Max` 时，输入框会短暂出现天蓝色动态光效。
 
 ## 输入编辑
 
@@ -90,7 +92,7 @@ Bracketed paste（右键或终端原生粘贴）会原样插入，包括换行�
 ### Model 与 preset
 
 `/model` 通过在当前历史末尾 fork 会话来切换模型，因为 DSH 没有原位换模型 API。
-旧会话仍保留在 `/resume` 中。
+旧会话仍保留在磁盘中。`/resume` 默认按 fork 谱系折叠，仅显示每组最新可继续会话；用右方向键展开历史版本或 rewind 分支，左方向键收起。
 
 `/preset` 只允许空白会话原地切换。已经开始的会话会把选择保存为下一次 `/new`
 或启动时的默认值。详细规则见[配置参考](configuration.md#agent-preset)。
@@ -122,7 +124,7 @@ plugin source 在会话中注入的动态上下文会显示为带来源名的可
 | `Esc` | 取消正在进行的拖拽，不复制 |
 
 复制优先使用 OSC 52；本地终端可回退到 `wl-copy`、`xclip` 或 `xsel`，tmux 使用
-`load-buffer -w`。设置 `CC_TUI_DISABLE_MOUSE=1` 可临时关闭 fullscreen 鼠标。
+`load-buffer -w`。设置 `CUTE_DSH_TUI_DISABLE_MOUSE=1` 可临时关闭 fullscreen 鼠标。
 
 ## `ask_user_question` 问卷
 
@@ -146,12 +148,12 @@ transcript。
 
 | 分组 | 命令 |
 | --- | --- |
-| 会话 | `/new`、`/resume`、`/clear`、`/compact`、`/export` |
+| 会话 | `/new`、`/resume`、`/btw <问题>`、`/clear`、`/compact`、`/export` |
 | 状态 | `/status`、`/cost`、`/config`、`/doctor`、`/init`、`/agents` |
 | 模型与显示 | `/model`、`/thinking`、`/tokens`、`/activity`、`/preset`、`/theme`、`/lang` |
 | 账号与策略 | `/login`、`/logout`、`/permission`、`/permissions`、`/add-dir`、`/mcp` |
 | 打包 Skills | `/audit`、`/bug`、`/practice`、`/review`、`/pr_comments`、`/release-notes`、`/vuln-check` |
-| 其他 | `/update`、`/terminal-setup`、`/help`、`/exit` |
+| 其他 | `/plugin [list\|search\|add\|remove\|update]`、`/update`、`/terminal-setup`、`/help`、`/exit` |
 | 注册表 | `/plan`、`/goal`，以及当前 DSH 组合注册的其他命令 |
 
 补充语法：
@@ -166,7 +168,7 @@ transcript。
 - 启动后会后台检查 npm 新版本；发现更新时会提示。检测遵循 npm registry
   配置（`NPM_CONFIG_REGISTRY` 或 `~/.npmrc`），镜像源用户看到的就是安装源
   的最新版。`/update` 更新已安装的
-  `@deepseek-harness-tui/dsh-tui`，然后自动重启并恢复当前会话；当前回合运行时需等待完成。
+  `@heluo0991/cute-dsh-tui`，然后自动重启并恢复当前会话；当前回合运行时需等待完成。
   仅在 `dsh --profile <name>` 启动时可用（源码运行等场景会提示不可用）；
   已是最新版时直接提示，不会重启。
 - `/plan [off|message]` 与 `/goal ...` 由 DSH 命令插件处理并写入会话事件。

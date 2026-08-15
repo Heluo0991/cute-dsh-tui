@@ -9,8 +9,9 @@ import { KeyboardShortcutHint } from './design-system/KeyboardShortcutHint.js'
 /**
  * Model picker in the CC ModelPicker style: a permission-colored Pane with
  * the model list as Select rows (❯ focus pointer, ✓ on the active model,
- * descriptions), plus the Enter/Esc hint line. The DSH agent's model is
- * fixed at creation time, so a selection notifies "restart to apply".
+ * descriptions), plus the Enter/Esc hint line. This is step one of `/model`:
+ * after choosing a model route, the next pane chooses that route's reasoning
+ * depth before the session fork is created.
  */
 export function ModelPicker({
   models,
@@ -26,7 +27,7 @@ export function ModelPicker({
       <Box flexDirection="column">
         <Box marginBottom={1}>
           <Text color="remember" bold>
-            Model
+            Model · step 1 of 2
           </Text>
         </Box>
         {models.map((model, index) => (
@@ -42,7 +43,7 @@ export function ModelPicker({
       </Box>
       <Text dimColor italic>
         <Byline>
-          <KeyboardShortcutHint shortcut="Enter" action="confirm" bold />
+          <KeyboardShortcutHint shortcut="Enter" action="choose depth" bold />
           <KeyboardShortcutHint shortcut="Esc" action="exit" />
         </Byline>
       </Text>

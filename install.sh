@@ -1,32 +1,42 @@
 #!/bin/sh
-# dsh-TUI 一键安装（npm 版）。
-# 走官方 dsh CLI 的 profile 插件机制：`add` 自动初始化 profile（首层
-# dsh-base），pnpm 安装后按 dsh.bundle.patch 元数据把本包追加为 bundle
-# 层；本包的 patch 会一并 insert 工作状态行（dsh-working-activity，作为
-# npm 依赖自动带入），一条命令全部就绪。
-# 无需 DSH 源码快照，无需 workspace 链接。
+# CuteDshTui repository helper for POSIX sh (macOS and Linux).
+# It intentionally installs only into a DSH profile; the normal npm package
+# entry point is `cute-dsh-tui`, which bootstraps this profile automatically.
 set -eu
 
 if ! command -v dsh >/dev/null 2>&1; then
-  echo "未检测到 dsh CLI。先安装官方客户端：" >&2
+  echo "dsh CLI was not found. Install the official CLI first:" >&2
   echo "  npm install -g @deepseek-ai/dsh" >&2
   exit 1
 fi
 
 if ! command -v pnpm >/dev/null 2>&1; then
-  echo "未检测到 pnpm。dsh plugin 把安装转发给 pnpm，请先安装：" >&2
-  echo "  npm install -g pnpm   （或启用 corepack：corepack enable pnpm）" >&2
+  echo "pnpm 10+ is required because dsh plugin delegates profile installation to it:" >&2
+  echo "  npm install -g pnpm@latest"
   exit 1
 fi
 
-dsh plugin --profile dsh-tui add @deepseek-harness-tui/dsh-tui
+pnpm_major="$(pnpm --version | cut -d. -f1)"
+case "$pnpm_major" in
+  ''|*[!0-9]*)
+    echo "Could not determine the installed pnpm version. Install pnpm 10 or newer:" >&2
+    echo "  npm install -g pnpm@latest" >&2
+    exit 1
+    ;;
+esac
+if [ "$pnpm_major" -lt 10 ]; then
+  echo "pnpm $pnpm_major is too old; CuteDshTui requires pnpm 10 or newer:" >&2
+  echo "  npm install -g pnpm@latest" >&2
+  exit 1
+fi
+
+dsh plugin --profile cute-dsh-tui add @heluo0991/cute-dsh-tui
 echo
-echo "安装完成。启动：dsh --profile dsh-tui"
-echo "Windows 也可以用仓库根目录的 dsh-tui.cmd（--resume 恢复上次会话）。"
+echo "Installed. Start with: dsh --profile cute-dsh-tui"
+echo "The globally installed portable command is: cute-dsh-tui"
 echo
-echo "注意：不要再对同一 profile 单独 add dsh-working-activity——它已随"
-echo "dsh-tui 的补丁层自动挂载，重复 add 会产生重复行。想调参（如"
-echo "publishIntervalMs）在 \$DSH_HOME/profiles/dsh-tui/cordis.patch.yml 按 id 覆盖："
+echo "Do not separately add dsh-working-activity to this profile; CuteDshTui mounts it."
+echo "To override its cadence, edit \$DSH_HOME/profiles/cute-dsh-tui/cordis.patch.yml:"
 echo "  - id: working-activity"
 echo "    config:"
 echo "      publishIntervalMs: 500"

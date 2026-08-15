@@ -25,4 +25,6 @@ export interface Rgb {
  * @returns Five ANSI rows, one per block-font line.
  */
 export declare function renderBigText(text: string, time: number, from: Rgb, to: Rgb, flash: Rgb, stepMs?: number): string[];
+/** Render one supplied Messages-font brand word with the normal splash paint. */
+export declare function renderMessagesText(text: string, time: number, from: Rgb, to: Rgb, flash: Rgb, stepMs?: number): string[];
 //# sourceMappingURL=bigfont.d.ts.map

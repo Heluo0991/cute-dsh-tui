@@ -1,6 +1,6 @@
 /**
- * Local slash commands for the dsh-tui TUI. Claude Code's command system is
- * deeply wired into its engine; dsh-tui ships a small built-in set with the
+ * Local slash commands for the cute-dsh-tui TUI. Claude Code's command system is
+ * deeply wired into its engine; cute-dsh-tui ships a small built-in set with the
  * same `/name — description` suggestion chrome, and merges plugin-registered
  * commands (plan/goal/…) from the DSH command registry (`dsh-commands`) —
  * `runCommand` in the Chat screen dispatches either kind, with the registry
@@ -16,6 +16,16 @@ export interface LocalCommand {
   tag?: string
   /** True when a DSH plugin registered this command (not built in). */
   external?: boolean
+  /** Optional second-level actions, shown after the command name is complete. */
+  subcommands?: readonly CommandSubcommand[]
+}
+
+/** One continuation offered below a built-in slash command. */
+export interface CommandSubcommand {
+  /** The action token, without the parent command. */
+  name: string
+  /** One-line description shown in the suggestion overlay. */
+  description: string
 }
 
 /**
@@ -29,11 +39,12 @@ export const LOCAL_COMMANDS: LocalCommand[] = [
   { name: 'compact', description: 'Compact the conversation history' },
   { name: 'resume', description: 'Resume a previous session' },
   { name: 'rewind', description: 'Rewind the conversation to a previous message' },
+  { name: 'btw', description: 'Ask a parallel side question without changing this conversation' },
   { name: 'export', description: 'Export the conversation to a markdown file' },
   // Session / environment
   { name: 'status', description: 'Show session status' },
   { name: 'cost', description: 'Show session token usage' },
-  { name: 'config', description: 'Show the dsh-tui configuration source' },
+  { name: 'config', description: 'Show the cute-dsh-tui configuration source' },
   { name: 'doctor', description: 'Run environment checks' },
   { name: 'init', description: 'Create AGENTS.md in the working directory' },
   { name: 'agents', description: 'Show subagents of this session' },
@@ -52,11 +63,22 @@ export const LOCAL_COMMANDS: LocalCommand[] = [
   { name: 'permissions', description: 'Show current sandbox and approval policy' },
   { name: 'add-dir', description: 'Show the filesystem policy scope' },
   { name: 'mcp', description: 'Show MCP status' },
-  { name: 'update', description: 'Update dsh-tui and restart' },
+  { name: 'update', description: 'Update cute-dsh-tui and restart' },
+  {
+    name: 'plugin',
+    description: 'List and manage plugins in this DSH profile',
+    subcommands: [
+      { name: 'list', description: 'Show installed and profile-loaded plugins' },
+      { name: 'search', description: 'Search plugin names in this profile' },
+      { name: 'add', description: 'Install a package into this profile' },
+      { name: 'remove', description: 'Remove a package from this profile' },
+      { name: 'update', description: 'Update one package, or all packages' },
+    ],
+  },
   // Built-in skills (CC's skill commands, driven through DSH skills)
   { name: 'audit', description: 'Run a comprehensive code audit on this project' },
   { name: 'bug', description: 'Capture a bug report' },
-  { name: 'practice', description: 'Practice programming with dsh-tui' },
+  { name: 'practice', description: 'Practice programming with cute-dsh-tui' },
   { name: 'review', description: 'Run a comprehensive code review on this project' },
   { name: 'pr_comments', description: 'Review pull request comments' },
   { name: 'release-notes', description: 'Generate release notes' },
@@ -65,7 +87,7 @@ export const LOCAL_COMMANDS: LocalCommand[] = [
   { name: 'terminal-setup', description: 'Show terminal setup instructions' },
   // Help / exit
   { name: 'help', description: 'Show shortcuts and commands' },
-  { name: 'exit', description: 'Exit dsh-tui' },
+  { name: 'exit', description: 'Exit cute-dsh-tui' },
 ]
 
 /**
@@ -115,8 +137,31 @@ export function filterCommands(
   input: string,
   list: readonly LocalCommand[] = LOCAL_COMMANDS,
 ): LocalCommand[] {
-  const prefix = input.replace(/^\//, '').trim().toLowerCase()
+  const source = input.replace(/^\//, '')
+  const trimmed = source.trim()
+  const [first = '', ...rest] = trimmed.split(/\s+/)
+  const parent = list.find(command => command.name.toLowerCase() === first.toLowerCase())
+  // Once a parent command is complete, complete its action token rather than
+  // hiding the overlay. Child names retain the parent so the prompt can use
+  // the existing Tab/Enter completion path unchanged.
+  if (parent?.subcommands !== undefined && (source.endsWith(' ') || rest.length === 0 || rest.length === 1)) {
+    const childPrefix = rest[0]?.toLowerCase() ?? ''
+    return parent.subcommands
+      .filter(child => child.name.toLowerCase().startsWith(childPrefix))
+      .map(child => ({
+        name: `${parent.name} ${child.name}`,
+        description: child.description,
+        tag: parent.name,
+      }))
+  }
+  const prefix = trimmed.toLowerCase()
   return list.filter(command =>
     command.name.toLowerCase().startsWith(prefix),
   )
+}
+
+/** True while an autocomplete item can safely replace the typed command. */
+export function canAcceptCommandSuggestion(input: string, command: LocalCommand): boolean {
+  const typed = input.replace(/^\//, '').trim().toLowerCase()
+  return typed.length > 0 && command.name.toLowerCase().startsWith(typed)
 }

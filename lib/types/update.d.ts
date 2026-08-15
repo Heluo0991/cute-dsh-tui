@@ -22,6 +22,11 @@ export interface TuiUpdateResult {
      */
     restartCode: number;
 }
+/** Result of a generic profile-plugin mutation followed by a replacement TUI. */
+export interface ProfilePluginRestartResult {
+    pluginCode: number;
+    restartCode: number;
+}
 /** Read the version from either the compiled package or the source checkout. */
 export declare function installedTuiVersion(): string | undefined;
 /**
@@ -56,14 +61,14 @@ export declare function checkForTuiUpdate(): Promise<TuiUpdateInfo | undefined>;
 /** cmd.exe joins spawn arguments with spaces; quote anything that could split. */
 export declare function shellQuote(args: readonly string[]): string[];
 /**
- * Update the installed dsh-tui package and restart the same launcher while
+ * Update the installed cute-dsh-tui package and restart the same launcher while
  * preserving the active session. The TUI must already be unmounted before
  * this is called so pnpm output cannot corrupt the rendered terminal frame.
  *
  * `--latest` is required: `pnpm add` writes a caret range into the profile
  * manifest, and a plain `pnpm update` stays inside that range — with this
  * project's minor-per-release cadence the TUI would restart unchanged while
- * reporting success. The restart carries `DSH_CC_UPDATED_FROM` so the new
+ * reporting success. The restart carries `CUTE_DSH_TUI_UPDATED_FROM` so the new
  * process can warn when the version did not actually move (e.g. a mirror
  * registry still serving the old `latest`).
  *
@@ -73,4 +78,11 @@ export declare function shellQuote(args: readonly string[]): string[];
  * @returns Exit codes for the update run and the replacement process.
  */
 export declare function updateTuiAndRestart(sessionId: string, profile: string): Promise<TuiUpdateResult>;
+/**
+ * Apply one already-confirmed `dsh plugin` verb after the TUI has unmounted,
+ * then restart exactly the launcher that created this process and resume the
+ * main conversation. Arguments are passed as argv, never interpolated into a
+ * shell command.
+ */
+export declare function runProfilePluginAndRestart(sessionId: string, profile: string, args: readonly string[]): Promise<ProfilePluginRestartResult>;
 //# sourceMappingURL=update.d.ts.map

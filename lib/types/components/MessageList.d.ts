@@ -33,9 +33,11 @@ export declare function MessageList({ rows, expanded, expandedRows, selectedId, 
  * welcome line. It scrolls away with the transcript once the conversation
  * fills the viewport (Claude Code shows its ✦ logo in the same slot).
  */
-export declare function LogoHeader({ model, effort, cwd, }: {
+export declare function LogoHeader({ model, effort, cwd, animateIntro, }: {
     model: string;
     effort?: string | undefined;
     cwd: string;
+    /** Inline mode freezes the splash before it can enter terminal scrollback. */
+    animateIntro?: boolean;
 }): React.ReactNode;
 //# sourceMappingURL=MessageList.d.ts.map

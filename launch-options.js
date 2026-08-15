@@ -1,13 +1,13 @@
 import { readFileSync } from 'node:fs'
 import { homedir } from 'node:os'
-import { join } from 'node:path'
+import { join, resolve } from 'node:path'
 
-const RESUME_FILE = join(homedir(), '.dsh-cc', 'resume.txt')
+const RESUME_FILE = join(homedir(), '.cute-dsh-tui', 'resume.txt')
 
-/** Help shown by both the packaged `dsh-tui` launcher and the local `dsh` shim. */
+/** Help shown by both the packaged `cute-dsh-tui` launcher and the local `dsh` shim. */
 export const LAUNCHER_USAGE = `Usage: dsh [launcher options] [dsh options]
 
-  dsh                              Start dsh-TUI in the current directory.
+  dsh                              Start CuteDshTui in the current directory.
   dsh --resume                     Choose a saved session for the current directory.
   dsh --resume <session-id>        Restore one session by its exact ID.
   dsh --resume --last              Restore the most recently used session.
@@ -17,8 +17,21 @@ export const LAUNCHER_USAGE = `Usage: dsh [launcher options] [dsh options]
   dsh --patch <path>               Forward an extra DSH patch overlay.
   dsh --dump-config                Forward a DSH diagnostic option.
 
-Set DSH_CC_WORKSPACE to start from another working directory.
+Set CUTE_DSH_TUI_WORKSPACE to start from another working directory on Windows,
+macOS, or Linux.
 `
+
+/**
+ * Resolve the optional workspace override before spawning DSH.  Keeping this
+ * platform-neutral is important: npm's generated POSIX bin shim invokes the
+ * same JavaScript file as the Windows .cmd wrapper.
+ */
+export function resolveLaunchWorkspace(
+  workspace = process.env.CUTE_DSH_TUI_WORKSPACE,
+  cwd = process.cwd(),
+) {
+  return workspace?.trim() ? resolve(cwd, workspace) : cwd
+}
 
 function readLastSessionFromDisk() {
   try {
@@ -42,19 +55,19 @@ export function parseLaunchArgs(argv, { readLastSession = readLastSessionFromDis
   let error
 
   const clearPicker = () => {
-    environment.DSH_CC_OPEN_RESUME_PICKER = undefined
+    environment.CUTE_DSH_TUI_OPEN_RESUME_PICKER = undefined
   }
   const resumeExact = (sessionId) => {
     clearPicker()
-    environment.DSH_CC_RESUME_SESSION = sessionId
+    environment.CUTE_DSH_TUI_RESUME_SESSION = sessionId
   }
   const resumeLast = () => {
     clearPicker()
-    environment.DSH_CC_RESUME_SESSION = readLastSession()
+    environment.CUTE_DSH_TUI_RESUME_SESSION = readLastSession()
   }
   const openPicker = () => {
-    environment.DSH_CC_RESUME_SESSION = undefined
-    environment.DSH_CC_OPEN_RESUME_PICKER = '1'
+    environment.CUTE_DSH_TUI_RESUME_SESSION = undefined
+    environment.CUTE_DSH_TUI_OPEN_RESUME_PICKER = '1'
   }
 
   for (let index = 0; index < argv.length; index += 1) {
@@ -73,7 +86,7 @@ export function parseLaunchArgs(argv, { readLastSession = readLastSessionFromDis
     }
     if (arg === '--yolo' || arg === '--dangerously-bypass-approvals-and-sandbox') {
       environment.DSH_PERMISSION_MODE = 'danger-full-access'
-      environment.DSH_CC_YOLO = '1'
+      environment.CUTE_DSH_TUI_YOLO = '1'
       continue
     }
     if (arg === '--continue' || arg === '-c') {

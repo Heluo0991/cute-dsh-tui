@@ -1,22 +1,22 @@
 {
-  "name": "@deepseek-harness-tui/dsh-tui",
-  "version": "0.5.0",
+  "name": "@heluo0991/cute-dsh-tui",
+  "version": "1.1.0",
   "description": "Claude Code style interactive TUI front door for DeepSeek Harness agents, built on the ported Ink core.",
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/ccch1mneyyy/dsh-TUI.git"
+    "url": "git+https://github.com/Heluo0991/cute-dsh-tui.git"
   },
   "bugs": {
-    "url": "https://github.com/ccch1mneyyy/dsh-TUI/issues"
+    "url": "https://github.com/Heluo0991/cute-dsh-tui/issues"
   },
-  "homepage": "https://github.com/ccch1mneyyy/dsh-TUI#readme",
+  "homepage": "https://github.com/Heluo0991/cute-dsh-tui#readme",
   "publishConfig": {
     "access": "public"
   },
   "type": "module",
   "bin": {
-    "dsh-tui": "./bin/dsh-tui.js"
+    "cute-dsh-tui": "./cute-dsh-tui.js"
   },
   "main": "lib/types/index.js",
   "types": "lib/types/index.d.ts",
@@ -38,11 +38,15 @@
     "./src/*": "./src/*"
   },
   "files": [
-    "bin",
+    "cute-dsh-tui.js",
+    "launch-options.js",
     "lib",
     "cordis.patch.yml",
     "cordis.yml",
-    "skills"
+    "skills",
+    "docs/assets/Cutedeepseek-pixelart.png",
+    "docs/assets/first-screen.png",
+    "docs/assets/pixel-character-standardized.json"
   ],
   "engines": {
     "node": "^22.19 || >=24"
@@ -54,7 +58,11 @@
     "verify:launcher": "node scripts/verify-launch-options.mjs",
     "verify:startup-resume": "node --import tsx/esm scripts/verify-startup-resume.tsx",
     "verify:permissions": "pnpm run build && node scripts/verify-permissions.mjs",
-    "verify:yolo-resume": "node --import tsx/esm scripts/verify-yolo-resume.tsx"
+    "verify:yolo-resume": "node --import tsx/esm scripts/verify-yolo-resume.tsx",
+    "verify:preference-migration": "node --import tsx/esm scripts/verify-preference-migration.ts",
+    "verify:model-switch-glow": "node --import tsx/esm scripts/verify-model-switch-glow.ts",
+    "verify:inline-thinking": "node --import tsx/esm scripts/verify-inline-thinking.tsx",
+    "verify:btw-plugin": "node --import tsx/esm scripts/verify-btw-plugin.ts"
   },
   "peerDependencies": {
     "@deepseek-ai/cordis": "^4.0.1",
@@ -75,6 +83,7 @@
     "@deepseek-ai/dsh-system-prompt": "^0.1.0-rc.6",
     "@deepseek-ai/dsh-terminal": "^0.1.0-rc.6",
     "@deepseek-ai/dsh-terminal-bash": "^0.1.0-rc.6",
+    "@deepseek-ai/dsh-tools": "^0.1.0-rc.6",
     "@deepseek-ai/dsh-tool-ask-user": "^0.1.0-rc.6",
     "@deepseek-ai/dsh-tool-bash-persistent": "^0.1.0-rc.6",
     "@deepseek-ai/dsh-tool-cordis": "^0.1.0-rc.6",

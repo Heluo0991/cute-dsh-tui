@@ -10,7 +10,7 @@
 | `Tab` | Complete a `/` command or `@` file; while the model is working, queue non-empty input as a post-turn follow-up |
 | `Ctrl+Enter` | Interrupt the running turn and process the input immediately |
 | `Shift+Enter` | Insert a newline at the caret |
-| `Shift+Tab` | Cycle the effort levels declared by the active adapter, for example Off -> High -> Max |
+| `Shift+Tab` | Cycle the current session permission preset; `danger-full-access` still requires confirmation |
 | `Alt/Option+Up` | Pull the latest undelivered message back into the editor |
 | `Up/Down` | Select menu items; in ordinary input, browse history or move through multiline text |
 | `Ctrl+V` | Insert system clipboard text; files/images copied in Windows Explorer insert paths |
@@ -27,6 +27,8 @@
 `/` has two meanings. In normal input it opens slash-command completion. In
 the `Ctrl+O` transcript view it opens full-session search; use `n` and `N` to
 move forward and backward through matches.
+
+`/model` first selects a model route (such as Flash or Pro), then shows the reasoning depths available for that route. The session fork is created only after the second-stage confirmation; choosing `Max` briefly adds a sky-blue animated prompt effect.
 
 ## Editing keys
 
@@ -96,7 +98,7 @@ selection is confirmed, the TUI:
 ### Model and preset
 
 `/model` switches through a session fork at the end of current history because
-DSH has no in-place model-switch API. The old session remains in `/resume`.
+DSH has no in-place model-switch API. Old sessions remain on disk, while `/resume` folds a fork lineage to its newest resumable leaf by default; Right expands historical versions and rewind branches, Left collapses them.
 
 `/preset` switches in place only for a blank session. In a started session,
 the choice becomes the default for the next `/new` or launch. See
@@ -133,7 +135,7 @@ owns native scrollback and selection.
 | `Esc` | Cancel an active drag without copying |
 
 Copy prefers OSC 52. Local fallbacks include `wl-copy`, `xclip`, and `xsel`;
-tmux uses `load-buffer -w`. Set `CC_TUI_DISABLE_MOUSE=1` to temporarily disable
+tmux uses `load-buffer -w`. Set `CUTE_DSH_TUI_DISABLE_MOUSE=1` to temporarily disable
 fullscreen mouse handling.
 
 ## `ask_user_question` questionnaires
@@ -159,12 +161,12 @@ to inspect the complete surface available in the current composition.
 
 | Group | Commands |
 | --- | --- |
-| Sessions | `/new`, `/resume`, `/clear`, `/compact`, `/export` |
+| Sessions | `/new`, `/resume`, `/btw <question>`, `/clear`, `/compact`, `/export` |
 | Status | `/status`, `/cost`, `/config`, `/doctor`, `/init`, `/agents` |
 | Model and display | `/model`, `/thinking`, `/tokens`, `/activity`, `/preset`, `/theme`, `/lang` |
 | Account and policy | `/login`, `/logout`, `/permission`, `/permissions`, `/add-dir`, `/mcp` |
 | Packaged skills | `/audit`, `/bug`, `/practice`, `/review`, `/pr_comments`, `/release-notes`, `/vuln-check` |
-| Other | `/update`, `/terminal-setup`, `/help`, `/exit` |
+| Other | `/plugin [list\|search\|add\|remove\|update]`, `/update`, `/terminal-setup`, `/help`, `/exit` |
 | Registry | `/plan`, `/goal`, and any other command registered by the DSH composition |
 
 Additional forms:
@@ -180,7 +182,7 @@ Additional forms:
   shows a notification when one is available. The check follows the npm
   registry configuration (`NPM_CONFIG_REGISTRY` or `~/.npmrc`), so mirror
   users see the versions their package manager actually installs. `/update`
-  updates the installed `@deepseek-harness-tui/dsh-tui`, then restarts and
+  updates the installed `@heluo0991/cute-dsh-tui`, then restarts and
   resumes the current session automatically; wait for an active turn to finish first. It is only
   available under a `dsh --profile <name>` launch (source checkouts get an
   unavailable notice), and an already-latest install is reported as such

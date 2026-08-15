@@ -7,13 +7,13 @@
 通过 npm/profile 机制安装后，用户配置位于：
 
 ```text
-$DSH_HOME/profiles/dsh-tui/cordis.patch.yml
+$DSH_HOME/profiles/cute-dsh-tui/cordis.patch.yml
 ```
 
 `DSH_HOME` 未设置时通常为 `~/.dsh`。该文件是顶层 YAML 数组，可使用 DSH
 支持的 `!!js` 表达式。
 
-Profile 启动按顺序叠加 `dsh-base`、已安装 bundle、`@deepseek-harness-tui/dsh-tui`
+Profile 启动按顺序叠加 `dsh-base`、已安装 bundle、`@heluo0991/cute-dsh-tui`
 的包内 `cordis.patch.yml`，最后再应用用户补丁。用户配置通常通过相同 `id` 覆盖已有行；
 只有确实新增服务时才使用 `insert`。
 
@@ -25,7 +25,7 @@ Profile 启动按顺序叠加 `dsh-base`、已安装 bundle、`@deepseek-harness
 下面是完整的常用覆盖示例：
 
 ```yaml
-- id: dsh-tui
+- id: cute-dsh-tui
   config:
     provider: deepseek-official
     model: deepseek-v4-flash
@@ -35,8 +35,8 @@ Profile 启动按顺序叠加 `dsh-base`、已安装 bundle、`@deepseek-harness
     activityFrames: claude
     contextBar: true
     fullscreen: false
-    preset: !!js process.env.CC_TUI_PRESET ?? undefined
-    sessionId: !!js process.env.DSH_CC_RESUME_SESSION ?? undefined
+    preset: !!js process.env.CUTE_DSH_TUI_PRESET ?? undefined
+    sessionId: !!js process.env.CUTE_DSH_TUI_RESUME_SESSION ?? undefined
 ```
 
 | 字段 | 默认/来源 | 说明 |
@@ -44,13 +44,13 @@ Profile 启动按顺序叠加 `dsh-base`、已安装 bundle、`@deepseek-harness
 | `provider` | `deepseek-official` | DSH 模型路由名称 |
 | `model` | `deepseek-v4-flash` | 启动模型；`/model` 可通过 session fork 实时切换 |
 | `cwd` | `process.cwd()` | Agent 工作目录与文件策略根目录 |
-| `effort` | 配置层通常为 `max` | 每个请求实际生效的推理等级（按模型档位校验，deepseek 仅 off/high/max，非法档位静默回落默认；优先于 Shift+Tab 持久化选择），兼作顶栏启动显示 |
+| `effort` | 配置层通常为 `max` | 每个请求实际生效的推理等级（按模型档位校验，deepseek 仅 off/high/max，非法档位静默回落默认；优先于 `/model` 持久化选择），兼作顶栏启动显示 |
 | `activity` | `true` | 是否显示实时工作状态行 |
 | `activityFrames` | 持久化选择或 `claude` | 工作状态动画预设；也可通过 `/activity` 修改 |
 | `contextBar` | `true` | 输入框下方的分段上下文进度条；`false` 隐藏该行 |
 | `fullscreen` | `false` | `true` 使用 alternate screen、应用内滚动和鼠标选区；`false` 使用 inline 模式 |
 | `preset` | 名册默认 `standard` | 新会话 Agent preset；显式配置优先于持久化偏好 |
-| `sessionId` | 未设置 | 要恢复的会话 ID，通常由 Windows `--resume` 启动器注入 |
+| `sessionId` | 未设置 | 要恢复的会话 ID，通常由 `cute-dsh-tui --resume` 注入 |
 
 ## 工作状态行
 
@@ -82,8 +82,8 @@ Profile 启动按顺序叠加 `dsh-base`、已安装 bundle、`@deepseek-harness
 - `/preset <id>` 直接选择；`/preset status` 查看当前状态。
 - 空白会话可以原地切换。已经产生对话的会话遵循官方 blank-only 规则，选择只会
   保存为新默认值，在 `/new` 或下一次启动时生效。
-- 默认值保存在 `~/.dsh-cc/agent-preset.json`。
-- 优先级为：显式 `config.preset` 或 `CC_TUI_PRESET`，然后持久化偏好，最后名册
+- 默认值保存在 `~/.cute-dsh-tui/agent-preset.json`。
+- 优先级为：显式 `config.preset` 或 `CUTE_DSH_TUI_PRESET`，然后持久化偏好，最后名册
   默认值 `standard`。
 - 恢复旧会话时，以该会话日志记录的 preset 为准，不读取当前默认值覆盖它。
 
@@ -91,8 +91,8 @@ Profile 启动按顺序叠加 `dsh-base`、已安装 bundle、`@deepseek-harness
 `agent.cordis.yml`。默认 `DSH_HOME` 下的路径即 `~/.dsh/.agent-presets/`。
 
 从 0.3 起，模型侧工具、plan、compaction、delegation 等由 preset 自己组合。
-Profile 模式不再使用旧的 `CC_TUI_COMPACT_RATIO`、
-`CC_TUI_COMPACT_RETAIN` 或旧版 TUI 的深度限制；这些策略应在 preset 中配置。
+Profile 模式不再使用旧的 `CUTE_DSH_TUI_COMPACT_RATIO`、
+`CUTE_DSH_TUI_COMPACT_RETAIN` 或旧版 TUI 的深度限制；这些策略应在 preset 中配置。
 
 ## MCP
 
@@ -131,20 +131,20 @@ Profile 模式不再使用旧的 `CC_TUI_COMPACT_RATIO`、
 | --- | --- |
 | `DEEPSEEK_API_KEY` | DeepSeek 凭证；运行模型的必需项 |
 | `DEEPSEEK_BASE_URL` | 覆盖 DeepSeek 兼容 API 端点 |
-| `CC_TUI_PERSONA` | 覆盖组合注入的 Agent persona |
-| `CC_TUI_PRESET` | 覆盖新会话默认 Agent preset |
-| `CC_TUI_THEME` | 锁定内置或自定义主题，优先于持久化选择 |
-| `CC_TUI_DISABLE_MOUSE` | 在 fullscreen 模式临时关闭鼠标处理 |
-| `DSH_CC_RESUME_SESSION` | 启动时恢复指定会话，通常由启动器设置 |
-| `DSH_CC_OPEN_RESUME_PICKER` | 启动时打开会话选择器（由 `dsh --resume` 设置） |
-| `DSH_CC_SESSION_ROOT` | 覆盖会话持久化位置；profile 安装时是 SQLite 数据库路径，裸 `cordis.yml` 启动时是 JSONL 根目录 |
+| `CUTE_DSH_TUI_PERSONA` | 覆盖组合注入的 Agent persona |
+| `CUTE_DSH_TUI_PRESET` | 覆盖新会话默认 Agent preset |
+| `CUTE_DSH_TUI_THEME` | 锁定内置或自定义主题，优先于持久化选择 |
+| `CUTE_DSH_TUI_DISABLE_MOUSE` | 在 fullscreen 模式临时关闭鼠标处理 |
+| `CUTE_DSH_TUI_RESUME_SESSION` | 启动时恢复指定会话，通常由启动器设置 |
+| `CUTE_DSH_TUI_OPEN_RESUME_PICKER` | 启动时打开会话选择器（由 `dsh --resume` 设置） |
+| `CUTE_DSH_TUI_SESSION_ROOT` | 覆盖会话持久化位置；profile 安装时是 SQLite 数据库路径，裸 `cordis.yml` 启动时是 JSONL 根目录 |
 | `DSH_PERMISSION_MODE` | 所有平台的启动期 sandbox policy 覆盖，例如 `workspace-write` 或 `danger-full-access`；通常应优先使用会话内 `/permission` |
-| `DSH_CC_YOLO` | 强制 danger-full-access 并跳过审批（由 `dsh --yolo` 设置） |
-| `DSH_CC_WORKSPACE` | Windows `dsh-tui.cmd` 采用的工作目录 |
-| `CC_TUI_DEBUG` | 启用写往 stderr 的 dsh-tui 调试日志 |
-| `DSH_CC_RENDER_LOG` | 指定文件路径，记录原始 ANSI 渲染帧用于取证 |
+| `CUTE_DSH_TUI_YOLO` | 强制 danger-full-access 并跳过审批（由 `dsh --yolo` 设置） |
+| `CUTE_DSH_TUI_WORKSPACE` | `cute-dsh-tui` 在 Windows、Linux、macOS 上采用的工作目录 |
+| `CUTE_DSH_TUI_DEBUG` | 启用写往 stderr 的 cute-dsh-tui 调试日志 |
+| `CUTE_DSH_TUI_RENDER_LOG` | 指定文件路径，记录原始 ANSI 渲染帧用于取证 |
 
-`DSH_CC_RENDER_LOG` 可能捕获屏幕上可见的提示词、工具参数和输出，不应上传到
+`CUTE_DSH_TUI_RENDER_LOG` 可能捕获屏幕上可见的提示词、工具参数和输出，不应上传到
 公开 issue，除非已经检查并脱敏。
 
 ## 组合约束
@@ -158,9 +158,9 @@ Profile 模式不再使用旧的 `CC_TUI_COMPACT_RATIO`、
 - `cordis.yml` 是裸组合示例，服务拓扑可能与 profile patch 不同。正常安装和用户
   覆盖应以 `cordis.patch.yml` 为准。
 
-`DSH_CC_SESSION_ROOT` 的解释也随组合而变：`dsh --profile dsh-tui` 使用本包 patch
-插入的 SQLite 行，默认文件为 `~/.dsh-cc/sessions.sqlite`；直接运行
+`CUTE_DSH_TUI_SESSION_ROOT` 的解释也随组合而变：`dsh --profile cute-dsh-tui` 使用本包 patch
+插入的 SQLite 行，默认文件为 `$DSH_HOME/sessions`；直接运行
 `dsh --config cordis.yml` 时，示例挂载的是 JSONL 持久化，默认目录为
-`~/.dsh-cc/sessions/`。两种启动方式不要混用同一个已有数据目录。
+`$DSH_HOME/sessions`。两种启动方式不要混用同一个已有数据目录。
 
 权限相关配置与平台差异见[架构与限制](architecture.md#权限与安全边界)。

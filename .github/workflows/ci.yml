@@ -11,7 +11,13 @@ concurrency:
 
 jobs:
   build:
-    runs-on: ubuntu-latest
+    name: ${{ matrix.os }} / Node ${{ matrix.node }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+        node: [22, 24]
     steps:
       - uses: actions/checkout@v4
 
@@ -21,12 +27,16 @@ jobs:
 
       - uses: actions/setup-node@v4
         with:
-          node-version: 24
+          node-version: ${{ matrix.node }}
           cache: pnpm
 
       - run: pnpm install --frozen-lockfile
 
       - run: pnpm build
+
+      - run: node scripts/verify-launch-options.mjs
+
+      - run: npm pack --dry-run
 
       # 带断言的回归：提问面板内联输入（issue #9）+ 工具卡排版
       # （⎿ 缩进、diff 红绿行、信封剥离），失败即非零退出。
@@ -69,3 +79,40 @@ jobs:
       # CJK 显示宽度截断回归（issue #41）：4 处描述按终端显示宽度处理，
       # CJK 不劈字、窄终端布局不破。
       - run: node --import tsx/esm scripts/verify-cjk-truncate.tsx
+
+  packed-profile:
+    name: packed profile / ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 11
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      - run: pnpm build
+
+      - run: npm install -g @deepseek-ai/dsh
+
+      - name: Install packed plugin in an isolated DSH profile
+        shell: bash
+        run: |
+          tmp_dir="$(mktemp -d)"
+          npm pack --pack-destination "$tmp_dir"
+          export DSH_HOME="$tmp_dir/dsh-home"
+          tarball="$(find "$tmp_dir" -maxdepth 1 -name '*.tgz' -print -quit)"
+          test -n "$tarball"
+          dsh plugin --profile cute-dsh-tui add "$tarball"
+          dsh --profile cute-dsh-tui --dump-config > "$tmp_dir/dump-config.json"
+          test -s "$tmp_dir/dump-config.json"
