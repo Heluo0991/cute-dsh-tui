@@ -76,6 +76,14 @@ if (probe.error || probe.status !== 0) {
 const dshHome = process.env.DSH_HOME || join(homedir(), '.dsh')
 const profileDir = profileDirectory(dshHome, PROFILE)
 const installedPackageDir = join(profileDir, 'node_modules', '@heluo0991', 'cute-dsh-tui')
+const installedProfileVersion = (() => {
+  if (!existsSync(installedPackageDir)) return undefined
+  try {
+    return JSON.parse(readFileSync(join(installedPackageDir, 'package.json'), 'utf8')).version
+  } catch {
+    return undefined
+  }
+})()
 const linkedToDevelopmentTree = (() => {
   if (!devPackagePath || !existsSync(installedPackageDir)) return false
   try {
@@ -87,8 +95,13 @@ const linkedToDevelopmentTree = (() => {
 
 // The development shim links the profile into this working tree. Normal npm
 // installs retain their exact-version behavior and never take this branch.
-if (!existsSync(installedPackageDir) || (devPackagePath && !linkedToDevelopmentTree)) {
-  console.log(`[cute-dsh-tui] initializing ${PROFILE} profile (${packageSpec})...`)
+// A global npm update must also update the isolated profile: DSH loads the
+// plugin from this profile, not from the global launcher package.
+const profileNeedsPackageInstall = !existsSync(installedPackageDir)
+  || (devPackagePath ? !linkedToDevelopmentTree : installedProfileVersion !== ownVersion)
+if (profileNeedsPackageInstall) {
+  const action = existsSync(installedPackageDir) ? 'updating' : 'initializing'
+  console.log(`[cute-dsh-tui] ${action} ${PROFILE} profile (${packageSpec})...`)
   let addCode
   try {
     addCode = runBundledPnpm(profileDir, ['add', packageSpec])

@@ -1706,7 +1706,7 @@ export function Chat({
                 channel.notify(
                   ok
                     ? 'API key saved for future cdsh launches and applied to this session.'
-                    : 'API key is set for this process, but secure persistence or live application failed.',
+                    : 'Could not save or apply the API key. Check the terminal error message and try again.',
                   { color: ok ? 'success' : 'error' },
                 )
               })()

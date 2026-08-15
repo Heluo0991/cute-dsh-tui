@@ -85,13 +85,6 @@ export async function apply(ctx: Context, config: Config): Promise<void> {
   // ask_user_question. Optional-service access goes through `ctx.get`, not
   // the inject proxy.
   const userQuestions = ctx.get('userQuestions') ?? new UserQuestionService(ctx)
-  // The local DSH credential provider resolves on every model operation, so
-  // writing through it makes `/login` effective without restarting the TUI.
-  // Keep the small structural type here to remain compatible with bare
-  // compositions where the optional service is not mounted.
-  const credentials = ctx.get('credentials') as
-    | { set(ref: string, value: string): Promise<void>; unset(ref: string): Promise<void> }
-    | undefined
   ctx.plugin(toolAskUser)
   const questionStore = new QuestionStore()
   // Packaged skills (/audit, /bug, …): contribute them through the host's
@@ -356,8 +349,19 @@ export async function apply(ctx: Context, config: Config): Promise<void> {
       pluginAction = action
       instance?.unmount()
     },
-    onStoreCredential: credentials === undefined ? undefined : async key => {
+    // Resolve the provider on demand. During plugin composition `ctx.get()`
+    // can still be empty even though dsh-credentials-local is configured to
+    // start later in the same runtime; capturing it here made Linux/macOS
+    // `/login` report success without ever writing .credentials.yaml.
+    onStoreCredential: async key => {
       try {
+        const credentials = ctx.get('credentials') as
+          | { set(ref: string, value: string): Promise<void>; unset(ref: string): Promise<void> }
+          | undefined
+        if (credentials === undefined) {
+          ctx.logger.warn('cute-dsh-tui: /login requires DSH credentials-local, but no credential provider is active')
+          return false
+        }
         await credentials.set('DEEPSEEK_API_KEY', key)
         return true
       } catch (error) {
@@ -365,8 +369,15 @@ export async function apply(ctx: Context, config: Config): Promise<void> {
         return false
       }
     },
-    onForgetCredential: credentials === undefined ? undefined : async () => {
+    onForgetCredential: async () => {
       try {
+        const credentials = ctx.get('credentials') as
+          | { set(ref: string, value: string): Promise<void>; unset(ref: string): Promise<void> }
+          | undefined
+        if (credentials === undefined) {
+          ctx.logger.warn('cute-dsh-tui: /logout requires DSH credentials-local, but no credential provider is active')
+          return false
+        }
         await credentials.unset('DEEPSEEK_API_KEY')
         return true
       } catch (error) {
