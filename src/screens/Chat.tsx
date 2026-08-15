@@ -42,6 +42,8 @@ import { Pane } from '../components/design-system/Pane.js'
 import { isMaxModel } from '../components/modelSwitchGlow.js'
 import { loadHistory, type HistoryEntry } from '../history.js'
 import type { SessionRecord } from '../sessionHistory.js'
+import { clearSavedApiKey, hasSavedApiKey, saveApiKey } from '../credentials.js'
+import { CredentialDeleteConfirm, CredentialSaveConfirm, LoginDialog } from '../components/LoginDialog.js'
 
 /** Row kinds the message-selection cursor can land on. */
 const SELECTABLE_KINDS = new Set<ChatRow['kind']>([
@@ -117,6 +119,8 @@ export function Chat({
   onExit,
   onUpdate,
   onPluginAction,
+  onStoreCredential,
+  onForgetCredential,
   profile,
   fullscreen = false,
   openResumePickerOnStart,
@@ -131,6 +135,10 @@ export function Chat({
   onUpdate?: () => void
   /** Profile mutation handoff: the plugin unmounts before spawning pnpm. */
   onPluginAction?: (action: PluginAction) => void
+  /** Store a key through DSH's live credential provider. */
+  onStoreCredential?: (key: string) => Promise<boolean>
+  /** Remove the key from that provider after explicit confirmation. */
+  onForgetCredential?: () => Promise<boolean>
   profile?: string
   /** Alternate-screen mode can safely keep header animation after history exists. */
   fullscreen?: boolean
@@ -237,6 +245,11 @@ export function Chat({
   const [btwOpenId, setBtwOpenId] = React.useState<string | null>(null)
   const [btwDraft, setBtwDraft] = React.useState('')
   const [pluginConfirm, setPluginConfirm] = React.useState<PluginAction | null>(null)
+  /** `/login` never uses the regular prompt, so an API key cannot hit history. */
+  const [loginOpen, setLoginOpen] = React.useState(false)
+  const [loginNeedsSaveConfirm, setLoginNeedsSaveConfirm] = React.useState(false)
+  const [pendingLoginKey, setPendingLoginKey] = React.useState<string | null>(null)
+  const [credentialDeleteConfirm, setCredentialDeleteConfirm] = React.useState(false)
   const searchAnchorRef = React.useRef(0)
   const rowRefsRef = React.useRef(new Map<number, DOMElement>())
   const { setQuery: setHighlight } = useSearchHighlight()
@@ -813,18 +826,34 @@ export function Chat({
         })
         return true
       case 'login': {
-        const key = process.env.DEEPSEEK_API_KEY
-        const lines = [
-          `${t('login-api-key', { key: key ? key.slice(0, 6) + '…' + key.slice(-4) : t('login-key-missing') })}`,
-          `${t('login-base-url', { url: process.env.DEEPSEEK_BASE_URL ?? t('login-official-endpoint') })}`,
-          t('login-source-hint'),
-        ]
         setHelpOpen(false)
-        channel.pushLocal('/login', lines)
+        const inherited = process.env.DEEPSEEK_API_KEY
+        // DSH deliberately snapshots an inherited environment as read-only.
+        // Pretending a late process.env assignment would override it would
+        // make the UI report a key change that the adapter never receives.
+        if (inherited !== undefined && inherited !== '') {
+          channel.pushLocal('/login', [
+            `API key: ${inherited.slice(0, 6)}…${inherited.slice(-4)}`,
+            'Source: launch environment (read-only for this running session).',
+            'To change it, update DEEPSEEK_API_KEY in the shell and restart cdsh.',
+          ])
+          return true
+        }
+        setLoginNeedsSaveConfirm(true)
+        setLoginOpen(true)
         return true
       }
       case 'logout':
-        channel.notify(t('login-logout-hint'))
+        if (process.env.DEEPSEEK_API_KEY !== undefined && process.env.DEEPSEEK_API_KEY !== '') {
+          channel.notify('The API key came from the launch environment. Clear it in the shell and restart cdsh.', { color: 'warning' })
+          return true
+        }
+        delete process.env.DEEPSEEK_API_KEY
+        if (hasSavedApiKey() || onForgetCredential !== undefined) {
+          setCredentialDeleteConfirm(true)
+        } else {
+          channel.notify('API key cleared for this session. No CuteDshTui-saved credential was changed.')
+        }
         return true
       case 'permission': {
         const presetId = rawInput.trim()
@@ -1066,6 +1095,9 @@ export function Chat({
     // panel's own useInput handles ↑/↓/Space/Tab/Enter/Esc; the prompt
     // input is unmounted, so nothing else should see these keys).
     if (questionSnapshot !== null) return
+    // LoginDialog owns every key while it is visible. Its own input listener
+    // handles masked editing and confirmation; the regular prompt is hidden.
+    if (loginOpen || pendingLoginKey !== null || credentialDeleteConfirm) return
     if (approvalSnapshot !== null) {
       if (key.return) approvalStore.allowCurrent()
       else if (key.escape || (key.ctrl && input === 'c')) approvalStore.cancelCurrent()
@@ -1533,7 +1565,8 @@ export function Chat({
   /** Prompt input is inert while a modal dialog owns the keyboard. */
   const promptSelectionActive =
     selectionActive || modelPickerOpen || effortPickerOpen || resumePickerOpen || activityPickerOpen ||
-    presetPickerOpen || themePickerOpen || thinkingOpen || historyOpen || rewindOpen || searchOpen
+    presetPickerOpen || themePickerOpen || thinkingOpen || historyOpen || rewindOpen || searchOpen ||
+    loginOpen || pendingLoginKey !== null || credentialDeleteConfirm
 
   const btwThread = btwOpenId === null ? undefined : channel.btwThreads.find(thread => thread.id === btwOpenId)
   if (btwThread !== undefined) return <BtwPane thread={btwThread} draft={btwDraft} expanded={expanded} />
@@ -1646,6 +1679,63 @@ export function Chat({
             <Text>{`dsh plugin --profile ${profile} ${pluginArgs(pluginConfirm).join(' ')}`}</Text>
             <Text dimColor>This will restart CuteDshTui and restore the current main session. Enter to continue · Esc to cancel.</Text>
           </Pane>
+        )}
+        {loginOpen && (
+          <LoginDialog
+            saving={loginNeedsSaveConfirm}
+            onSubmit={key => {
+              setLoginOpen(false)
+              if (loginNeedsSaveConfirm) {
+                setPendingLoginKey(key)
+              } else {
+                channel.notify('API key set for this CuteDshTui session only; your existing environment value was not replaced.')
+              }
+            }}
+            onCancel={() => setLoginOpen(false)}
+          />
+        )}
+        {pendingLoginKey !== null && (
+          <CredentialSaveConfirm
+            onConfirm={() => {
+              const key = pendingLoginKey
+              setPendingLoginKey(null)
+              void (async () => {
+                const saved = saveApiKey(key)
+                const applied = onStoreCredential === undefined ? true : await onStoreCredential(key)
+                const ok = saved && applied
+                channel.notify(
+                  ok
+                    ? 'API key saved for future cdsh launches and applied to this session.'
+                    : 'API key is set for this process, but secure persistence or live application failed.',
+                  { color: ok ? 'success' : 'error' },
+                )
+              })()
+            }}
+            onDecline={() => {
+              setPendingLoginKey(null)
+              channel.notify('API key will be cleared when this CuteDshTui session exits.')
+            }}
+          />
+        )}
+        {credentialDeleteConfirm && (
+          <CredentialDeleteConfirm
+            onConfirm={() => {
+              setCredentialDeleteConfirm(false)
+              void (async () => {
+                const removed = clearSavedApiKey()
+                const forgotten = onForgetCredential === undefined ? true : await onForgetCredential()
+                const ok = removed && forgotten
+                channel.notify(
+                  ok ? 'Saved CuteDshTui credential removed.' : 'Could not remove the saved credential.',
+                  { color: ok ? 'success' : 'error' },
+                )
+              })()
+            }}
+            onCancel={() => {
+              setCredentialDeleteConfirm(false)
+              channel.notify('Session API key cleared. The saved credential was kept.')
+            }}
+          />
         )}
         {permissionPickerOpen && channel.permissions !== undefined && (
           <Box flexDirection="column" marginTop={1}>

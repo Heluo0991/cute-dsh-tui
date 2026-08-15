@@ -85,6 +85,13 @@ export async function apply(ctx: Context, config: Config): Promise<void> {
   // ask_user_question. Optional-service access goes through `ctx.get`, not
   // the inject proxy.
   const userQuestions = ctx.get('userQuestions') ?? new UserQuestionService(ctx)
+  // The local DSH credential provider resolves on every model operation, so
+  // writing through it makes `/login` effective without restarting the TUI.
+  // Keep the small structural type here to remain compatible with bare
+  // compositions where the optional service is not mounted.
+  const credentials = ctx.get('credentials') as
+    | { set(ref: string, value: string): Promise<void>; unset(ref: string): Promise<void> }
+    | undefined
   ctx.plugin(toolAskUser)
   const questionStore = new QuestionStore()
   // Packaged skills (/audit, /bug, …): contribute them through the host's
@@ -349,6 +356,24 @@ export async function apply(ctx: Context, config: Config): Promise<void> {
       pluginAction = action
       instance?.unmount()
     },
+    onStoreCredential: credentials === undefined ? undefined : async key => {
+      try {
+        await credentials.set('DEEPSEEK_API_KEY', key)
+        return true
+      } catch (error) {
+        ctx.logger.warn(`cute-dsh-tui: /login could not persist the live credential: ${error instanceof Error ? error.message : String(error)}`)
+        return false
+      }
+    },
+    onForgetCredential: credentials === undefined ? undefined : async () => {
+      try {
+        await credentials.unset('DEEPSEEK_API_KEY')
+        return true
+      } catch (error) {
+        ctx.logger.warn(`cute-dsh-tui: /logout could not remove the live credential: ${error instanceof Error ? error.message : String(error)}`)
+        return false
+      }
+    },
   })
   // fullscreen: wrap the tree in <AlternateScreen> (DEC 1049 + SGR mouse
   // tracking), which turns on in-app text selection (copy-on-select via
@@ -390,7 +415,7 @@ export async function apply(ctx: Context, config: Config): Promise<void> {
 }
 
 /**
- * Attach to an existing agent, resume a persisted session (`cute-dsh-tui --resume`
+ * Attach to an existing agent, resume a persisted session (`cdsh --resume`
  * feeds the id through `config.sessionId`), or create a fresh one. Resume
  * goes through the DSH persistence seam (`ctx.agents.resume` reads the
  * session log written by dsh-session-persistence-jsonl); a missing artifact
@@ -543,7 +568,7 @@ function disposeRootAndExit(ctx: Context, code: number): void {
 function resumeCommand(profile: string | undefined, sessionId: string): string {
   const boot = profile === undefined ? 'dsh --config cordis.yml' : `dsh --profile ${profile}`
   return process.platform === 'win32'
-    ? `cute-dsh-tui --resume ${sessionId}`
+    ? `cdsh --resume ${sessionId}`
     : `CUTE_DSH_TUI_RESUME_SESSION=${sessionId} ${boot}`
 }
 

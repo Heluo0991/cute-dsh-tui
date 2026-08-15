@@ -4,6 +4,7 @@ import { homedir } from 'node:os'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { gt, valid } from 'semver'
+import { profileDirectory, runBundledPnpmAsync } from './profileManager.js'
 
 const PACKAGE_NAME = '@heluo0991/cute-dsh-tui'
 const DEFAULT_REGISTRY = 'https://registry.npmjs.org'
@@ -158,15 +159,8 @@ export async function checkForTuiUpdate(): Promise<TuiUpdateInfo | undefined> {
   return target.kind === 'update' ? { current: target.current, latest: target.latest } : undefined
 }
 
-/** cmd.exe joins spawn arguments with spaces; quote anything that could split. */
-export function shellQuote(args: readonly string[]): string[] {
-  return args.map(arg => (/[ \t"^&|<>()]/.test(arg) ? `"${arg.replace(/"/g, '""')}"` : arg))
-}
-
 interface ProcessOptions {
   env?: NodeJS.ProcessEnv
-  /** Needed only for .cmd launchers on Windows (they cannot spawn directly). */
-  shell?: boolean
 }
 
 /**
@@ -183,11 +177,9 @@ function runProcess(
 ): Promise<number> {
   return new Promise(resolve => {
     let settled = false
-    const useShell = options.shell === true && process.platform === 'win32'
-    const child = spawn(command, useShell ? shellQuote(args) : args, {
+    const child = spawn(command, args, {
       env: options.env,
       stdio: 'inherit',
-      shell: useShell,
     })
     const finish = (code: number): void => {
       if (settled) return
@@ -220,15 +212,12 @@ function runProcess(
  * @returns Exit codes for the update run and the replacement process.
  */
 export async function updateTuiAndRestart(sessionId: string, profile: string): Promise<TuiUpdateResult> {
-  const dsh = process.platform === 'win32' ? 'dsh.cmd' : 'dsh'
-  const updateCode = await runProcess(dsh, [
-    'plugin',
-    '--profile',
-    profile,
+  const dshHome = process.env.DSH_HOME ?? join(homedir(), '.dsh')
+  const updateCode = await runBundledPnpmAsync(profileDirectory(dshHome, profile), [
     'update',
     '--latest',
     PACKAGE_NAME,
-  ], { shell: true })
+  ])
   if (updateCode !== 0) return { updateCode, restartCode: updateCode }
 
   const restartCode = await runProcess(process.execPath, [...process.execArgv, ...process.argv.slice(1)], {
@@ -252,8 +241,8 @@ export async function runProfilePluginAndRestart(
   profile: string,
   args: readonly string[],
 ): Promise<ProfilePluginRestartResult> {
-  const dsh = process.platform === 'win32' ? 'dsh.cmd' : 'dsh'
-  const pluginCode = await runProcess(dsh, ['plugin', '--profile', profile, ...args], { shell: true })
+  const dshHome = process.env.DSH_HOME ?? join(homedir(), '.dsh')
+  const pluginCode = await runBundledPnpmAsync(profileDirectory(dshHome, profile), args)
   if (pluginCode !== 0) return { pluginCode, restartCode: pluginCode }
   const restartCode = await runProcess(process.execPath, [...process.execArgv, ...process.argv.slice(1)], {
     env: { ...process.env, CUTE_DSH_TUI_RESUME_SESSION: sessionId },

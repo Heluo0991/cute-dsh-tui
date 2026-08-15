@@ -15,7 +15,7 @@ import { type PluginAction } from '../pluginManager.js';
  * interrupts the running turn, or (when idle) asks for a second Ctrl+C to
  * exit; Enter while scrolled up jumps back to the bottom.
  */
-export declare function Chat({ channel, questionStore, approvalStore: suppliedApprovalStore, onExit, onUpdate, onPluginAction, profile, fullscreen, openResumePickerOnStart, yoloResumeUpgrade, }: {
+export declare function Chat({ channel, questionStore, approvalStore: suppliedApprovalStore, onExit, onUpdate, onPluginAction, onStoreCredential, onForgetCredential, profile, fullscreen, openResumePickerOnStart, yoloResumeUpgrade, }: {
     channel: Channel;
     questionStore: QuestionStore;
     /** Optional for embedders; the real plugin always supplies its shared store. */
@@ -25,6 +25,10 @@ export declare function Chat({ channel, questionStore, approvalStore: suppliedAp
     onUpdate?: () => void;
     /** Profile mutation handoff: the plugin unmounts before spawning pnpm. */
     onPluginAction?: (action: PluginAction) => void;
+    /** Store a key through DSH's live credential provider. */
+    onStoreCredential?: (key: string) => Promise<boolean>;
+    /** Remove the key from that provider after explicit confirmation. */
+    onForgetCredential?: () => Promise<boolean>;
     profile?: string;
     /** Alternate-screen mode can safely keep header animation after history exists. */
     fullscreen?: boolean;

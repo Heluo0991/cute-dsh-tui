@@ -4,212 +4,90 @@
 
 ## 前置条件
 
-- Node.js `^22.19 || >=24`。CI 使用 Node 24。
-- 官方 DeepSeek Harness CLI：`@deepseek-ai/dsh`。
-- `pnpm` **10 或更高**（CI 使用 11）。`dsh plugin` 会把 profile 内的包安装
-  交给 pnpm；pnpm 9 对传递依赖的提升行为不同，profile 里会解析不到
-  `dsh-working-activity`，表现为启动后立刻退出且几乎无报错（见 issue #60
-  与下方常见问题）。
-- 支持交互输入的终端 TTY。`cute-dsh-tui` 不支持把 stdout 重定向后启动。
-- `DEEPSEEK_API_KEY`。使用自定义兼容端点时还可设置
-  `DEEPSEEK_BASE_URL`。
+- Node.js `^22.19 || >=24`。
+- 支持交互输入的终端 TTY；不能把 stdout 重定向后运行 TUI。
+- DeepSeek API key，或兼容端点所需的 `DEEPSEEK_BASE_URL`。
 
-macOS/Linux：
+## 推荐部署：`cdsh`
+
+无论 Windows、Linux 还是 macOS，安装后均可从任意目录直接运行 `cdsh`。它不会占用官方 `dsh` 命令，也不要求手动安装 pnpm 或复制启动脚本。
 
 ```sh
+npm install -g @heluo0991/cute-dsh-tui
+cdsh
+```
+
+第一次执行会在 `$DSH_HOME/profiles/cute-dsh-tui`（默认 `~/.dsh/profiles/cute-dsh-tui`）创建 profile，并使用包内 DSH/pnpm 运行时安装本版本。之后进入项目目录后运行 `cdsh` 即可；当前目录会成为 Agent 工作区。
+
+`cute-dsh-tui` 仍可用作兼容命令，但新文档和支持流程一律使用 `cdsh`。
+
+## 已安装官方 DSH 的用户
+
+安装本包并运行 `cdsh` 即可创建独立 profile，原有的 `dsh` 与其他 profile 不会被修改：
+
+```sh
+npm install -g @heluo0991/cute-dsh-tui
+cdsh
+```
+
+若你明确想用官方命令管理其他 profile，继续使用 `dsh plugin --profile <名称> ...`。不要把旧 TUI 包和 CuteDshTui 加到同一个 profile。
+
+## API key
+
+最安全且最简单的交互路径是在 TUI 中输入 `/login`：
+
+1. 在掩码输入框粘贴 API key；该输入不会写入普通命令历史。
+2. 如果启动终端已有 `DEEPSEEK_API_KEY`，DSH 将其视为只读启动来源；`/login` 显示状态。请在 shell 中更改变量并重启 `cdsh`。
+3. 如果没有该变量，TUI 询问是否保存：确认后 Windows 写入当前用户环境变量；macOS/Linux 由 DSH 写入仅当前用户可读的 `$DSH_HOME/.credentials.yaml`，`cdsh` 与官方 `dsh` 后续都可使用。
+4. 拒绝保存则只在本次会话有效；`/logout` 可清除本次会话，并可确认删除由 CuteDshTui 保存的密钥。
+
+显式环境变量优先于保存配置，适合 CI、容器与密钥管理工具。
+
+```sh
+# Linux/macOS：仅当前 shell
 export DEEPSEEK_API_KEY='your-key'
 ```
 
-PowerShell：
-
 ```powershell
+# Windows PowerShell：仅当前窗口
 $env:DEEPSEEK_API_KEY = 'your-key'
+
+# Windows：后续新开终端的用户环境变量
+setx DEEPSEEK_API_KEY "your-key"
 ```
 
-不要把真实密钥提交到仓库。正常的 profile 启动直接读取环境变量。
+`setx` 不会回写当前 PowerShell；请新开终端或用 `/login` 立即生效。不要使用系统级变量、将密钥写入仓库或 `.env` 项目文件。
 
-## 安装
-
-### 没有 DSH：一条全局安装路径
-
-最快路径（全局安装后自带 `cute-dsh-tui` 直达命令）：
+## 常用启动参数
 
 ```sh
-# 官方 CLI + 本插件
-npm install -g @deepseek-ai/dsh @heluo0991/cute-dsh-tui
-
-# pnpm 未安装时任选一种方式（首次启动自动初始化 profile 时需要）
-npm install -g pnpm
-# 或：corepack enable pnpm
-
-# 启动：首次运行自动执行 dsh plugin --profile cute-dsh-tui add @heluo0991/cute-dsh-tui@<版本>
-cute-dsh-tui
+cdsh --resume              # 打开恢复选择器
+cdsh --resume <session-id> # 恢复指定会话
+cdsh --continue            # 恢复最近会话
+cdsh --yolo                # 请求完整权限，TUI 会显示确认流程
 ```
 
-### 已有 DSH：只添加插件
-
-手工分步（等价）：
+`CUTE_DSH_TUI_WORKSPACE` 可让你从别处启动指定工作目录：
 
 ```sh
-npm install -g @deepseek-ai/dsh
-dsh plugin --profile cute-dsh-tui add @heluo0991/cute-dsh-tui
-dsh --profile cute-dsh-tui   # 或 cute-dsh-tui
+CUTE_DSH_TUI_WORKSPACE=/path/to/project cdsh
 ```
 
-从仓库检出运行时，Linux/macOS 也可以执行：
+PowerShell：`$env:CUTE_DSH_TUI_WORKSPACE='C:\path\to\project'; cdsh`。
+
+## 更新
+
+在 TUI 内使用 `/update`，或更新全局入口：
 
 ```sh
-sh install.sh
+npm install -g @heluo0991/cute-dsh-tui@latest
 ```
 
-`install.sh` 是 POSIX `sh` 辅助入口：检查 `dsh` 和 pnpm 10+ 后安装 profile 插件；它不会复制源码，也不需要本地构建。Windows 请直接使用上述 PowerShell 命令或全局 `cute-dsh-tui`。
+`/update` 保留当前会话并重启；如果网络或 registry 不可达，更新不会破坏已安装版本。
 
-## 从旧包迁移
+## 排错
 
-旧版安装使用无 scope 包 `@deepseek-harness-tui/dsh-tui` 和 `cc-tui` profile。新版本改为组织包
-`@heluo0991/cute-dsh-tui` 与 `cute-dsh-tui` profile；执行以下命令创建新 profile：
-
-```sh
-dsh plugin --profile cute-dsh-tui add @heluo0991/cute-dsh-tui
-dsh --profile cute-dsh-tui
-```
-
-`~/.cute-dsh-tui`、`CUTE_DSH_TUI_*` 与 `CUTE_DSH_TUI_*` 暂时保留为兼容接口，因此会话恢复标记、
-主题、模型、preset 和输入历史无需迁移。确认新 profile 正常后，旧
-`$DSH_HOME/profiles/cc-tui` 仅作为旧安装残留，可按需删除；不要把旧包和新包同时
-添加到同一个 profile。
-
-## 安装命令做了什么
-
-首次执行 `dsh plugin --profile cute-dsh-tui add @heluo0991/cute-dsh-tui` 时，官方 CLI 会：
-
-1. 在 `$DSH_HOME/profiles/cute-dsh-tui/` 初始化 profile。未设置 `DSH_HOME` 时，
-   默认根目录通常是 `~/.dsh`。
-2. 让 profile 的第一层 bundle 使用 `@deepseek-ai/dsh-base`。
-3. 在 profile 内通过 pnpm 安装 `@heluo0991/cute-dsh-tui`。
-4. 读取包内 `dsh.bundle.patch` 元数据，将 `cordis.patch.yml` 追加为组合层。
-
-启动时的主要顺序是：
-
-```text
-dsh-base -> 其他 bundle -> @heluo0991/cute-dsh-tui patch -> 用户 profile patch
-```
-
-base 提供 Agent、模型、会话、文件、Shell、策略和注册表等服务；本插件的 patch
-覆盖或插入 TUI、Agent preset 名册、SQLite 会话持久化与工作状态行。
-
-`dsh-working-activity` 已经是本包依赖，并由 `cute-dsh-tui` 的 patch 自动插入。
-不要对同一个 profile 再单独执行 `add dsh-working-activity`，否则可能出现重复行。
-
-## 启动
-
-```sh
-dsh --profile cute-dsh-tui
-```
-
-命令从当前目录启动，因此 Agent 的默认工作区也是当前目录。进入目标项目目录后再
-启动即可。
-
-Windows 仓库检出还提供兼容包装：
-
-```bat
-cute-dsh-tui.cmd
-cute-dsh-tui.cmd --resume
-```
-
-`--resume` 会读取 `~/.cute-dsh-tui/resume.txt`，恢复 TUI 最近选择的会话。设置
-`CUTE_DSH_TUI_WORKSPACE` 可以在 Windows、Linux 与 macOS 上从指定工作目录启动。
-
-## 更新到最新版本
-
-项目迭代很快，更新复用安装命令，显式指定 `@latest`：
-
-```sh
-dsh plugin --profile cute-dsh-tui add @heluo0991/cute-dsh-tui@latest
-```
-
-- 不带 `@latest` 时 pnpm 会按 profile `package.json` 里已记录的版本范围
-  （如 `^0.1.4`）就地解析，可能停留在旧的主线上——这是"重复执行安装命令
-  但版本没变"的常见原因。
-- 确认生效：启动横幅右上角显示当前版本（`✦ cute-dsh-tui vX.Y.Z`）。
-- 用户覆盖层 `cordis.patch.yml` 在更新中原样保留；会话数据的存放位置
-  可能随版本变化（如 0.3.7 起 `/resume` 改用与 dsh web 共享的 JSONL
-  会话库），跨大版本更新后旧会话不在列表属预期，原数据不会被删除。
-
-## Profile 配置
-
-用户覆盖文件位于：
-
-```text
-$DSH_HOME/profiles/cute-dsh-tui/cordis.patch.yml
-```
-
-配置一个节点时，`config` 块是整段替换，不是逐字段深合并。复制示例时需要保留
-仍然有效的字段。完整说明见[配置参考](configuration.md)。
-
-仓库根目录的 `cordis.yml` 是裸组合示例；正常的 npm/profile 安装以
-`cordis.patch.yml` 为准，不需要把根配置复制到 profile。
-
-## 从源码开发
-
-```sh
-git clone https://github.com/Heluo0991/cute-dsh-tui.git
-cd CuteDshTui
-pnpm install --frozen-lockfile
-pnpm build
-pnpm smoke
-```
-
-`pnpm build` 执行 `tsc -p tsconfig.json`，把 `src/` 编译到 `lib/types/`。
-`lib/types/` 是提交并发布的产物；源码改动必须同步重建。
-
-CI 还会运行三条渲染回归：
-
-```sh
-node --import tsx/esm scripts/repro-askpanel.tsx
-node --import tsx/esm scripts/verify-askpanel-layout.tsx
-node --import tsx/esm scripts/repro-toolcards.tsx
-```
-
-`pnpm tui` 调用的 `scripts/run.ts` 假设包位于 DeepSeek Harness monorepo 的
-`packages/*` 布局中，不是本独立仓库的通用启动命令。独立仓库做真实集成测试时，
-应安装到 profile 后在 TTY 中启动。
-
-
-## 常见问题
-
-### `cute-dsh-tui requires an interactive terminal`
-
-stdout 不是 TTY。请直接在终端中启动，不要把主进程输出管道到文件或其他命令。
-
-### 找不到 `dsh` 或 `pnpm`
-
-确认全局 npm bin 目录在 `PATH` 中，并重新打开终端。`install.sh` 会在安装前检查
-这两个命令。
-
-### 启动后立刻退回 shell，几乎没有报错（pnpm 9）
-
-pnpm 9 安装的 profile 里，传递依赖 `dsh-working-activity` 不会被提升到
-loader 可解析的位置，模块解析失败导致整棵插件树被回收，TUI 打印 resume
-提示后直接退出（issue #60）。升级 pnpm 到 10+ 后重装即可：
-
-```sh
-npm install -g pnpm@latest
-dsh plugin --profile cute-dsh-tui add @heluo0991/cute-dsh-tui@latest
-```
-
-### 模型启动失败或提示没有凭证
-
-确认启动 `dsh` 的同一个 Shell 中存在 `DEEPSEEK_API_KEY`。自定义端点同时检查
-`DEEPSEEK_BASE_URL`。
-
-### 工作状态行重复
-
-检查 profile 是否曾单独添加 `dsh-working-activity`。保留本包 patch 自动插入的
-`working-activity` 行，移除重复 bundle 配置。
-
-### TUI 显示错位或终端退出后状态异常
-
-先运行 `/doctor`，记录终端类型和模式，再参考[交互文档](interaction.md)与
-[架构文档](architecture.md)。渲染问题可使用 `CUTE_DSH_TUI_RENDER_LOG` 采集原始帧，
-但日志可能包含会话可见内容，应妥善处理。
+- `cdsh` 找不到：关闭并重新打开终端，让 npm 全局 bin 目录进入 PATH。
+- 首次安装失败：检查 npm registry 网络和 Node 版本；重新执行 `cdsh` 会安全重试。
+- 未配置凭证：用 `/login`，或确认启动 `cdsh` 的同一 shell 中存在 `DEEPSEEK_API_KEY`。
+- 需要诊断：TUI 内使用 `/doctor`；调试输出可设 `CUTE_DSH_TUI_DEBUG=1 cdsh`。

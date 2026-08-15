@@ -444,7 +444,7 @@ export interface Channel {
   listFiles(): Promise<readonly string[]>
   /** Recent sessions recorded by the DSH persistence backend (for `/resume`). */
   listSessions(): Promise<readonly SessionRecord[]>
-  /** Mark a session for `cute-dsh-tui --resume` on the next launch. */
+  /** Mark a session for `cdsh --resume` on the next launch. */
   setResumeTarget(sessionId: string): void
   /** Manually compact the session history (CC's /compact); no-op notify when the leaf lacks a compaction service. */
   compact(): void

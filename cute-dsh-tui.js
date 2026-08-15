@@ -2,7 +2,7 @@
 /**
  * Portable CuteDshTui launcher.
  *
- * It verifies the DSH CLI, creates the cute-dsh-tui profile on first use, handles
+ * It uses its packaged DSH runtime, creates the cute-dsh-tui profile on first use, handles
  * TUI-owned launch flags, then forwards the remaining arguments to
  * `dsh --profile cute-dsh-tui`.
  */
@@ -12,6 +12,7 @@ import { homedir } from 'node:os'
 import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { LAUNCHER_USAGE, applyLaunchEnvironment, parseLaunchArgs, resolveLaunchWorkspace } from './launch-options.js'
+import { bundledDshInvocation, profileDirectory, runBundledPnpm } from './lib/types/profileManager.js'
 
 const here = fileURLToPath(new URL('.', import.meta.url))
 const ownVersion = JSON.parse(readFileSync(join(here, 'package.json'), 'utf8')).version
@@ -29,12 +30,6 @@ const packageSpec = devPackagePath
 // long sessions, so production is the safe default for every entry point.
 process.env.NODE_ENV ??= 'production'
 
-const isWin = process.platform === 'win32'
-const shellOpt = isWin ? { shell: true } : {}
-// The local G:\DSH command shim pins this to its isolated RC6 runtime. A
-// normal package installation keeps the portable `dsh` default.
-const dshBin = process.env.CUTE_DSH_TUI_DSH_BIN || process.env.DSH_TUI_DSH_BIN || 'dsh'
-
 const launch = parseLaunchArgs(process.argv.slice(2))
 if (launch.showHelp) {
   process.stdout.write(LAUNCHER_USAGE)
@@ -45,9 +40,10 @@ if (launch.error !== undefined) {
   process.exit(2)
 }
 if (launch.showVersion) {
-  const version = spawnSync(dshBin, ['--version'], { stdio: 'inherit', ...shellOpt })
+  const invocation = bundledDshInvocation(['--version'])
+  const version = spawnSync(invocation.command, invocation.args, { stdio: 'inherit' })
   if (version.error) {
-    console.error(`[cute-dsh-tui] failed to run dsh: ${version.error.message}`)
+    console.error(`[cute-dsh-tui] failed to run the bundled DSH runtime: ${version.error.message}`)
     process.exit(1)
   }
   process.exit(version.status ?? 1)
@@ -66,19 +62,19 @@ try {
   process.exit(2)
 }
 
-// Verify the DSH CLI before attempting profile bootstrap.
-const probe = spawnSync(dshBin, ['--version'], { stdio: 'pipe', ...shellOpt })
+// Verify the bundled DSH runtime before attempting profile bootstrap.
+const probeInvocation = bundledDshInvocation(['--version'])
+const probe = spawnSync(probeInvocation.command, probeInvocation.args, { stdio: 'pipe' })
 if (probe.error || probe.status !== 0) {
-  console.error('[cute-dsh-tui] dsh CLI was not found. Install it first:')
-  console.error('  npm install -g @deepseek-ai/dsh')
-  console.error('[cute-dsh-tui] Then open a new terminal if your global npm bin directory is not on PATH.')
+  console.error('[cute-dsh-tui] bundled DSH runtime was not available. Reinstall CuteDshTui:')
+  console.error(`  npm install -g ${PACKAGE}`)
   process.exit(1)
 }
 
 // Ensure the profile exists. This keeps the published `cute-dsh-tui` command
 // self-contained while the local wrapper uses the same isolated profile.
 const dshHome = process.env.DSH_HOME || join(homedir(), '.dsh')
-const profileDir = join(dshHome, 'profiles', PROFILE)
+const profileDir = profileDirectory(dshHome, PROFILE)
 const installedPackageDir = join(profileDir, 'node_modules', '@heluo0991', 'cute-dsh-tui')
 const linkedToDevelopmentTree = (() => {
   if (!devPackagePath || !existsSync(installedPackageDir)) return false
@@ -92,32 +88,25 @@ const linkedToDevelopmentTree = (() => {
 // The development shim links the profile into this working tree. Normal npm
 // installs retain their exact-version behavior and never take this branch.
 if (!existsSync(installedPackageDir) || (devPackagePath && !linkedToDevelopmentTree)) {
-  const pnpmProbe = spawnSync('pnpm', ['--version'], { encoding: 'utf8', ...shellOpt })
-  const pnpmVersion = typeof pnpmProbe.stdout === 'string' ? pnpmProbe.stdout.trim() : ''
-  const pnpmMajor = Number.parseInt(pnpmVersion.split('.')[0] ?? '', 10)
-  if (pnpmProbe.error || pnpmProbe.status !== 0 || !Number.isInteger(pnpmMajor) || pnpmMajor < 10) {
-    console.error('[cute-dsh-tui] pnpm 10 or newer is required for the first profile install:')
-    console.error('  npm install -g pnpm@latest')
-    console.error('  # or: corepack enable pnpm')
+  console.log(`[cute-dsh-tui] initializing ${PROFILE} profile (${packageSpec})...`)
+  let addCode
+  try {
+    addCode = runBundledPnpm(profileDir, ['add', packageSpec])
+  } catch (error) {
+    console.error(`[cute-dsh-tui] bundled profile installation failed: ${error instanceof Error ? error.message : String(error)}`)
     process.exit(1)
   }
-  console.log(`[cute-dsh-tui] initializing ${PROFILE} profile (${packageSpec})...`)
-  const add = spawnSync(
-    dshBin,
-    ['plugin', '--profile', PROFILE, 'add', packageSpec],
-    { stdio: 'inherit', ...shellOpt },
-  )
-  if (add.status !== 0) {
+  if (addCode !== 0) {
     console.error('[cute-dsh-tui] profile installation failed. Retry manually with:')
-    console.error(`  dsh plugin --profile ${PROFILE} add ${packageSpec}`)
-    process.exit(add.status ?? 1)
+    console.error(`  cdsh  # then retry after checking npm registry access`)
+    process.exit(addCode)
   }
 }
 
-const child = spawn(dshBin, ['--profile', PROFILE, ...launch.dshArgs], {
+const launchInvocation = bundledDshInvocation(['--profile', PROFILE, ...launch.dshArgs])
+const child = spawn(launchInvocation.command, launchInvocation.args, {
   stdio: 'inherit',
   env: process.env,
-  ...shellOpt,
 })
 child.on('error', (error) => {
   console.error(`[cute-dsh-tui] launch failed: ${error.message}`)

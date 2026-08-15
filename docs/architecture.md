@@ -75,7 +75,7 @@ stdout 打印诊断；使用 stderr 的 `CUTE_DSH_TUI_DEBUG` 或 `CUTE_DSH_TUI_R
 | 路径 | 内容 |
 | --- | --- |
 | `$DSH_HOME/sessions` | profile patch 默认的 DSH SQLite 会话事件 |
-| `~/.cute-dsh-tui/resume.txt` | `cute-dsh-tui --resume` 和退出提示使用的最近 session ID |
+| `~/.cute-dsh-tui/resume.txt` | `cdsh --resume` 和退出提示使用的最近 session ID |
 | `~/.cute-dsh-tui/last-used.json` | `/resume` 最近使用排序元数据 |
 | `~/.cute-dsh-tui/theme.json` | 当前主题选择 |
 | `~/.cute-dsh-tui/themes/` | 用户自定义主题 JSON |
