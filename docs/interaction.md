@@ -76,7 +76,7 @@ Bracketed paste（右键或终端原生粘贴）会原样插入，包括换行�
 `/resume` 显示当前工作目录下最近使用的可恢复会话。标题取第一条用户消息，列表
 按最近使用时间排序。确认后会切换 Agent 并回放持久化事件。
 
-Windows `dsh-tui.cmd --resume` 使用 `~/.dsh-cc/resume.txt` 中最后选择的会话 ID。
+命令行也可在启动时使用完整恢复流程：`dsh --resume` 打开当前目录选择器，`dsh --resume <session-id>` 精确恢复，`dsh --resume --last`（或 `dsh -c`）恢复最近会话。
 
 ### Rewind
 

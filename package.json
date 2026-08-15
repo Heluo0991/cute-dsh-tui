@@ -50,7 +50,9 @@
   "scripts": {
     "build": "tsc -p tsconfig.json",
     "tui": "node --import tsx/esm scripts/run.ts",
-    "smoke": "node --import tsx/esm scripts/smoke.tsx"
+    "smoke": "node --import tsx/esm scripts/smoke.tsx",
+    "verify:launcher": "node scripts/verify-launch-options.mjs",
+    "verify:startup-resume": "node --import tsx/esm scripts/verify-startup-resume.tsx"
   },
   "peerDependencies": {
     "@deepseek-ai/cordis": "^4.0.1",

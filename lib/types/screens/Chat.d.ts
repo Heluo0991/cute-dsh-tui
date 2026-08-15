@@ -13,11 +13,13 @@ import type { QuestionStore } from '../questions.js';
  * interrupts the running turn, or (when idle) asks for a second Ctrl+C to
  * exit; Enter while scrolled up jumps back to the bottom.
  */
-export declare function Chat({ channel, questionStore, onExit, onUpdate, }: {
+export declare function Chat({ channel, questionStore, onExit, onUpdate, openResumePickerOnStart, }: {
     channel: Channel;
     questionStore: QuestionStore;
     onExit: () => void;
     /** Update the installed package and restart the current TUI process. */
     onUpdate?: () => void;
+    /** Open the current-working-directory session picker after the first frame. */
+    openResumePickerOnStart?: boolean;
 }): React.JSX.Element;
 //# sourceMappingURL=Chat.d.ts.map

@@ -136,8 +136,10 @@ Profile 模式不再使用旧的 `CC_TUI_COMPACT_RATIO`、
 | `CC_TUI_THEME` | 锁定内置或自定义主题，优先于持久化选择 |
 | `CC_TUI_DISABLE_MOUSE` | 在 fullscreen 模式临时关闭鼠标处理 |
 | `DSH_CC_RESUME_SESSION` | 启动时恢复指定会话，通常由启动器设置 |
+| `DSH_CC_OPEN_RESUME_PICKER` | 启动时打开会话选择器（由 `dsh --resume` 设置） |
 | `DSH_CC_SESSION_ROOT` | 覆盖会话持久化位置；profile 安装时是 SQLite 数据库路径，裸 `cordis.yml` 启动时是 JSONL 根目录 |
 | `DSH_PERMISSION_MODE` | 非 Windows 平台覆盖 sandbox policy，例如 `workspace-write` 或 `danger-full-access` |
+| `DSH_CC_YOLO` | 强制 danger-full-access 并跳过审批（由 `dsh --yolo` 设置） |
 | `DSH_CC_WORKSPACE` | Windows `dsh-tui.cmd` 采用的工作目录 |
 | `CC_TUI_DEBUG` | 启用写往 stderr 的 dsh-tui 调试日志 |
 | `DSH_CC_RENDER_LOG` | 指定文件路径，记录原始 ANSI 渲染帧用于取证 |

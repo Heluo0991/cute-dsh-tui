@@ -128,17 +128,19 @@
 
 # Windows has no sandbox confinement backend yet (sandbox-local's win32
 # chain is empty); use danger-full-access on Windows so bash commands can
-# run. Other platforms keep the base workspace-write default.
+# run. `dsh --yolo` sets DSH_CC_YOLO=1 and opts into that same full-trust
+# policy explicitly on every platform.
 - id: sandbox-policy
   config:
-    mode: !!js "process.platform === 'win32' ? 'danger-full-access' : (process.env.DSH_PERMISSION_MODE ?? 'workspace-write')"
+    mode: !!js "(process.env.DSH_CC_YOLO === '1' || process.platform === 'win32') ? 'danger-full-access' : (process.env.DSH_PERMISSION_MODE ?? 'workspace-write')"
     workspaceRoot: !!js process.cwd()
 
 # On Windows, skip approval prompts (no sandbox = the user's terminal trust
-# model, matching every other terminal coding agent).
+# model, matching every other terminal coding agent). `--yolo` requests the
+# same no-approval behavior on non-Windows platforms as well.
 - id: approval
   config:
-    policy: !!js "process.platform === 'win32' ? 'never' : ((process.env.DSH_PERMISSION_MODE ?? 'workspace-write') === 'danger-full-access' ? 'never' : 'ask')"
+    policy: !!js "(process.env.DSH_CC_YOLO === '1' || process.platform === 'win32') ? 'never' : ((process.env.DSH_PERMISSION_MODE ?? 'workspace-write') === 'danger-full-access' ? 'never' : 'ask')"
 
 # Sessions live in the shared JSONL store (~/.dsh/sessions) — the same
 # backend dsh web writes — so /resume here and the web session list see each

@@ -107,12 +107,15 @@ export function Chat({
   questionStore,
   onExit,
   onUpdate,
+  openResumePickerOnStart,
 }: {
   channel: Channel
   questionStore: QuestionStore
   onExit: () => void
   /** Update the installed package and restart the current TUI process. */
   onUpdate?: () => void
+  /** Open the current-working-directory session picker after the first frame. */
+  openResumePickerOnStart?: boolean
 }) {
   // Re-render whenever the channel mutates; rows/status are read fresh below.
   React.useSyncExternalStore(channel.subscribe, () => channel.version)
@@ -282,6 +285,28 @@ export function Chat({
   useTerminalTitle(
     `${titlePrefix} 🐋 ${channel.sessionTitle}`,
   )
+
+  const startupResumeOpenedRef = React.useRef(false)
+  const openStartupResumePicker = React.useCallback(() => {
+    void (async () => {
+      const sessions = await channel.listSessions()
+      // A launch creates a blank live session before Chat mounts. It cannot
+      // be resumed into itself and does not belong in the startup picker.
+      const pickable = sessions.filter(session => session.id !== channel.agentId)
+      setResumeSessions(pickable)
+      if (pickable.length === 0) {
+        channel.notify(t('resume-none-in-cwd'))
+        return
+      }
+      setResumePickerOpen(true)
+      setResumeIndex(0)
+    })()
+  }, [channel])
+  React.useEffect(() => {
+    if (!openResumePickerOnStart || startupResumeOpenedRef.current) return
+    startupResumeOpenedRef.current = true
+    openStartupResumePicker()
+  }, [openResumePickerOnStart, openStartupResumePicker])
 
   /**
    * Dispatch a slash command; false lets the input flow to the model.

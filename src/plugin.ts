@@ -263,11 +263,13 @@ export async function apply(ctx: Context, config: Config): Promise<void> {
     },
   })
   const handleExit = funnel.handleExit
+  const openResumePickerOnStart = process.env.DSH_CC_OPEN_RESUME_PICKER === '1'
 
   const chat = React.createElement(Chat, {
     channel,
     questionStore,
     onExit: () => handleExit(),
+    openResumePickerOnStart,
     // Only a `dsh --profile <name>` launch has a profile installation for
     // `/update` to act on; source checkouts and `--config` overlays get the
     // unavailable notice instead.

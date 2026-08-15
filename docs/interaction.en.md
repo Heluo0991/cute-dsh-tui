@@ -78,10 +78,10 @@ redelivers them immediately.
 
 `/resume` lists recent resumable sessions for the current working directory.
 Titles come from the first user message, and entries are ordered by most recent
-use. Confirming switches the Agent and replays persisted events.
-
-On Windows, `dsh-tui.cmd --resume` uses the session ID last written to
-`~/.dsh-cc/resume.txt`.
+use. Confirming switches the Agent and replays persisted events. The same
+picker opens immediately with `dsh --resume`; use `dsh --resume <session-id>`
+for an exact session, or `dsh --resume --last` (or `dsh -c`) for the previous
+session.
 
 ### Rewind
 
