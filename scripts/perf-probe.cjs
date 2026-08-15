@@ -1,4 +1,4 @@
-// perf-probe.cjs — streaming-smoothness probe: real dsh-cc in a PTY, one
+// perf-probe.cjs — streaming-smoothness probe: real cute-dsh-tui in a PTY, one
 // long-streaming user message, COMMIT_LOG captures React commit frequency
 // and slow reconciles. Usage:
 //   node scripts/perf-probe.cjs [rounds]
@@ -9,7 +9,7 @@ const path = require('path')
 
 const CC = 'D:\\code\\projects\\test-ccch1mneyyy\\packages\\ui\\cc-tui'
 const COMMIT_LOG = 'D:\\tmp\\commit-log.txt'
-const HEAP_WATCH = process.env.USERPROFILE + '\\.dsh-cc\\heap-watch.log'
+const HEAP_WATCH = process.env.USERPROFILE + '\\.cute-dsh-tui\\heap-watch.log'
 const ROUNDS = Number(process.argv[2] || 2)
 const MSG =
   process.env.PERF_MSG ||
@@ -19,7 +19,7 @@ fs.mkdirSync('D:\\tmp', { recursive: true })
 fs.writeFileSync(COMMIT_LOG, '')
 const heapBefore = fs.existsSync(HEAP_WATCH) ? fs.statSync(HEAP_WATCH).size : 0
 
-const pty = spawn('cmd.exe', ['/c', 'dsh-tui.cmd'], {
+const pty = spawn('cmd.exe', ['/c', 'cute-dsh-tui.cmd'], {
   name: 'xterm-256color',
   cols: 120,
   rows: 36,
@@ -27,7 +27,7 @@ const pty = spawn('cmd.exe', ['/c', 'dsh-tui.cmd'], {
   env: {
     ...process.env,
     CLAUDE_CODE_COMMIT_LOG: COMMIT_LOG,
-    DSH_CC_HEAP_WATCH: '1',
+    CUTE_DSH_TUI_HEAP_WATCH: '1',
   },
 })
 

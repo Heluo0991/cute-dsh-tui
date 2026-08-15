@@ -2,8 +2,8 @@
 
 [Documentation index](README.md) · [简体中文](contributing.md)
 
-Thanks for considering contributing to dsh-TUI! This guide is the shared
-development contract for humans and coding agents working on `@deepseek-harness-tui/dsh-tui`.
+Thanks for considering contributing to CuteDshTui! This guide is the shared
+development contract for humans and coding agents working on `@heluo0991/cute-dsh-tui`.
 
 ## How To Contribute
 
@@ -21,9 +21,9 @@ development contract for humans and coding agents working on `@deepseek-harness-
 ## Scope
 
 This file applies to the entire repository. It is the shared development
-contract for humans and coding agents working on `@deepseek-harness-tui/dsh-tui`.
+contract for humans and coding agents working on `@heluo0991/cute-dsh-tui`.
 
-`@deepseek-harness-tui/dsh-tui` is a single-package, ESM-only TypeScript project. It provides a
+`@heluo0991/cute-dsh-tui` is a single-package, ESM-only TypeScript project. It provides a
 React terminal UI front door for DeepSeek Harness through Cordis. The package
 owns the TUI, its local command surface, packaged skills, and a ported Ink/Yoga
 renderer. DeepSeek Harness owns the agent, session, model, tool, persistence,
@@ -60,7 +60,7 @@ boundaries and helpers over introducing parallel abstractions.
 - `src/cc/`: terminal formatting and presentation helpers adapted for the
   Claude Code-style UI.
 - `src/*Prefs.ts`, `src/customTheme.ts`, and `src/sessionHistory.ts`: persisted
-  user preferences and local session metadata under `~/.dsh-cc`.
+  user preferences and local session metadata under `~/.cute-dsh-tui`.
 - `skills/*/SKILL.md`: skills shipped in the npm package and registered by
   `src/packaged-skills.ts`.
 - `cordis.patch.yml`: package bundle overlay used by profile installation.
@@ -214,7 +214,7 @@ paths, so use the matching probe when changing one of them.
 `pnpm tui` invokes `scripts/run.ts`, which assumes the package lives inside a
 DeepSeek Harness monorepo layout with `apps/cli` and `packages/*`. It is not a
 portable standalone smoke command. For an end-user integration check, install
-the plugin into a DSH profile and run `dsh --profile dsh-tui` in a real TTY with
+the plugin into a DSH profile and run `dsh --profile cute-dsh-tui` in a real TTY with
 the required credentials.
 
 ## TypeScript And Style
@@ -307,7 +307,7 @@ the required credentials.
   use the repository's width, slicing, wrapping, and ANSI helpers.
 - Keep frame output buffered and normal runs quiet. Do not add `console.log` or
   stdout diagnostics while the TUI is active. Use an opt-in stderr/debug path
-  such as `CC_TUI_DEBUG`, or the existing `DSH_CC_RENDER_LOG` frame capture.
+  such as `CUTE_DSH_TUI_DEBUG`, or the existing `CUTE_DSH_TUI_RENDER_LOG` frame capture.
 - Preserve raw-mode, cursor, alternate-screen, synchronized-output, mouse,
   focus, and terminal-query cleanup on success, error, interrupt, and teardown.
 - Avoid render-time unbounded collections or per-token/per-frame allocations.
@@ -325,7 +325,7 @@ the required credentials.
 - Follow the existing precedence for configurable preferences: explicit
   deployment config or environment override, then persisted user choice, then
   detected/default value. Document any change to that order.
-- Persist user data beneath the existing `~/.dsh-cc` locations. Validate and
+- Persist user data beneath the existing `~/.cute-dsh-tui` locations. Validate and
   safely parse external JSON; malformed optional state should warn or fall
   back rather than crash the TUI.
 - Treat theme names and file contents as untrusted input. Preserve path

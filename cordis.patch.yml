@@ -1,22 +1,22 @@
-# The dsh-tui bundle patch: the interactive terminal front door over the
+# The cute-dsh-tui bundle patch: the interactive terminal front door over the
 # dsh-base layer. Applied after dsh-base's insert; rows here override base
 # rows by id, with the profile's own cordis.patch.yml and any --patch
 # overlays still to come.
 #
 # A patch replaces the targeted row's whole `config`, so each row below
 # restates every key it owns (see the dsh-base patch for the shared
-# defaults). The dsh-base core rows that need no dsh-tui value — tools,
+# defaults). The dsh-base core rows that need no cute-dsh-tui value — tools,
 # skills, goal, plan mode, workspace context, telemetry — are inherited
 # unchanged. Sandbox and approval defaults are overridden below so the TUI
 # can offer the same permission model on every platform.
 
 # ── surface-specific values over the dsh-base layer ─────────────────────────
 
-# The dsh-tui deployment persona; CC_TUI_PERSONA overrides the coding-agent
+# The cute-dsh-tui deployment persona; CUTE_DSH_TUI_PERSONA overrides the coding-agent
 # default (the base persona is empty).
 - id: system-prompt
   config:
-    persona: !!js process.env.CC_TUI_PERSONA ?? 'You are a coding agent.'
+    persona: !!js process.env.CUTE_DSH_TUI_PERSONA ?? 'You are a coding agent.'
 
 # The native DeepSeek adapter, pinned to the harness defaults: full thinking
 # at max effort, key and base URL from the launching environment. The base
@@ -59,7 +59,7 @@
 
 # compaction lives in the preset's own isolate realm (standard/code/cordis
 # carry `compaction-basic` with package defaults; minimal has none). The
-# CC_TUI_COMPACT_RATIO/CC_TUI_COMPACT_RETAIN tunables retired with this host
+# CUTE_DSH_TUI_COMPACT_RATIO/CUTE_DSH_TUI_COMPACT_RETAIN tunables retired with this host
 # row — preset compositions own their compaction config.
 - id: compaction-basic
   disabled: true
@@ -130,11 +130,11 @@
 # DSH rc.6 provides a Windows PowerShell sandbox through the Windows ACL
 # restricted-token runner. Keep the same safe default on every platform:
 # workspace writes are allowed, while operations that require escalation ask
-# through dsh-tui's approval panel. `dsh --yolo` is the explicit full-trust
+# through cute-dsh-tui's approval panel. `dsh --yolo` is the explicit full-trust
 # opt-in and disables prompts for a new session.
 - id: sandbox-policy
   config:
-    mode: !!js "process.env.DSH_CC_YOLO === '1' ? 'danger-full-access' : (process.env.DSH_PERMISSION_MODE ?? 'workspace-write')"
+    mode: !!js "process.env.CUTE_DSH_TUI_YOLO === '1' ? 'danger-full-access' : (process.env.DSH_PERMISSION_MODE ?? 'workspace-write')"
     workspaceRoot: !!js process.cwd()
 
 # A non-yolo explicit DSH_PERMISSION_MODE=danger-full-access has the same
@@ -142,21 +142,21 @@
 # answer one-shot escalation requests.
 - id: approval
   config:
-    policy: !!js "(process.env.DSH_CC_YOLO === '1' || (process.env.DSH_PERMISSION_MODE ?? 'workspace-write') === 'danger-full-access') ? 'never' : 'ask'"
+    policy: !!js "(process.env.CUTE_DSH_TUI_YOLO === '1' || (process.env.DSH_PERMISSION_MODE ?? 'workspace-write') === 'danger-full-access') ? 'never' : 'ask'"
 
 # Sessions live in the shared JSONL store (~/.dsh/sessions) — the same
 # backend dsh web writes — so /resume here and the web session list see each
 # other (#24). The row itself comes from the dsh-base layer; this override
-# only re-points the root when DSH_CC_SESSION_ROOT is set (test isolation).
+# only re-points the root when CUTE_DSH_TUI_SESSION_ROOT is set (test isolation).
 - id: session-persistence-jsonl
   config:
-    root: !!js process.env.DSH_CC_SESSION_ROOT ?? dshHomePath('sessions')
+    root: !!js process.env.CUTE_DSH_TUI_SESSION_ROOT ?? dshHomePath('sessions')
 
-# ── dsh-tui rows ────────────────────────────────────────────────────────────
+# ── cute-dsh-tui rows ────────────────────────────────────────────────────────────
 
 # The `user-interaction` service row comes from the dsh-base bundle layer
 # (mounted before this layer); do not insert it again — the include patch
-# semantics would create a duplicate row. dsh-tui defensively creates the
+# semantics would create a duplicate row. cute-dsh-tui defensively creates the
 # service on its own context when no composition provides it (bare
 # `dsh --config cordis.yml` boots), then mounts the model-facing
 # ask_user_question tool and registers the questionnaire provider on
@@ -184,10 +184,10 @@
 
     # The interactive front door. The plugin creates/resumes its agent at
     # runtime, seeds the startup status line, and disposes the whole app tree
-    # (exiting the process) when the TUI unmounts. `dsh-tui.cmd --resume`
-    # feeds the session id through DSH_CC_RESUME_SESSION.
-    - id: dsh-tui
-      name: '@deepseek-harness-tui/dsh-tui'
+    # (exiting the process) when the TUI unmounts. `cute-dsh-tui.cmd --resume`
+    # feeds the session id through CUTE_DSH_TUI_RESUME_SESSION.
+    - id: cute-dsh-tui
+      name: '@heluo0991/cute-dsh-tui'
       config:
         provider: deepseek-official
         # Alt-screen fullscreen（CC 同款）：应用内鼠标选区（选择即复制, OSC 52 +
@@ -197,17 +197,17 @@
         fullscreen: false
         # 每个请求实际生效的推理强度，按当前路由的 adapter 档位校验
         # （deepseek: off/high/max）——不在档位表里的值被忽略，回落 adapter
-        # 默认值。优先于持久化的 Shift+Tab 选择（~/.dsh-cc/effort.json）；
+        # 默认值。优先于通过 /model 持久化的选择（~/.cute-dsh-tui/effort.json）；
         # 同时作为顶栏/状态栏的启动显示，首个请求头回来后以实际值为准。
         effort: max
-        # Static preset choice (CC_TUI_PRESET overrides): wins over the
-        # persisted `/preset` preference (~/.dsh-cc/agent-preset.json), which
+        # Static preset choice (CUTE_DSH_TUI_PRESET overrides): wins over the
+        # persisted `/preset` preference (~/.cute-dsh-tui/agent-preset.json), which
         # wins over the roster default (standard).
-        preset: !!js process.env.CC_TUI_PRESET ?? undefined
-        sessionId: !!js process.env.DSH_CC_RESUME_SESSION ?? undefined
+        preset: !!js process.env.CUTE_DSH_TUI_PRESET ?? undefined
+        sessionId: !!js process.env.CUTE_DSH_TUI_RESUME_SESSION ?? undefined
 
     # Live working-line data source (thinking copy / running tool / turn
-    # summary). Mounted through @deepseek-harness-tui/dsh-tui's own
+    # summary). Mounted through @heluo0991/cute-dsh-tui's own
     # `./working-activity` re-export, NOT the bare `dsh-working-activity`
     # name: the dsh Loader resolves row names from the profile directory,
     # and pnpm's isolated node_modules layout never links a transitive
@@ -217,6 +217,6 @@
     # publishIntervalMs 500 keeps the status-line timers ticking smoothly
     # (default 2000ms).
     - id: working-activity
-      name: '@deepseek-harness-tui/dsh-tui/working-activity'
+      name: '@heluo0991/cute-dsh-tui/working-activity'
       config:
         publishIntervalMs: 500

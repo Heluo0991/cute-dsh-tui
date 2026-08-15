@@ -5,11 +5,11 @@ import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { gt, valid } from 'semver'
 
-const PACKAGE_NAME = '@deepseek-harness-tui/dsh-tui'
+const PACKAGE_NAME = '@heluo0991/cute-dsh-tui'
 const DEFAULT_REGISTRY = 'https://registry.npmjs.org'
 const UPDATE_CHECK_TIMEOUT_MS = 4000
 /** env marker set on the /update restart; the new process verifies it at boot. */
-const UPDATED_FROM_ENV = 'DSH_CC_UPDATED_FROM'
+const UPDATED_FROM_ENV = 'CUTE_DSH_TUI_UPDATED_FROM'
 
 export interface TuiUpdateInfo {
   current: string
@@ -29,6 +29,12 @@ export interface TuiUpdateResult {
    * Exit code of the restarted TUI process. Equals `updateCode` when the
    * failure happened before a restart was attempted.
    */
+  restartCode: number
+}
+
+/** Result of a generic profile-plugin mutation followed by a replacement TUI. */
+export interface ProfilePluginRestartResult {
+  pluginCode: number
   restartCode: number
 }
 
@@ -189,7 +195,7 @@ function runProcess(
       resolve(code)
     }
     child.once('error', error => {
-      process.stderr.write(`dsh-tui: failed to run ${command}: ${error.message}\n`)
+      process.stderr.write(`cute-dsh-tui: failed to run ${command}: ${error.message}\n`)
       finish(127)
     })
     child.once('close', code => finish(code ?? 1))
@@ -197,14 +203,14 @@ function runProcess(
 }
 
 /**
- * Update the installed dsh-tui package and restart the same launcher while
+ * Update the installed cute-dsh-tui package and restart the same launcher while
  * preserving the active session. The TUI must already be unmounted before
  * this is called so pnpm output cannot corrupt the rendered terminal frame.
  *
  * `--latest` is required: `pnpm add` writes a caret range into the profile
  * manifest, and a plain `pnpm update` stays inside that range — with this
  * project's minor-per-release cadence the TUI would restart unchanged while
- * reporting success. The restart carries `DSH_CC_UPDATED_FROM` so the new
+ * reporting success. The restart carries `CUTE_DSH_TUI_UPDATED_FROM` so the new
  * process can warn when the version did not actually move (e.g. a mirror
  * registry still serving the old `latest`).
  *
@@ -228,9 +234,29 @@ export async function updateTuiAndRestart(sessionId: string, profile: string): P
   const restartCode = await runProcess(process.execPath, [...process.execArgv, ...process.argv.slice(1)], {
     env: {
       ...process.env,
-      DSH_CC_RESUME_SESSION: sessionId,
+      CUTE_DSH_TUI_RESUME_SESSION: sessionId,
       [UPDATED_FROM_ENV]: installedTuiVersion() ?? '',
     },
   })
   return { updateCode, restartCode }
+}
+
+/**
+ * Apply one already-confirmed `dsh plugin` verb after the TUI has unmounted,
+ * then restart exactly the launcher that created this process and resume the
+ * main conversation. Arguments are passed as argv, never interpolated into a
+ * shell command.
+ */
+export async function runProfilePluginAndRestart(
+  sessionId: string,
+  profile: string,
+  args: readonly string[],
+): Promise<ProfilePluginRestartResult> {
+  const dsh = process.platform === 'win32' ? 'dsh.cmd' : 'dsh'
+  const pluginCode = await runProcess(dsh, ['plugin', '--profile', profile, ...args], { shell: true })
+  if (pluginCode !== 0) return { pluginCode, restartCode: pluginCode }
+  const restartCode = await runProcess(process.execPath, [...process.execArgv, ...process.argv.slice(1)], {
+    env: { ...process.env, CUTE_DSH_TUI_RESUME_SESSION: sessionId },
+  })
+  return { pluginCode, restartCode }
 }

@@ -1,16 +1,16 @@
-# dsh-tui interactive front door over the agent-spine bundle.
+# cute-dsh-tui interactive front door over the agent-spine bundle.
 # Run with: dsh --config cordis.yml (或 npm 安装后走 dsh plugin 机制)
 # Requires DEEPSEEK_API_KEY; a terminal TTY is mandatory.
 
 # The user-interaction service: hosts `ctx.userQuestions`, the seam behind
-# the model-facing ask_user_question tool. dsh-tui registers its questionnaire
+# the model-facing ask_user_question tool. cute-dsh-tui registers its questionnaire
 # provider on it; the service must live at the root so the agent loop's tool
 # execution can reach it.
 - id: user-questions
   name: '@deepseek-ai/dsh-user-questions'
 
-- id: dsh-tui
-  name: '@deepseek-harness-tui/dsh-tui'
+- id: cute-dsh-tui
+  name: '@heluo0991/cute-dsh-tui'
   config:
     provider: deepseek-official
     # Alt-screen fullscreen (CC 同款): 应用内鼠标选区（选择即复制, OSC 52 +
@@ -20,11 +20,11 @@
     # Reasoning effort applied to every request, validated against the live
     # route's adapter levels (deepseek: off/high/max) — an unlisted level is
     # ignored and the adapter default applies. Wins over the persisted
-    # Shift+Tab choice (~/.dsh-cc/effort.json); also seeds the startup
+    # `/model` choice (~/.cute-dsh-tui/effort.json); also seeds the startup
     # header/statusline until the first request header reports the live value.
     effort: max
     #  feeds the chosen session id through this env var.
-    sessionId: !!js process.env.DSH_CC_RESUME_SESSION ?? undefined
+    sessionId: !!js process.env.CUTE_DSH_TUI_RESUME_SESSION ?? undefined
 
 # The DeepSeek adapter. Shipped default: full thinking at max effort.
 # rc.6 schema key is `apiKeyEnv` (a credential-ref env var NAME, default
@@ -106,7 +106,7 @@
 - id: agent-spine
   name: '@deepseek-ai/dsh-agent-spine-demo'
   config:
-    persona: !!js process.env.CC_TUI_PERSONA ?? 'You are a coding agent.'
+    persona: !!js process.env.CUTE_DSH_TUI_PERSONA ?? 'You are a coding agent.'
     # Workspace context (AGENTS.md injection) at the standard 64KB cap;
     # task tools stay at their DSH defaults (on).
     workspaceContext:
@@ -142,16 +142,16 @@
   name: '@deepseek-ai/dsh-command-goal'
 
 # Live working line for the status bar: thinking copy / running tool / turn
-# summary. dsh-tui consumes its log-only activity/status events; the
-# plugin's own TUI prompt slot is skipped without an official dsh-tui.
-# Mounted through @deepseek-harness-tui/dsh-tui's `./working-activity`
+# summary. cute-dsh-tui consumes its log-only activity/status events; the
+# plugin's own TUI prompt slot is skipped without an official cute-dsh-tui.
+# Mounted through @heluo0991/cute-dsh-tui's `./working-activity`
 # re-export (not the bare `dsh-working-activity` name) so the row resolves
 # from install layouts that never link transitive dependencies into the
 # boot anchor's node_modules — pnpm's isolated profile layout, issue #60.
 # publishIntervalMs 500: live-phase snapshots republish every 500ms so the
-# dsh-tui status-line elapsed timers tick smoothly (default 2000ms).
+# cute-dsh-tui status-line elapsed timers tick smoothly (default 2000ms).
 - id: working-activity
-  name: '@deepseek-harness-tui/dsh-tui/working-activity'
+  name: '@heluo0991/cute-dsh-tui/working-activity'
   config:
     publishIntervalMs: 500
 
@@ -161,7 +161,7 @@
 - id: sessions
   name: '@deepseek-ai/dsh-session-persistence-jsonl'
   config:
-    root: !!js process.env.DSH_CC_SESSION_ROOT ?? (process.env.USERPROFILE ?? process.env.HOME) + '/.dsh-cc/sessions'
+    root: !!js process.env.CUTE_DSH_TUI_SESSION_ROOT ?? dshHomePath('sessions')
 
 # Read-only session lineage — the subagent service's /agents listing reads it.
 - id: session-query
@@ -181,5 +181,5 @@
     # would never make manual /compact useful. Default 20% (200k tokens)
     # with a 5% retained tail; both are overridable for tests and must keep
     # retainRatio < thresholdRatio (BasicCompactConfig validates this).
-    thresholdRatio: !!js parseFloat(process.env.CC_TUI_COMPACT_RATIO ?? '0.2')
-    retainRatio: !!js parseFloat(process.env.CC_TUI_COMPACT_RETAIN ?? '0.05')
+    thresholdRatio: !!js parseFloat(process.env.CUTE_DSH_TUI_COMPACT_RATIO ?? '0.2')
+    retainRatio: !!js parseFloat(process.env.CUTE_DSH_TUI_COMPACT_RETAIN ?? '0.05')

@@ -60,7 +60,7 @@ for (const removed of ['vim', 'connect', 'hooks', 'memory']) {
 
 const patch = readFileSync(new URL('../cordis.patch.yml', import.meta.url), 'utf8')
 assert.match(patch, /workspace-write/)
-assert.match(patch, /DSH_CC_YOLO === '1'/)
+assert.match(patch, /CUTE_DSH_TUI_YOLO === '1'/)
 assert.doesNotMatch(patch, /process\.platform === 'win32'/)
 
 console.log('permission and approval verification passed')

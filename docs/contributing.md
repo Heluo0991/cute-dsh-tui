@@ -2,7 +2,7 @@
 
 [文档索引](README.md) · [English](contributing.en.md)
 
-感谢你考虑为 dsh-TUI 做贡献！本文档是 `@deepseek-harness-tui/dsh-tui` 的共享开发
+感谢你考虑为 CuteDshTui 做贡献！本文档是 `@heluo0991/cute-dsh-tui` 的共享开发
 契约，适用于在本仓库工作的所有人与编码 Agent。
 
 ## 如何贡献
@@ -15,7 +15,7 @@
 
 ## 范围（Scope）
 
-`@deepseek-harness-tui/dsh-tui` 是单包、纯 ESM 的 TypeScript 项目：为 DeepSeek Harness 提供
+`@heluo0991/cute-dsh-tui` 是单包、纯 ESM 的 TypeScript 项目：为 DeepSeek Harness 提供
 React 终端 UI 前门（通过 Cordis 挂载）。包内拥有 TUI、本地命令面、打包技能
 以及移植的 Ink/Yoga 渲染器；Agent、会话、模型、工具、持久化与策略域由
 DeepSeek Harness 拥有，TUI 只消费它们。
@@ -45,7 +45,7 @@ DeepSeek Harness 拥有，TUI 只消费它们。
 - `src/native-ts/yoga-layout/`：渲染器使用的移植布局引擎。
 - `src/cc/`：为 Claude Code 风格 UI 适配的终端格式化与呈现辅助。
 - `src/*Prefs.ts`、`src/customTheme.ts`、`src/sessionHistory.ts`：持久化的
-  用户偏好与 `~/.dsh-cc` 下的本地会话元数据。
+  用户偏好与 `~/.cute-dsh-tui` 下的本地会话元数据。
 - `skills/*/SKILL.md`：随 npm 包分发的技能，由 `src/packaged-skills.ts` 注册。
 - `cordis.patch.yml`：profile 安装时使用的包级 bundle 覆盖层。行的顺序、行 ID、
   被禁用的 host 行、insert/override 语义都很关键。
@@ -164,7 +164,7 @@ TypeScript 源的脚本在头部声明 `node --import tsx/esm <script>` 形式�
 
 `pnpm tui` 调用 `scripts/run.ts`，它假定包位于 DeepSeek Harness monorepo
 （`apps/cli` + `packages/*`）布局内，不是可移植的独立冒烟命令。端到端集成检查：
-把插件装进 DSH profile，在真实 TTY 用所需凭证运行 `dsh --profile dsh-tui`。
+把插件装进 DSH profile，在真实 TTY 用所需凭证运行 `dsh --profile cute-dsh-tui`。
 
 ## TypeScript 与风格（TypeScript And Style）
 
@@ -236,8 +236,8 @@ TypeScript 源的脚本在头部声明 `node --import tsx/esm <script>` 形式�
 - 终端宽度是显示单元宽度，不是 JS 字符串长度。考虑 ANSI 转义、组合字符、
   emoji 与东亚宽字符；用仓库的宽度/切片/换行/ANSI 辅助函数。
 - 保持帧输出缓冲、常规运行安静。TUI 活动期间不要加 `console.log` 或 stdout
-  诊断。用 opt-in 的 stderr/调试路径（如 `CC_TUI_DEBUG`）或既有
-  `DSH_CC_RENDER_LOG` 帧捕获。
+  诊断。用 opt-in 的 stderr/调试路径（如 `CUTE_DSH_TUI_DEBUG`）或既有
+  `CUTE_DSH_TUI_RENDER_LOG` 帧捕获。
 - 在成功、错误、中断与收尾时都保持 raw 模式、光标、alt-screen、同步输出、
   鼠标、焦点与终端查询的清理。
 - 避免渲染期无界集合或每 token/每帧分配。流式会话长命，本仓库对先前的 OOM
@@ -251,7 +251,7 @@ TypeScript 源的脚本在头部声明 `node --import tsx/esm <script>` 形式�
 
 - 遵循既有可配置偏好优先级：显式部署配置或环境覆盖 > 持久化用户选择 >
   检测/默认值。改变该顺序要记录。
-- 用户数据持久化在既有 `~/.dsh-cc` 位置下。校验并安全解析外部 JSON；损坏的
+- 用户数据持久化在既有 `~/.cute-dsh-tui` 位置下。校验并安全解析外部 JSON；损坏的
   可选状态应警告或回退，而不是让 TUI 崩溃。
 - 把主题名与文件内容当不可信输入。保留路径包含检查与损坏主题文件的
   全有或全无校验。

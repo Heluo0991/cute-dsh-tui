@@ -489,11 +489,12 @@ function TranscriptRow({
           <AssistantThinkingMessage
             thinking={text}
             addMargin={addMargin}
-            // Streaming reasoning shows expanded live, then folds
-            // automatically once the turn settles (unless Ctrl+O or a
-            // single-row expansion keeps it open).
-            verbose={isExpanded || expanded || streaming}
+            // Reasoning stays one line while streaming so inline mode never
+            // has to resize earlier transcript content. Ctrl+O or a selected
+            // row still reveals the preserved full text on demand.
+            verbose={isExpanded || expanded}
             durationMs={durationMs}
+            streaming={streaming}
             isSelected={isSelected}
             onClick={onClick}
           />
@@ -607,14 +608,17 @@ export function LogoHeader({
   model,
   effort,
   cwd,
+  animateIntro = true,
 }: {
   model: string
   effort?: string | undefined
   cwd: string
+  /** Inline mode freezes the splash before it can enter terminal scrollback. */
+  animateIntro?: boolean
 }): React.ReactNode {
   return (
     <Box flexDirection="column" marginBottom={1}>
-      <LogoV2 model={model} effort={effort} cwd={cwd} />
+      <LogoV2 model={model} effort={effort} cwd={cwd} animateIntro={animateIntro} />
     </Box>
   )
 }

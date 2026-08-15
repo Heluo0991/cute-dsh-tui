@@ -7,6 +7,8 @@ type Props = {
     verbose: boolean;
     /** Thinking wall-clock duration once the reasoning block settled (ms). */
     durationMs?: number;
+    /** True only while the model is emitting reasoning deltas. */
+    streaming?: boolean;
     /** Message-selection mode highlight. */
     isSelected?: boolean;
     onClick?(): void;
@@ -15,9 +17,9 @@ type Props = {
  * Thinking block: folded `∴ Thinking (ctrl+o to expand)`, expanded shows the
  * full reasoning text indented under `∴ Thinking…` (ported from the leak's
  * `messages/AssistantThinkingMessage.tsx`). When the channel records the
- * reasoning duration, the label carries it (`∴ Thinking · 12s …`) — dsh-tui's
+ * reasoning duration, the label carries it (`∴ Thinking · 12s …`) — cute-dsh-tui's
  * take on making thinking time visible in the transcript.
  */
-export declare function AssistantThinkingMessage({ thinking, addMargin, verbose, durationMs, isSelected, onClick, }: Props): React.ReactNode;
+export declare function AssistantThinkingMessage({ thinking, addMargin, verbose, durationMs, streaming, isSelected, onClick, }: Props): React.ReactNode;
 export {};
 //# sourceMappingURL=AssistantThinkingMessage.d.ts.map

@@ -65,8 +65,8 @@ by `callId`, never guessed from array position.
 
 When changing `src/ink/` or Yoga, run the CI questionnaire/tool-card regressions
 and the affected scroll, resize, copy-on-select, or PTY harness. Do not print
-diagnostics to an active TUI's stdout; use stderr `CC_TUI_DEBUG` or
-`DSH_CC_RENDER_LOG`.
+diagnostics to an active TUI's stdout; use stderr `CUTE_DSH_TUI_DEBUG` or
+`CUTE_DSH_TUI_RENDER_LOG`.
 
 ## Inline and fullscreen modes
 
@@ -84,23 +84,23 @@ ConPTY.
 
 | Path | Contents |
 | --- | --- |
-| `~/.dsh-cc/sessions.sqlite` | DSH SQLite session events from the profile patch |
-| `~/.dsh-cc/resume.txt` | Recent session ID used by the Windows launcher and exit hint |
-| `~/.dsh-cc/last-used.json` | `/resume` recency metadata |
-| `~/.dsh-cc/theme.json` | Current theme selection |
-| `~/.dsh-cc/themes/` | User theme JSON files |
-| `~/.dsh-cc/working-activity.json` | Activity animation selection |
-| `~/.dsh-cc/agent-preset.json` | Default Agent preset for new sessions |
+| `$DSH_HOME/sessions` | DSH SQLite session events from the profile patch |
+| `~/.cute-dsh-tui/resume.txt` | Recent session ID used by `cute-dsh-tui --resume` and the exit hint |
+| `~/.cute-dsh-tui/last-used.json` | `/resume` recency metadata |
+| `~/.cute-dsh-tui/theme.json` | Current theme selection |
+| `~/.cute-dsh-tui/themes/` | User theme JSON files |
+| `~/.cute-dsh-tui/working-activity.json` | Activity animation selection |
+| `~/.cute-dsh-tui/agent-preset.json` | Default Agent preset for new sessions |
 
-`DSH_CC_SESSION_ROOT` can override the SQLite path in the profile composition;
+`CUTE_DSH_TUI_SESSION_ROOT` can override the SQLite path in the profile composition;
 when the root `cordis.yml` is launched directly, the same variable overrides
-the JSONL root (default `~/.dsh-cc/sessions/`). Preference files are optional
+the JSONL root (default `$DSH_HOME/sessions`). Preference files are optional
 state: malformed or missing files fall back silently rather than preventing
 startup.
 
 ## Permissions and security boundary
 
-`dsh-TUI` does not provide a separate sandbox. Effective capability comes from
+`CuteDshTui` does not provide a separate sandbox. Effective capability comes from
 the DSH services mounted by `cordis.patch.yml`. It consumes `permissionPresets`
 and `dsh-user-approval`: `/permission` invokes the native DSH command for the
 current session, while escalation requests wait for a one-shot allow, deny, or
@@ -143,9 +143,9 @@ visual TUI alone does not describe the effective policy.
 | Goal | Method |
 | --- | --- |
 | Environment and profile | Run `/doctor`, `/config`, `/permissions`, and `/permission` inside the TUI |
-| stderr diagnostics | `CC_TUI_DEBUG=1 dsh --profile dsh-tui` |
-| Raw ANSI frames | `DSH_CC_RENDER_LOG=/path/to/render.log dsh --profile dsh-tui` |
+| stderr diagnostics | `CUTE_DSH_TUI_DEBUG=1 dsh --profile cute-dsh-tui` |
+| Raw ANSI frames | `CUTE_DSH_TUI_RENDER_LOG=/path/to/render.log dsh --profile cute-dsh-tui` |
 | Theme regression | `node --import tsx/esm scripts/verify-themes.mjs` |
 
-`DSH_CC_RENDER_LOG` and session exports may contain sensitive content. Redact
+`CUTE_DSH_TUI_RENDER_LOG` and session exports may contain sensitive content. Redact
 them before sharing.

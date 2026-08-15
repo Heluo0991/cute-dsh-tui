@@ -136,6 +136,15 @@ export interface ChatRow {
      *  exempt from the next fold pass so a restore is not instantly undone. */
     restored?: boolean;
 }
+/** One independently rendered `/btw` child conversation. */
+export interface BtwThread {
+    readonly id: string;
+    readonly parentSessionId: string;
+    readonly question: string;
+    readonly rows: readonly ChatRow[];
+    readonly working: boolean;
+    readonly createdAt: number;
+}
 /** Running token totals across the session's assistant messages. */
 export interface TokenUsage {
     input: number;
@@ -144,7 +153,7 @@ export interface TokenUsage {
 /**
  * Latest `activity/status` snapshot (the log-only event appended by
  * `@deepseek-ai/dsh-working-activity` for any UI consumer): the model's
- * live working line — thinking copy, running tool, turn summary. dsh-tui
+ * live working line — thinking copy, running tool, turn summary. cute-dsh-tui
  * renders it on the status line; nothing here requires the plugin (absent
  * events simply leave the slot empty).
  */
@@ -337,6 +346,8 @@ export interface Channel {
     readonly commandList: readonly LocalCommand[];
     /** Effective DSH sandbox/approval preset for the live session. */
     readonly permissions: PermissionState | undefined;
+    /** In-process `/btw` child conversations; never merged into the main transcript. */
+    readonly btwThreads: readonly BtwThread[];
     /**
      * Run a plugin-registered slash command against the live agent (DSH
      * `dsh-commands` registry): logs `command/run`/`command/done` and returns
@@ -347,6 +358,12 @@ export interface Channel {
     runExternalCommand(name: string, rawInput: string): Promise<string | undefined>;
     /** Apply a DSH permission preset to the current idle session. */
     switchPermission(presetId: string): Promise<boolean>;
+    /** Start an isolated side conversation without pausing the main agent. */
+    startBtw(question: string): Promise<string | undefined>;
+    /** Cancel one BTW child only; the main agent keeps running. */
+    cancelBtw(id: string): void;
+    /** Continue one existing BTW child without sending text to the main agent. */
+    submitBtw(id: string, text: string): void;
     /** Estimated context segments by content type (pi-nano-context style bar). */
     readonly contextSegments: {
         system: number;
@@ -382,10 +399,10 @@ export interface Channel {
     /** Switch the live model (`/model` picker): forks the conversation at its
      *  current end and continues it with a new agent routed to `provider`/`model`.
      *  The history replays unchanged; only the request route changes. */
-    switchModel(provider: string, model: string): Promise<boolean>;
-    /** Cycle the live route's reasoning effort (Shift+Tab) through the
-     *  adapter's own level list (dsh parity: deepseek Off→High→Max), taking
-     *  effect on the next request and persisting across restarts. */
+    switchModel(provider: string, model: string, effort?: string): Promise<boolean>;
+    /** Cycle the live route's reasoning effort through the adapter's own level
+     *  list. This remains available for programmatic callers; interactive
+     *  selection is handled by the second stage of `/model`. */
     cycleEffort(): Promise<void>;
     /** The preset the CURRENT session runs under (issue #8), resolved from its
      *  log at create/resume time; undefined when no roster is mounted. */
@@ -413,17 +430,19 @@ export interface Channel {
         timeoutMs?: number;
     }): void;
     /** Switch the working-activity indicator preset (`/activity`): validates
-     *  the name, persists it to `~/.dsh-cc/working-activity.json`, and
+     *  the name, persists it to `~/.cute-dsh-tui/working-activity.json`, and
      *  re-renders the indicator immediately; false when the name is unknown
      *  or the preference cannot be written. */
     setActivityFrames(name: string): boolean;
     /** Advertised models across every registered provider route (empty when the LLM service is absent). */
     listModels(): Promise<readonly LlmModelInfo[]>;
+    /** Adapter-advertised reasoning depths for one exact model route. */
+    listModelEfforts(provider: string, model: string): Promise<readonly ReasoningEffortOption[]>;
     /** Top-level entries of the session cwd for `@` file completion. */
     listFiles(): Promise<readonly string[]>;
     /** Recent sessions recorded by the DSH persistence backend (for `/resume`). */
     listSessions(): Promise<readonly SessionRecord[]>;
-    /** Mark a session for `dsh-tui --resume` on the next launch. */
+    /** Mark a session for `cute-dsh-tui --resume` on the next launch. */
     setResumeTarget(sessionId: string): void;
     /** Manually compact the session history (CC's /compact); no-op notify when the leaf lacks a compaction service. */
     compact(): void;
@@ -432,7 +451,7 @@ export interface Channel {
     pushLocal(title: string, lines: readonly string[]): void;
     /** MCP server/tool status for /mcp: one line per server, or setup guidance. */
     mcpStatus(): string[];
-    /** Write the conversation transcript to `dsh-tui-export-<ts>.md` in the
+    /** Write the conversation transcript to `cute-dsh-tui-export-<ts>.md` in the
      *  session cwd; returns the written path, or null on failure. */
     exportSession(): string | null;
     /** Create `AGENTS.md` in the session cwd (DSH workspace-context file);
@@ -443,6 +462,8 @@ export interface Channel {
     /** Subagent rows for `/agents` (DSH subagent service; empty message when
      *  the service is absent). */
     listSubagents(): Promise<string[]>;
+    /** Current non-group Cordis Loader entries, read-only. */
+    listLoadedPlugins(): string[];
 }
 /** @internal */
 /** One roster entry in the `/preset` picker (see {@link Channel.listPresets}). */
@@ -453,6 +474,12 @@ export interface PresetOption {
     /** Present when the roster marked this preset unloadable (shown verbatim). */
     broken?: string;
     isDefault: boolean;
+}
+/** One adapter-advertised reasoning depth for an exact provider/model route. */
+export interface ReasoningEffortOption {
+    id: string;
+    name: string;
+    description?: string | undefined;
 }
 /** One selectable DSH permission preset. */
 export interface PermissionOption {
@@ -539,6 +566,7 @@ export interface ChannelState {
     runExternalCommand(name: string, rawInput: string): Promise<string | undefined>;
     /** Effective permission state (see the public Channel type). */
     permissions: PermissionState | undefined;
+    btwThreads: BtwThread[];
     /** Estimated context segments by content type (pi-nano-context style bar). */
     contextSegments: {
         system: number;
@@ -566,8 +594,8 @@ export interface ChannelState {
     /** Start a fresh conversation (`/new`). */
     newSession(): Promise<boolean>;
     /** Switch the live model (`/model` picker). */
-    switchModel(provider: string, model: string): Promise<boolean>;
-    /** Cycle reasoning effort (see the public Channel type). */
+    switchModel(provider: string, model: string, effort?: string): Promise<boolean>;
+    /** Cycle reasoning effort (programmatic compatibility surface). */
     cycleEffort(): Promise<void>;
     /** The preset the current session runs under (see the public Channel type). */
     agentPreset: string | undefined;
@@ -577,6 +605,9 @@ export interface ChannelState {
     switchPreset(presetId: string): Promise<boolean>;
     /** Apply a DSH permission preset to the idle session. */
     switchPermission(presetId: string): Promise<boolean>;
+    startBtw(question: string): Promise<string | undefined>;
+    cancelBtw(id: string): void;
+    submitBtw(id: string, text: string): void;
     clear(): void;
     /** @internal older-row restoration (see the public Channel.loadOlder). */
     loadOlder(): number;
@@ -587,6 +618,7 @@ export interface ChannelState {
     /** Switch the working-activity indicator preset (see the public Channel). */
     setActivityFrames(name: string): boolean;
     listModels(): Promise<readonly LlmModelInfo[]>;
+    listModelEfforts(provider: string, model: string): Promise<readonly ReasoningEffortOption[]>;
     listFiles(): Promise<readonly string[]>;
     listSessions(): Promise<readonly SessionRecord[]>;
     setResumeTarget(sessionId: string): void;
@@ -604,6 +636,7 @@ export interface ChannelState {
     doctorInfo(): string[];
     /** Subagent rows (CC's /agents). */
     listSubagents(): Promise<string[]>;
+    listLoadedPlugins(): string[];
 }
 /**
  * Create the live channel state for one agent session: replay the durable

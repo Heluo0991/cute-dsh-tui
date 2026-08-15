@@ -1,5 +1,5 @@
 /**
- * leak-pty-stress.cjs — spawn the REAL dsh-cc in a PTY, auto-send realistic
+ * leak-pty-stress.cjs — spawn the REAL cute-dsh-tui in a PTY, auto-send realistic
  * tool-heavy prompts, watch child RSS from outside until it blows or stabilizes.
  *
  * Usage: node packages/ui/cc-tui/scripts/leak-pty-stress.cjs [rounds] [intervalSec]
@@ -13,7 +13,7 @@ const os = require('node:os')
 const ROUNDS = Number(process.argv[2] ?? 25)
 const INTERVAL_SEC = Number(process.argv[3] ?? 75)
 const WORKSPACE = 'D:/code/projects/test-ccch1mneyyy'
-const LOG = path.join(os.homedir(), '.dsh-cc', 'pty-stress-rss.log')
+const LOG = path.join(os.homedir(), '.cute-dsh-tui', 'pty-stress-rss.log')
 
 const PROMPTS = [
   'run bash: git log --oneline -15, then make a markdown table summarizing each commit in detail',
@@ -44,10 +44,10 @@ async function main() {
 
   const runScript = 'packages/ui/cc-tui/scripts/run.ts'
   // V8-native OOM snapshot via NODE_OPTIONS (avoids cmd quoting hell).
-  const snapDir = path.join(os.homedir(), '.dsh-cc').split('\\').join('/')
+  const snapDir = path.join(os.homedir(), '.cute-dsh-tui').split('\\').join('/')
   const env = {
     ...process.env,
-    DSH_CC_HEAP_WATCH: '1',
+    CUTE_DSH_TUI_HEAP_WATCH: '1',
     NODE_OPTIONS: `--heapsnapshot-near-heap-limit=2 --diagnostic-dir=${snapDir}`,
   }
   const proc = spawn('cmd.exe', ['/c', `node --import tsx/esm ${runScript}`], {
@@ -66,10 +66,10 @@ async function main() {
   const t0 = Date.now()
   await new Promise((r) => {
     const iv = setInterval(() => {
-      if (output.includes('❯') || output.includes('dsh-TUI') || Date.now() - t0 > 90000) { clearInterval(iv); r() }
+      if (output.includes('❯') || output.includes('CuteDshTui') || Date.now() - t0 > 90000) { clearInterval(iv); r() }
     }, 500)
   })
-  const bootOk = output.includes('❯') || output.includes('dsh-TUI')
+  const bootOk = output.includes('❯') || output.includes('CuteDshTui')
   console.error(`[stress] boot ${bootOk ? 'OK' : 'TIMEOUT-BAILOUT'} after ${((Date.now() - t0) / 1000).toFixed(0)}s, output=${output.length}B`)
   if (!bootOk) {
     console.error('[stress] TUI did not render — aborting (check heap-watch.log / diagnostic)')

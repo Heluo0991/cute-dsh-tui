@@ -31,8 +31,12 @@ export interface PromptInputProps {
     onFillConsumed?(): void;
     /** Double-tap Esc with an empty input: open the rewind picker (CC rewind). */
     onRewindRequest?(): void;
+    /** Cycle the current session permission preset (Shift+Tab). */
+    onCyclePermission?(): void;
     /** Filled with the live controller each render (see PromptController). */
     controllerRef?: React.RefObject<PromptController | null>;
+    /** True only while an eligible Max-model route is being switched. */
+    modelSwitching?: boolean;
 }
 /**
  * Claude Code style prompt input: rounded border box (top+bottom borders
@@ -63,5 +67,5 @@ export interface PromptInputProps {
  * working) interrupts the turn and delivers them right away; Ctrl+Enter
  * aborts the turn and sends the current input immediately.
  */
-export declare function PromptInput({ channel, helpOpen, onToggleHelp, onRunCommand, selectionActive, fillText, onFillConsumed, onRewindRequest, controllerRef, }: PromptInputProps): React.JSX.Element;
+export declare function PromptInput({ channel, helpOpen, onToggleHelp, onRunCommand, selectionActive, fillText, onFillConsumed, onRewindRequest, onCyclePermission, controllerRef, modelSwitching, }: PromptInputProps): React.JSX.Element;
 //# sourceMappingURL=PromptInput.d.ts.map

@@ -1,8 +1,8 @@
 /**
  * Persisted working-activity indicator preference, mirroring the pi
  * working-activity extension's `~/.pi/agent/working-activity.json`
- * (`frames` key). dsh-tui keeps its own copy at
- * `~/.dsh-cc/working-activity.json` so the `/activity` choice survives
+ * (`frames` key). cute-dsh-tui keeps its own copy at
+ * `~/.cute-dsh-tui/working-activity.json` so the `/activity` choice survives
  * restarts. The file is best-effort: a missing or corrupt file (or an
  * unknown preset left behind by an older version) just falls back to the
  * default preset.
@@ -13,7 +13,7 @@ import { homedir } from 'node:os'
 import { join } from 'node:path'
 import { isPresetName } from './components/activityFrames.js'
 
-const PREFS_DIR = join(homedir(), '.dsh-cc')
+const PREFS_DIR = join(homedir(), '.cute-dsh-tui')
 
 /**
  * Parse a persisted `{ frames }` value; anything else yields undefined.

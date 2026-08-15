@@ -3,7 +3,7 @@ import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { homedir } from 'node:os'
 import { join } from 'node:path'
 
-const HISTORY_DIR = join(homedir(), '.dsh-cc')
+const HISTORY_DIR = join(homedir(), '.cute-dsh-tui')
 const HISTORY_FILE = join(HISTORY_DIR, 'history.jsonl')
 
 /** One persisted input-history entry. */

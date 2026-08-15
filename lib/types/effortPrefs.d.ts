@@ -1,7 +1,8 @@
 /**
- * Persisted reasoning-effort preference (`~/.dsh-cc/effort.json`). Shift+Tab
- * cycles the live route's adapter-owned levels (dsh-llm `LlmModelReasoningInfo`);
- * the choice lands here so the next boot starts on it. The file is
+ * Persisted reasoning-depth preference (`~/.cute-dsh-tui/effort.json`). The
+ * second stage of `/model` selects an adapter-owned level
+ * (dsh-llm `LlmModelReasoningInfo`); the choice lands here so the next boot
+ * starts on it. The file is
  * best-effort: a missing/corrupt file or a level the current adapter does not
  * offer just falls back to the provider default — the first request/header
  * event always re-asserts the truth on the status line.

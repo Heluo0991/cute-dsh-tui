@@ -1,7 +1,7 @@
 /**
- * Launcher contract for `dsh-tui --resume`: the TUI writes the chosen session
- * id to `~/.dsh-cc/resume.txt`, and the launcher feeds it back as
- * `DSH_CC_RESUME_SESSION`. Session *records* live in DSH's own persistence
+ * Launcher contract for `cute-dsh-tui --resume`: the TUI writes the chosen session
+ * id to `~/.cute-dsh-tui/resume.txt`, and the launcher feeds it back as
+ * `CUTE_DSH_TUI_RESUME_SESSION`. Session *records* live in DSH's own persistence
  * backend (dsh-session-persistence-jsonl) — `/resume` lists those via
  * `sessionPersistence.list()`, this file only carries the id across
  * processes. It also keeps a small `last-used.json` of session-id → epoch-ms
@@ -19,9 +19,13 @@ export interface SessionRecord {
   cwd: string
   createdAt: number
   updatedAt: number
+  /** Fork lineage metadata used only to group the `/resume` UI. */
+  parentSessionId?: string
+  lineageRoot: string
+  isLeaf: boolean
 }
 
-const DIR = join(homedir(), '.dsh-cc')
+const DIR = join(homedir(), '.cute-dsh-tui')
 const RESUME_FILE = join(DIR, 'resume.txt')
 const LAST_USED_FILE = join(DIR, 'last-used.json')
 
@@ -31,7 +35,7 @@ function ensureDir(): void {
 
 /**
  * Store the session to resume and report the launcher invocation.
- * @param sessionId - Session id for `dsh-tui --resume` on the next launch.
+ * @param sessionId - Session id for `cute-dsh-tui --resume` on the next launch.
  */
 export function writeResumeTarget(sessionId: string): void {
   ensureDir()
@@ -48,7 +52,7 @@ export function clearResumeTarget(): void {
 }
 
 /**
- * The session id requested by `dsh-tui --resume`, if any.
+ * The session id requested by `cute-dsh-tui --resume`, if any.
  * @returns The stored session id, or undefined when none is set.
  */
 export function readResumeTarget(): string | undefined {

@@ -1,5 +1,5 @@
 import React from 'react'
-import { Box, Text } from '../../ui.js'
+import { Box, Text, useAnimationFrame } from '../../ui.js'
 import { KeyboardShortcutHint } from '../design-system/KeyboardShortcutHint.js'
 import { Markdown } from '../Markdown.js'
 import { formatDuration } from '../../cc/format.js'
@@ -12,6 +12,8 @@ type Props = {
   verbose: boolean
   /** Thinking wall-clock duration once the reasoning block settled (ms). */
   durationMs?: number
+  /** True only while the model is emitting reasoning deltas. */
+  streaming?: boolean
   /** Message-selection mode highlight. */
   isSelected?: boolean
   onClick?(): void
@@ -21,7 +23,7 @@ type Props = {
  * Thinking block: folded `∴ Thinking (ctrl+o to expand)`, expanded shows the
  * full reasoning text indented under `∴ Thinking…` (ported from the leak's
  * `messages/AssistantThinkingMessage.tsx`). When the channel records the
- * reasoning duration, the label carries it (`∴ Thinking · 12s …`) — dsh-tui's
+ * reasoning duration, the label carries it (`∴ Thinking · 12s …`) — cute-dsh-tui's
  * take on making thinking time visible in the transcript.
  */
 export function AssistantThinkingMessage({
@@ -29,10 +31,14 @@ export function AssistantThinkingMessage({
   addMargin,
   verbose,
   durationMs,
+  streaming = false,
   isSelected = false,
   onClick,
 }: Props): React.ReactNode {
-  if (!thinking) return null
+  const [animationRef, time] = useAnimationFrame(streaming ? 120 : null)
+  if (!thinking && !streaming) return null
+
+  const frame = ['·', '•', '●', '•'][Math.floor(time / 120) % 4]
 
   const duration =
     durationMs !== undefined && durationMs >= 1000
@@ -42,12 +48,13 @@ export function AssistantThinkingMessage({
   if (!verbose) {
     return (
       <Box
+        ref={animationRef}
         marginTop={addMargin ? 1 : 0}
         backgroundColor={isSelected ? 'messageActionsBackground' : undefined}
         onClick={onClick}
       >
         <Text dimColor italic>
-          ∴ Thinking{duration}{' '}
+          {streaming ? <Text color="claude">{frame} Thinking</Text> : '∴ Thinking'}{duration}{' '}
           <Text dimColor>
             <KeyboardShortcutHint shortcut="ctrl+o" action="expand" parens />
           </Text>
@@ -58,6 +65,7 @@ export function AssistantThinkingMessage({
 
   return (
     <Box
+      ref={animationRef}
       flexDirection="column"
       gap={1}
       marginTop={addMargin ? 1 : 0}
@@ -66,7 +74,7 @@ export function AssistantThinkingMessage({
       onClick={onClick}
     >
       <Text dimColor italic>
-        ∴ Thinking{duration}…
+        {streaming ? <Text color="claude">{frame} Thinking</Text> : '∴ Thinking'}{duration}…
       </Text>
       <Box paddingLeft={2}>
         <Markdown dimColor>{thinking}</Markdown>

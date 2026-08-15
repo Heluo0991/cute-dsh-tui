@@ -1,159 +1,118 @@
 <p align="center">
-  <img src="docs/assets/logo.svg" alt="dsh-TUI - DeepSeek Harness terminal interface" width="560">
+  <img src="docs/assets/Cutedeepseek-pixelart.png" alt="CuteDshTui pixel mascot" width="180">
 </p>
 
 <p align="center">
-  <a href="README.md">简体中文</a> · <strong>English</strong>
+  <img src="docs/assets/first-screen.png" alt="CuteDshTui first screen with its Messages wordmark and pixel mascot" width="100%">
+</p>
+
+<h1 align="center">CuteDshTui</h1>
+
+<p align="center">
+  A terminal-native interface for DeepSeek Harness.<br>
+  Start it from any compatible Windows, Linux, or macOS terminal.
 </p>
 
 <p align="center">
-  <a href="https://www.npmjs.com/package/@deepseek-harness-tui/dsh-tui"><img alt="npm" src="https://img.shields.io/npm/v/@deepseek-harness-tui/dsh-tui?style=flat-square&color=4b6fff"></a>
-  <a href="https://github.com/ccch1mneyyy/dsh-TUI/actions/workflows/ci.yml"><img alt="CI" src="https://github.com/ccch1mneyyy/dsh-TUI/actions/workflows/ci.yml/badge.svg"></a>
-  <a href="LICENSE"><img alt="MIT License" src="https://img.shields.io/badge/license-MIT-263146?style=flat-square"></a>
-  <img alt="Public beta" src="https://img.shields.io/badge/status-public%20beta-7da1de?style=flat-square">
+  <a href="https://www.npmjs.com/package/@heluo0991/cute-dsh-tui"><img alt="npm" src="https://img.shields.io/npm/v/@heluo0991/cute-dsh-tui?style=flat-square&color=6aaeff"></a>
+  <a href="https://github.com/Heluo0991/cute-dsh-tui"><img alt="GitHub" src="https://img.shields.io/badge/GitHub-Heluo0991%2Fcute--dsh--tui-263146?style=flat-square"></a>
+  <a href="LICENSE"><img alt="MIT License" src="https://img.shields.io/badge/license-MIT-7da1de?style=flat-square"></a>
+  <a href="README.md"><img alt="Chinese README" src="https://img.shields.io/badge/README-%E7%AE%80%E4%BD%93%E4%B8%AD%E6%96%87-abc2ec?style=flat-square"></a>
 </p>
 
-# dsh-TUI
-
-`dsh-TUI` is an interactive terminal front door for DeepSeek Harness. It is
-mounted as a Cordis plugin and provides a Claude Code-style conversation, tool,
-session, and fullscreen terminal experience while continuing to use the
-official DSH agent, model, tool, session, and persistence services.
-
-The project does not patch DeepSeek Harness core. Installing the plugin enables
-the interface, and removing it leaves no core modifications behind.
-
-> Status: public beta. It is suitable for daily use and extension work. Read
-> [Architecture and limitations](docs/architecture.en.md) before relying on its
-> permission model or terminal-specific behavior.
+> An independently maintained community project. It is not affiliated with or endorsed by DeepSeek Harness.
 
 ## Highlights
 
-- **Terminal-native interaction**: streaming Markdown, structured tool cards,
-  command and file completion, `@` file references (complete anywhere in the
-  message; sending attaches the file content or directory listing), history
-  search, message selection, inline or alternate-screen rendering, and `/lang`
-  zh/en UI language switching.
-- **Visible agent state**: live activity, segmented context usage, TPS, cache
-  hit rate, reasoning effort, input/output tokens, and Git/session metadata.
-- **Complete session workflow**: `/resume`, `/new`, `/compact`, `/export`, model
-  switching, and double-`Esc` rewind through a session fork.
-- **Official DSH integrations**: agent presets, skills, MCP, goals, todos,
-  subagents, and `ask_user_question` are connected through existing services
-  and registries.
-- **Designed for long sessions**: event-driven projection, differential output,
-  message virtualization, replay coalescing, and bounded caches prevent render
-  cost and memory from growing without limit.
+- Terminal-native chat, Markdown, tool cards, file references, and command completion.
+- A Messages wordmark, CuteDeepSeek pixel mascot, and one-time startup shimmer that settles without continuous repainting.
+- Two-stage `/model`: choose a model, then its reasoning depth. A Max switch briefly lights the input border.
+- `/resume`, `/new`, `/compact`, and `/export`, with fork-aware session recovery.
+- `/btw <question>` for a parallel side question and `/plugin` for current-profile plugin management.
+- Visible thinking/activity state, context, approvals, themes, and Agent presets.
 
-## Preview
+## Deploy
 
-<p align="center">
-  <img src="screenshots/splash.png" alt="dsh-TUI conversation with the pixel-whale header" width="100%">
-</p>
+### New user: DSH is not installed yet
 
-Live activity, goal/todo state, and context metrics:
-
-<p align="center">
-  <img src="screenshots/working-line.png" alt="dsh-TUI live activity and context metrics" width="100%">
-</p>
-
-## Quick Start
-
-Prerequisites: an interactive terminal TTY, the official `dsh` CLI, and
-`pnpm` 10+. Model requests also require `DEEPSEEK_API_KEY`.
+You need Node.js `^22.19 || >=24`, an interactive terminal TTY, and a DeepSeek API key. The following works on Windows, Linux, and macOS:
 
 ```sh
-# 1. Install the CLI and this plugin globally (ships the dsh-tui command)
-npm install -g @deepseek-ai/dsh @deepseek-harness-tui/dsh-tui
-
-# 2. Start it (first run auto-initializes the dsh-tui profile; needs pnpm)
-dsh-tui
+npm install -g @deepseek-ai/dsh @heluo0991/cute-dsh-tui pnpm@latest
+cute-dsh-tui
 ```
 
-Manual alternative: `dsh plugin --profile dsh-tui add @deepseek-harness-tui/dsh-tui`
-(the repository's `sh install.sh` wraps this step and checks the required
-commands), then `dsh-tui` and `dsh --profile dsh-tui` are equivalent.
+The first run creates the `cute-dsh-tui` profile and installs the current plugin version. Afterwards, enter your project directory and run `cute-dsh-tui`.
 
-`dsh-tui --resume` restores the most recently selected session; on Windows
-the repository's `dsh-tui.cmd` works the same way.
+Set the API key for the current Linux/macOS shell:
 
-See [Getting started](docs/getting-started.en.md) for profile composition,
-source builds, and troubleshooting.
+```sh
+export DEEPSEEK_API_KEY='your-key'
+```
 
-Inside the TUI, `/update` updates the installed
-`@deepseek-harness-tui/dsh-tui` package and automatically restarts into the current session.
+For the current Windows PowerShell window:
 
-The TUI also checks npm for updates in the background after startup. The check
-never blocks the first frame and silently ignores offline or registry errors.
+```powershell
+$env:DEEPSEEK_API_KEY = 'your-key'
+```
 
-For migration from the former `dsh-cc-tui` package and `cc-tui` profile, see
-[Getting started](docs/getting-started.en.md#migrate-from-the-former-package).
+### Existing DSH user: add the plugin
 
-## Documentation
+`dsh plugin` uses pnpm to manage profiles; use pnpm 10 or newer.
 
-| Topic | Contents |
+```sh
+npm install -g pnpm@latest   # only when pnpm is absent
+dsh plugin --profile cute-dsh-tui add @heluo0991/cute-dsh-tui
+dsh --profile cute-dsh-tui
+```
+
+This leaves other DSH profiles untouched. Profile configuration lives in `$DSH_HOME/profiles/cute-dsh-tui/cordis.patch.yml`; sessions stay in `$DSH_HOME/sessions`; UI preferences live in `~/.cute-dsh-tui`.
+
+### Update
+
+Run `/update` inside the TUI, or:
+
+```sh
+dsh plugin --profile cute-dsh-tui update --latest @heluo0991/cute-dsh-tui
+```
+
+## Use it
+
+Start from the target project directory: it becomes the Agent's default workspace.
+
+| Goal | Command or shortcut |
 | --- | --- |
-| [Getting started](docs/getting-started.en.md) | Prerequisites, installation, startup, profile lifecycle, source development |
-| [Configuration](docs/configuration.en.md) | Cordis overrides, fields, agent presets, MCP, environment variables |
-| [Themes](docs/themes.en.md) | Built-in themes, background detection, custom JSON themes, validation |
-| [Interaction and commands](docs/interaction.en.md) | Keyboard, mouse, questionnaires, slash commands, session workflows |
-| [Architecture and limitations](docs/architecture.en.md) | Runtime path, rendering, persistence, security boundary, known limitations |
-| [Contributing](docs/contributing.en.md) | Contribution workflow, repository map, build artifacts, verification matrix, change rules |
+| See all available commands | `/help` |
+| Pick a model and reasoning depth | `/model` |
+| Restore a saved session | `/resume` or `cute-dsh-tui --resume` |
+| Create, compact, or export a session | `/new`, `/compact`, `/export` |
+| Ask without changing the main transcript | `/btw <question>` |
+| Inspect or manage profile plugins | `/plugin list`, `/plugin search <term>` |
+| Change permissions | cycle with `Shift+Tab`, or choose with `/permission` |
+| Change appearance or language | `/theme`, `/lang`, `/activity` |
 
-The complete bilingual index is [`docs/README.md`](docs/README.md).
+`--continue` (or `-c`) resumes the latest session; `--yolo` requests `danger-full-access`. Set `CUTE_DSH_TUI_WORKSPACE=/path/to/project` to start a chosen project from another directory; this works consistently on Windows, Linux, and macOS.
 
-## How It Works
+## Platform support
 
-```text
-dsh profile
-  -> dsh-base
-  -> dsh-TUI Cordis patch
-  -> agent preset + DSH services
-  -> session/event
-  -> Channel projection
-  -> React components
-  -> ported Ink/Yoga renderer
-  -> terminal
-```
+CuteDshTui ships as a Node CLI, not as a Windows batch file. It runs natively wherever compatible Node, npm, pnpm, DSH, and an interactive TTY are available: Windows, Linux, and macOS on supported x64/arm64 Node platforms. CI validates the build and credential-free installation path on Ubuntu and macOS. `cute-dsh-tui.cmd` remains only as a checkout compatibility wrapper for Windows.
 
-The TUI owns interaction and presentation only. The session log remains the
-conversation source of truth, while model calls, tool execution, fork/resume,
-compaction, and persistence remain owned by DSH services. See the
-[architecture guide](docs/architecture.en.md) for module boundaries and
-performance details.
+More documentation: [Getting started](docs/getting-started.en.md) · [Interaction reference](docs/interaction.en.md) · [Configuration](docs/configuration.en.md) · [Architecture](docs/architecture.en.md)
 
 ## Development
 
-CI uses Node 24 and pnpm 11. The package supports Node `^22.19 || >=24`.
-
 ```sh
+git clone https://github.com/Heluo0991/cute-dsh-tui.git
+cd cute-dsh-tui
 pnpm install --frozen-lockfile
-pnpm build
-pnpm smoke
+pnpm run build
+pnpm run smoke
 ```
 
-`pnpm build` compiles `src/` into the checked-in `lib/types/` output. Source
-changes must include regenerated artifacts, and rendering, questionnaire, or
-tool-card changes require the relevant regression scripts.
+Before a release run `pnpm run verify:permissions`, `pnpm run verify:launcher`, `pnpm run verify:inline-thinking`, and `npm pack --dry-run`.
 
-## Permissions and Security Boundary
+## License and acknowledgements
 
-`dsh-TUI` does not implement a separate sandbox. It uses the filesystem,
-shell, sandbox, and approval policies of the active DSH profile. The supplied
-profile uses workspace confinement and approvals by default on non-Windows
-platforms. Windows currently has no corresponding sandbox backend, so the
-composition falls back to `danger-full-access` without approval prompts.
-Inspect the profile before starting it around sensitive credentials or an
-untrusted repository.
+This project is released under the [MIT License](LICENSE). CuteDshTui originally evolved from a framework fork of [ccch1mneyyy/dsh-TUI](https://github.com/ccch1mneyyy/dsh-TUI); thank you to that project and its contributors.
 
-See [Permissions and security boundary](docs/architecture.en.md#permissions-and-security-boundary)
-for details.
-
-## Featured by DeepSeek Harness
-
-The DeepSeek Harness official WeChat account featured this plugin among its
-early user-built extensions. [View the feature screenshot](screenshots/wechat-official.png).
-
-## License
-
-[MIT](LICENSE)
+Required upstream copyright and license notices remain in distributed material.

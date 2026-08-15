@@ -7,9 +7,9 @@ import { Box, Text, useAnimationFrame, useTerminalSize } from '../ui.js'
 import { getTheme } from '../theme.js'
 import { useTheme } from './design-system/ThemeProvider.js'
 import { parseRGB } from './Spinner/spinnerUtils.js'
-import { renderBigText } from './bigfont.js'
+import { renderMessagesText } from './bigfont.js'
 import { BRAND, FLASH, ICE, PALE, sweep } from './shimmer.js'
-import { STANDARD_FRAME_INDEX, WhaleArt } from './Whale.js'
+import { CuteDeepSeekArt } from './CuteDeepSeek.js'
 import { OPENING_SEQUENCE } from './whaleFrames.js'
 
 /**
@@ -18,23 +18,26 @@ import { OPENING_SEQUENCE } from './whaleFrames.js'
  * package metadata is unreadable (unusual layouts).
  */
 const VERSION = (() => {
-  try {
-    const pkgPath = join(dirname(fileURLToPath(import.meta.url)), '..', '..', '..', 'package.json')
-    return (JSON.parse(readFileSync(pkgPath, 'utf8')) as { version?: string }).version ?? '0.1.0'
-  } catch {
-    return '0.1.0'
+  for (const relativePath of ['../../../package.json', '../../package.json']) {
+    try {
+      const pkgPath = join(dirname(fileURLToPath(import.meta.url)), relativePath)
+      const version = (JSON.parse(readFileSync(pkgPath, 'utf8')) as { version?: unknown }).version
+      if (typeof version === 'string') return version
+    } catch {
+      // Try the source-layout fallback after the compiled-layout path.
+    }
   }
+  return '1.1.0'
 })()
 
-/** Below this width the whale hides and the header goes text-only. */
-const WHALE_MIN_COLUMNS = 64
+/** Below this width the mascot hides and the header goes text-only. */
+const MASCOT_MIN_COLUMNS = 115
 
 /**
- * Fixed whale box width: the tail-wag frames reach 4 columns further right
- * than the standard pose, and a pinned width keeps the text column from
- * shifting sideways during the opening animation.
+ * Fixed mascot box width keeps the text column stable during the breathing
+ * introduction.
  */
-const FULL_WHALE_WIDTH = 40
+const FULL_MASCOT_WIDTH = 33
 
 /**
  * Leading spaces that center the welcome line under the drawn whale: the
@@ -43,7 +46,7 @@ const FULL_WHALE_WIDTH = 40
  * columns — 18.5 − 7 = 11.5 → 12. Centered on the full 40-column box
  * instead would need 13, which reads one column right of the whale body.
  */
-const WELCOME_PAD = 12
+const WELCOME_PAD = 9
 
 /** `max` → `Max` (effort levels arrive lower-case from the adapter). */
 function capitalize(text: string): string {
@@ -58,7 +61,7 @@ function capitalize(text: string): string {
  * off-screen, clock unsubscribed, zero timers.
  *
  * Layout: the 13-row pixel whale beside a text column of matching height —
- * the `✦ dsh-TUI` wordmark with version, the `DEEPSEEK`/`HARNESS` tagline in
+ * the `✦ CuteDshTui` wordmark with version, the `DEEPSEEK`/`HARNESS` tagline in
  * the 5-row block font (brand-blue → ice gradient), the model/effort and
  * cwd in plain text (no brand-color highlight), the startup tip, and below
  * the whale the welcome tagline, centered under the art, in ice
@@ -69,20 +72,26 @@ export function LogoV2({
   effort,
   cwd,
   skipIntro = false,
+  animateIntro = true,
 }: {
   model: string
   effort?: string | undefined
   cwd: string
   /** Test seam: mount straight into the settled header (probes skip the intro). */
   skipIntro?: boolean
+  /** Inline mode stops repainting the header as soon as transcript rows exist. */
+  animateIntro?: boolean
 }): React.ReactNode {
-  const [step, setStep] = React.useState(skipIntro ? OPENING_SEQUENCE.length : 0)
-  const settled = step >= OPENING_SEQUENCE.length
+  const introEnabled = animateIntro && !skipIntro
+  const [step, setStep] = React.useState(introEnabled ? 0 : OPENING_SEQUENCE.length)
+  const settled = !introEnabled || step >= OPENING_SEQUENCE.length
 
   // Opening clock: drives the shimmer sweep and big-text highlight only
   // while the intro plays; `null` afterwards unsubscribes so the settled
   // header never repaints. 60ms frames keep the sweep lively.
   const [ref, time] = useAnimationFrame(settled ? null : 60)
+  const openingStartTime = React.useRef<number | null>(null)
+  if (openingStartTime.current === null) openingStartTime.current = time
 
   // Frame chain: dwell per OPENING_SEQUENCE entry, then settle for good.
   React.useEffect(() => {
@@ -103,22 +112,21 @@ export function LogoV2({
   const wordmarkShimmerRGB = parseRGB(theme.claudeShimmer) ?? ICE
   const taglineRGB = parseRGB(theme.claudeBlue_FOR_SYSTEM_SPINNER) ?? ICE
 
-  const showWhale = columns >= WHALE_MIN_COLUMNS
-  const frameIndex = settled ? STANDARD_FRAME_INDEX : OPENING_SEQUENCE[step].frame
+  const showMascot = columns >= MASCOT_MIN_COLUMNS
   // Frozen clock for the settled header: t=0 parks every sweep highlight
   // off-screen, leaving the static gradient behind.
-  const t = settled ? 0 : time
+  const t = settled ? 0 : Math.max(0, time - openingStartTime.current)
 
-  const bigDeepSeek = renderBigText('DEEPSEEK', t, wordmarkRGB, taglineRGB, FLASH, 60)
-  const bigHarness = renderBigText('HARNESS', t, taglineRGB, PALE, FLASH, 60)
+  const bigDeepSeek = renderMessagesText('DEEPSEEK', t, wordmarkRGB, taglineRGB, FLASH)
+  const bigHarness = renderMessagesText('HARNESS', t, taglineRGB, PALE, FLASH)
 
   return (
     <Box ref={ref} flexDirection="column" marginTop={1}>
       <Box flexDirection="row" gap={2} width="100%" alignItems="center">
-        {showWhale && <WhaleArt frameIndex={frameIndex} width={FULL_WHALE_WIDTH} />}
+        {showMascot && <CuteDeepSeekArt pulse={t} width={FULL_MASCOT_WIDTH} />}
         <Box flexDirection="column" flexShrink={1}>
           <Text wrap="truncate-end">
-            {sweep('✦ dsh-TUI', t, wordmarkRGB, wordmarkShimmerRGB, 60)}
+            {sweep('✦ CuteDshTui', t, wordmarkRGB, wordmarkShimmerRGB, 60)}
             <Text dimColor>{'  v' + VERSION}</Text>
           </Text>
           {bigDeepSeek.map((row, index) => (
@@ -149,7 +157,7 @@ export function LogoV2({
           </Text>
         </Box>
       </Box>
-      <Box marginTop={1} paddingLeft={showWhale ? WELCOME_PAD : 2}>
+      <Box marginTop={1} paddingLeft={showMascot ? WELCOME_PAD : 2}>
         <Text>{sweep(tr('logo-tagline'), t, taglineRGB, FLASH, 60)}</Text>
       </Box>
     </Box>

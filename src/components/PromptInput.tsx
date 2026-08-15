@@ -1,16 +1,17 @@
 import React from 'react'
 import { t } from '../i18n.js'
-import { Box, Text, useInput, useTerminalSize } from '../ui.js'
+import { Box, Text, useAnimationFrame, useInput, useTerminalSize } from '../ui.js'
 import { useDeclaredCursor } from '../ink/hooks/use-declared-cursor.js'
 import { stringWidth } from '../ink/stringWidth.js'
 import { formatClipboardInsert, readClipboard } from '../utils/clipboard.js'
 import type { Channel } from '../channel.js'
-import { filterCommands, parseCommandName } from '../commands.js'
+import { canAcceptCommandSuggestion, filterCommands, parseCommandName } from '../commands.js'
 import { appendHistory } from '../history.js'
 import { mentionAtCaret } from '../utils/mentions.js'
 import { CommandSuggestions } from './CommandSuggestions.js'
 import { FileSuggestions } from './FileSuggestions.js'
 import { HelpMenu } from './HelpMenu.js'
+import { modelSwitchBorderColors } from './modelSwitchGlow.js'
 
 const HISTORY_LIMIT = 50
 
@@ -76,8 +77,12 @@ export interface PromptInputProps {
   onFillConsumed?(): void
   /** Double-tap Esc with an empty input: open the rewind picker (CC rewind). */
   onRewindRequest?(): void
+  /** Cycle the current session permission preset (Shift+Tab). */
+  onCyclePermission?(): void
   /** Filled with the live controller each render (see PromptController). */
   controllerRef?: React.RefObject<PromptController | null>
+  /** True only while an eligible Max-model route is being switched. */
+  modelSwitching?: boolean
 }
 
 /**
@@ -118,7 +123,9 @@ export function PromptInput({
   fillText,
   onFillConsumed,
   onRewindRequest,
+  onCyclePermission,
   controllerRef,
+  modelSwitching = false,
 }: PromptInputProps) {
   const [value, setValue] = React.useState('')
   const [cursor, setCursor] = React.useState(0)
@@ -164,6 +171,10 @@ export function PromptInput({
     }
   }, [])
   const { columns } = useTerminalSize()
+  // Subscribe only during an eligible model switch. Once the request settles,
+  // the prompt no longer receives animation frames.
+  const [glowRef, glowTime] = useAnimationFrame(modelSwitching ? 60 : null)
+  const switchBorderColors = modelSwitching ? modelSwitchBorderColors(glowTime) : null
 
   const suggestions = value.startsWith('/')
     ? filterCommands(value, channel.commandList)
@@ -425,7 +436,7 @@ export function PromptInput({
       lastEnterAtRef.current = now
       if (overlayOpen) {
         const command = suggestions[selectedCommand]
-        if (command) {
+        if (command && canAcceptCommandSuggestion(value, command)) {
           tryRunCommand(`/${command.name}`)
           return
         }
@@ -459,7 +470,7 @@ export function PromptInput({
       const line = (value + input).trim()
       if (line.startsWith('/')) {
         const matches = filterCommands(line, channel.commandList)
-        if (matches.length === 1) {
+        if (matches.length === 1 && canAcceptCommandSuggestion(line, matches[0]!)) {
           tryRunCommand(`/${matches[0]!.name}`)
           return
         }
@@ -485,11 +496,10 @@ export function PromptInput({
       handleEnter()
       return
     }
-    // Shift+Tab cycles the reasoning effort (dsh parity: the adapter's own
-    // level list, e.g. deepseek Off→High→Max). Must precede the plain-Tab
-    // arms — the parser reports backtab as key.tab + key.shift.
+    // Shift+Tab cycles the session permission preset. It must precede the
+    // plain-Tab arms — the parser reports backtab as key.tab + key.shift.
     if (key.tab && key.shift) {
-      void channel.cycleEffort()
+      onCyclePermission?.()
       return
     }
     if (key.tab && fileOverlayOpen) {
@@ -892,13 +902,18 @@ export function PromptInput({
         </Box>
       )}
       <Box
+        ref={glowRef}
         flexDirection="column"
         alignItems="flex-start"
         justifyContent="flex-start"
-        borderColor="promptBorder"
+        borderColor={switchBorderColors?.top ?? 'promptBorder'}
+        borderTopColor={switchBorderColors?.top}
+        borderRightColor={switchBorderColors?.right}
+        borderBottomColor={switchBorderColors?.bottom}
+        borderLeftColor={switchBorderColors?.left}
         borderStyle="round"
-        borderLeft={false}
-        borderRight={false}
+        borderLeft={modelSwitching}
+        borderRight={modelSwitching}
         borderBottom
         width="100%"
       >
