@@ -146,7 +146,7 @@ for the complete field reference.
 | `DSH_CC_RESUME_SESSION` | Resume a session at startup, normally set by a launcher |
 | `DSH_CC_OPEN_RESUME_PICKER` | Open the session picker at startup (set by `dsh --resume`) |
 | `DSH_CC_SESSION_ROOT` | Override the session persistence location; the profile uses a SQLite database path, while bare `cordis.yml` uses a JSONL root directory |
-| `DSH_PERMISSION_MODE` | Override non-Windows sandbox policy, such as `workspace-write` or `danger-full-access` |
+| `DSH_PERMISSION_MODE` | Override startup sandbox policy on any platform, such as `workspace-write` or `danger-full-access`; prefer in-session `/permission` when possible |
 | `DSH_CC_YOLO` | Force danger-full-access and skip approvals (set by `dsh --yolo`) |
 | `DSH_CC_WORKSPACE` | Working directory used by the Windows `dsh-tui.cmd` launcher |
 | `CC_TUI_DEBUG` | Enable dsh-tui diagnostics on stderr |

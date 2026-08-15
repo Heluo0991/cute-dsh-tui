@@ -138,7 +138,7 @@ Profile 模式不再使用旧的 `CC_TUI_COMPACT_RATIO`、
 | `DSH_CC_RESUME_SESSION` | 启动时恢复指定会话，通常由启动器设置 |
 | `DSH_CC_OPEN_RESUME_PICKER` | 启动时打开会话选择器（由 `dsh --resume` 设置） |
 | `DSH_CC_SESSION_ROOT` | 覆盖会话持久化位置；profile 安装时是 SQLite 数据库路径，裸 `cordis.yml` 启动时是 JSONL 根目录 |
-| `DSH_PERMISSION_MODE` | 非 Windows 平台覆盖 sandbox policy，例如 `workspace-write` 或 `danger-full-access` |
+| `DSH_PERMISSION_MODE` | 所有平台的启动期 sandbox policy 覆盖，例如 `workspace-write` 或 `danger-full-access`；通常应优先使用会话内 `/permission` |
 | `DSH_CC_YOLO` | 强制 danger-full-access 并跳过审批（由 `dsh --yolo` 设置） |
 | `DSH_CC_WORKSPACE` | Windows `dsh-tui.cmd` 采用的工作目录 |
 | `CC_TUI_DEBUG` | 启用写往 stderr 的 dsh-tui 调试日志 |

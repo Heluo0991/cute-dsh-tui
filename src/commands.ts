@@ -48,11 +48,10 @@ export const LOCAL_COMMANDS: LocalCommand[] = [
   // Account / policy
   { name: 'login', description: 'Show API credential status' },
   { name: 'logout', description: 'Clear the API credential' },
-  { name: 'permissions', description: 'Show permission policy status' },
+  { name: 'permission', description: 'Switch sandbox and approval policy' },
+  { name: 'permissions', description: 'Show current sandbox and approval policy' },
   { name: 'add-dir', description: 'Show the filesystem policy scope' },
-  { name: 'hooks', description: 'Show hooks status' },
   { name: 'mcp', description: 'Show MCP status' },
-  { name: 'memory', description: 'Show memory status' },
   { name: 'update', description: 'Update dsh-tui and restart' },
   // Built-in skills (CC's skill commands, driven through DSH skills)
   { name: 'audit', description: 'Run a comprehensive code audit on this project' },
@@ -62,10 +61,8 @@ export const LOCAL_COMMANDS: LocalCommand[] = [
   { name: 'pr_comments', description: 'Review pull request comments' },
   { name: 'release-notes', description: 'Generate release notes' },
   { name: 'vuln-check', description: 'Run a security vulnerability check' },
-  // Misc / not applicable on this leaf
-  { name: 'vim', description: 'Toggle vim mode' },
+  // Misc
   { name: 'terminal-setup', description: 'Show terminal setup instructions' },
-  { name: 'connect', description: 'Connect to a remote machine' },
   // Help / exit
   { name: 'help', description: 'Show shortcuts and commands' },
   { name: 'exit', description: 'Exit dsh-tui' },

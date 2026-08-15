@@ -52,7 +52,9 @@
     "tui": "node --import tsx/esm scripts/run.ts",
     "smoke": "node --import tsx/esm scripts/smoke.tsx",
     "verify:launcher": "node scripts/verify-launch-options.mjs",
-    "verify:startup-resume": "node --import tsx/esm scripts/verify-startup-resume.tsx"
+    "verify:startup-resume": "node --import tsx/esm scripts/verify-startup-resume.tsx",
+    "verify:permissions": "pnpm run build && node scripts/verify-permissions.mjs",
+    "verify:yolo-resume": "node --import tsx/esm scripts/verify-yolo-resume.tsx"
   },
   "peerDependencies": {
     "@deepseek-ai/cordis": "^4.0.1",

@@ -114,7 +114,7 @@ export interface ToolViewPresenter {
  */
 export interface ChatRow {
   id: number
-  kind: 'user' | 'assistant' | 'tool' | 'notice' | 'reasoning' | 'interrupt' | 'local' | 'local-output' | 'compact'
+  kind: 'user' | 'context' | 'assistant' | 'tool' | 'notice' | 'reasoning' | 'interrupt' | 'local' | 'local-output' | 'compact'
   /** Extra label for non-human user rows (e.g. `steering`). */
   label?: string
   text: string
@@ -338,6 +338,8 @@ export interface Channel {
    * nothing here; locals win on name collisions.
    */
   readonly commandList: readonly LocalCommand[]
+  /** Effective DSH sandbox/approval preset for the live session. */
+  readonly permissions: PermissionState | undefined
   /**
    * Run a plugin-registered slash command against the live agent (DSH
    * `dsh-commands` registry): logs `command/run`/`command/done` and returns
@@ -346,6 +348,8 @@ export interface Channel {
    * back to sending the line to the model).
    */
   runExternalCommand(name: string, rawInput: string): Promise<string | undefined>
+  /** Apply a DSH permission preset to the current idle session. */
+  switchPermission(presetId: string): Promise<boolean>
   /** Estimated context segments by content type (pi-nano-context style bar). */
   readonly contextSegments: {
     system: number
@@ -452,6 +456,19 @@ export interface PresetOption {
   isDefault: boolean
 }
 
+/** One selectable DSH permission preset. */
+export interface PermissionOption {
+  readonly id: string
+  readonly name: string
+  readonly description: string
+}
+
+/** Current-session permission selection surfaced by the picker and status view. */
+export interface PermissionState {
+  readonly current: string
+  readonly options: readonly PermissionOption[]
+}
+
 /** @internal */
 /** One user message submitted while the model was working, not yet claimed
  *  by a turn. `steer` lands at the next step boundary of the running turn;
@@ -519,6 +536,8 @@ export interface ChannelState {
   commandList: readonly LocalCommand[]
   /** Run a plugin-registered command (see the public Channel type). */
   runExternalCommand(name: string, rawInput: string): Promise<string | undefined>
+  /** Effective permission state (see the public Channel type). */
+  permissions: PermissionState | undefined
   /** Estimated context segments by content type (pi-nano-context style bar). */
   contextSegments: {
     system: number
@@ -555,6 +574,8 @@ export interface ChannelState {
   listPresets(): Promise<readonly PresetOption[]>
   /** Switch the agent preset (see the public Channel type). */
   switchPreset(presetId: string): Promise<boolean>
+  /** Apply a DSH permission preset to the idle session. */
+  switchPermission(presetId: string): Promise<boolean>
   clear(): void
   /** @internal older-row restoration (see the public Channel.loadOlder). */
   loadOlder(): number
@@ -618,7 +639,7 @@ function foldRows(rows: ChatRow[], cap: number): number {
   let folded = 0
   for (const row of rows.slice(0, excess)) {
     if (row.folded || row.restored) continue
-    if (row.kind !== 'user' && row.kind !== 'assistant' && row.kind !== 'reasoning' && row.kind !== 'tool') continue
+    if (row.kind !== 'user' && row.kind !== 'context' && row.kind !== 'assistant' && row.kind !== 'reasoning' && row.kind !== 'tool') continue
     row.folded = true
     folded += 1
     if (row.kind === 'tool' && row.tool) {
@@ -679,7 +700,15 @@ function foldBack(rows: ChatRow[], events: readonly SessionEvent[], views?: Tool
       restored += 1
       continue
     }
-    // Text rows are anchored on their first delta chunk; the settled
+    if (row.kind === 'user' || row.kind === 'context') {
+      const message = restoreEvents.find(event => event.seq === rowSeq && event.type === 'user/message')
+      if (message === undefined) continue
+      restoreRowFromEvent(row, message)
+      row.folded = false
+      restored += 1
+      continue
+    }
+    // Assistant text rows are anchored on their first delta chunk; the settled
     // assistant/message at or after that seq carries the full text.
     const message = restoreEvents.find(event => event.seq >= rowSeq && event.type === 'assistant/message')
     if (message === undefined) continue
@@ -693,7 +722,8 @@ function foldBack(rows: ChatRow[], events: readonly SessionEvent[], views?: Tool
 /** Rebuild a folded row's full text from its source session event. */
 function restoreRowFromEvent(row: ChatRow, event: SessionEvent): void {
   switch (row.kind) {
-    case 'user': {
+    case 'user':
+    case 'context': {
       if (event.type !== 'user/message') break
       const text = event.data.content.map(block => block.type === 'text' ? block.text : '').join('').trim()
       if (text) row.text = text
@@ -877,6 +907,32 @@ export function createChannel(
   // command/run + command/done records). Absent the service, only the
   // built-in local commands exist.
   const commandService: CommandRuntime | undefined = ctx.get('commands')
+  /**
+   * dsh-base mounts this service and pins a permission event on every new
+   * session. Keep the structural type local so the TUI can still boot with a
+   * deliberately minimal custom composition that omits it.
+   */
+  const permissionPresets = ctx.get('permissionPresets') as
+    | {
+      readonly names: readonly string[]
+      current(events: readonly SessionEvent[]): string
+      optionOf(name: string): { name: string; description?: string }
+    }
+    | undefined
+  const permissionStateFor = (target: Agent): PermissionState | undefined => {
+    if (permissionPresets === undefined) return undefined
+    return {
+      current: permissionPresets.current(target.session.events),
+      options: permissionPresets.names.map(id => {
+        const option = permissionPresets.optionOf(id)
+        return {
+          id,
+          name: option.name,
+          description: option.description ?? id,
+        }
+      }),
+    }
+  }
   const listeners = new Set<() => void>()
   /** True while a frame-aligned stream notification is pending (emitStream). */
   let streamNotifyScheduled = false
@@ -1084,6 +1140,7 @@ export function createChannel(
     loadedContext: undefined,
     pending: [],
     commandList: LOCAL_COMMANDS,
+    permissions: permissionStateFor(agent),
     lastUsage: undefined,
     tps: undefined,
     tpsSamples: [],
@@ -1337,6 +1394,7 @@ export function createChannel(
       const oldHandle = currentHandle
       agent = handle.agent
       currentHandle = handle
+      state.permissions = permissionStateFor(agent)
       bindAgent()
       refreshCommandList()
       void refreshLoadedContext()
@@ -1442,6 +1500,7 @@ export function createChannel(
       const oldHandle = currentHandle
       agent = handle.agent
       currentHandle = handle
+      state.permissions = permissionStateFor(agent)
       bindAgent()
       refreshCommandList()
       void refreshLoadedContext()
@@ -1562,6 +1621,7 @@ export function createChannel(
       const oldHandle = currentHandle
       agent = handle.agent
       currentHandle = handle
+      state.permissions = permissionStateFor(agent)
       bindAgent()
       refreshCommandList()
       void refreshLoadedContext()
@@ -1667,6 +1727,7 @@ export function createChannel(
       const oldHandle = currentHandle
       agent = handle.agent
       currentHandle = handle
+      state.permissions = permissionStateFor(agent)
       bindAgent()
       refreshCommandList()
       void refreshLoadedContext()
@@ -1823,6 +1884,51 @@ export function createChannel(
       }
       state.notify(t('preset-switched-saved', { id: target.id }), { color: 'success' })
       return true
+    },
+    async switchPermission(presetId) {
+      if (state.working) {
+        state.notify('Cannot switch permissions while a turn is running', { color: 'warning' })
+        return false
+      }
+      const permissions = permissionStateFor(agent)
+      if (permissions === undefined) {
+        state.notify('Permission switching unavailable in this profile', { color: 'error' })
+        return false
+      }
+      if (!permissions.options.some(option => option.id === presetId)) {
+        state.notify(`Unknown permission preset: ${presetId}`, { color: 'error' })
+        return false
+      }
+      if (!commandService) {
+        state.notify('Permission switching unavailable: command service not loaded', { color: 'error' })
+        return false
+      }
+      try {
+        const execution = await commandService.execute(
+          agent,
+          `/permission ${presetId}`,
+          new AbortController().signal,
+        )
+        if (execution === undefined) {
+          state.notify('Permission switching unavailable: DSH /permission is not registered', { color: 'error' })
+          return false
+        }
+        const message = execution.result.text
+        if (execution.result.kind === 'error') {
+          state.notify(execution.result.text, { color: 'error', timeoutMs: 8000 })
+          return false
+        }
+        state.permissions = permissionStateFor(agent)
+        state.emit()
+        if (message !== undefined && message !== '') state.notify(message)
+        return true
+      } catch (error) {
+        state.notify(
+          `Permission switch failed 路 ${error instanceof Error ? (error.message ?? String(error)) : String(error)}`,
+          { color: 'error', timeoutMs: 8000 },
+        )
+        return false
+      }
     },
     listModels() {
       const llm = ctx.get('llm') as
@@ -2540,8 +2646,27 @@ ${output}
           applyGoalEvent(event)
           break
         }
-        // Injected context (plugin/skill source) is not a human bubble; v1
-        // renders direct human prompts only.
+        // Dynamic plugin context is model-visible and durable, but must never
+        // masquerade as a human prompt. Render it as its own collapsible
+        // transcript row, retaining the producer attribution for audits.
+        if (event.data.source.kind === 'plugin') {
+          const text = textOf(event.data.content)
+          if (text) {
+            state.rows.push({
+              id: nextRowId,
+              kind: 'context',
+              label: `Injected context · ${event.data.source.plugin}`,
+              text,
+              seq: event.seq,
+            })
+            // Plugin injections are persisted as synthetic user messages, so
+            // they occupy the request/context side of the meter rather than
+            // a misleading sixth segment or the assistant output segment.
+            state.contextSegments.prompt += estimateTokens(text)
+            nextRowId += 1
+          }
+          break
+        }
         if (event.data.source.kind !== 'user') break
         const text = firstTextOf(event.data.content)
         if (text) {

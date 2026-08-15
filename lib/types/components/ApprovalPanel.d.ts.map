@@ -1,0 +1,1 @@
+{"version":3,"file":"ApprovalPanel.d.ts","sourceRoot":"","sources":["../../../src/components/ApprovalPanel.tsx"],"names":[],"mappings":"AAAA,OAAO,KAAK,MAAM,OAAO,CAAA;AAKzB,OAAO,KAAK,EAAE,gBAAgB,EAAE,MAAM,iBAAiB,CAAA;AAEvD,mEAAmE;AACnE,wBAAgB,aAAa,CAAC,EAC5B,QAAQ,GACT,EAAE;IACD,QAAQ,EAAE,gBAAgB,CAAA;CAC3B,GAAG,KAAK,CAAC,SAAS,CA2BlB"}

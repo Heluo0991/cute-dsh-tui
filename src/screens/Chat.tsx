@@ -6,7 +6,9 @@ import { formatTokens } from '../cc/format.js'
 import type { LlmModelInfo } from '@deepseek-ai/dsh-llm'
 import type { Channel, ChatRow, PresetOption } from '../channel.js'
 import type { QuestionStore } from '../questions.js'
+import { ApprovalStore } from '../approvals.js'
 import { AskUserQuestionPanel } from '../components/questions/AskUserQuestionPanel.js'
+import { ApprovalPanel } from '../components/ApprovalPanel.js'
 import type { DOMElement } from '../ink/dom.js'
 import { useSearchHighlight } from '../ink/hooks/use-search-highlight.js'
 import { useTerminalTitle } from '../ink/hooks/use-terminal-title.js'
@@ -31,6 +33,7 @@ import { FRAME_PRESETS, PRESET_NAMES } from '../components/activityFrames.js'
 import { ThinkingToggle } from '../components/ThinkingToggle.js'
 import { HistorySearchDialog } from '../components/HistorySearchDialog.js'
 import { RewindPicker } from '../components/RewindPicker.js'
+import { FullAccessConfirm, PermissionPicker } from '../components/PermissionPicker.js'
 import { LoadingState } from '../components/design-system/LoadingState.js'
 import { Pane } from '../components/design-system/Pane.js'
 import { loadHistory, type HistoryEntry } from '../history.js'
@@ -39,6 +42,7 @@ import type { SessionRecord } from '../sessionHistory.js'
 /** Row kinds the message-selection cursor can land on. */
 const SELECTABLE_KINDS = new Set<ChatRow['kind']>([
   'user',
+  'context',
   'assistant',
   'tool',
   'reasoning',
@@ -105,18 +109,31 @@ function searchableText(row: ChatRow): string {
 export function Chat({
   channel,
   questionStore,
+  approvalStore: suppliedApprovalStore,
   onExit,
   onUpdate,
   openResumePickerOnStart,
+  yoloResumeUpgrade,
 }: {
   channel: Channel
   questionStore: QuestionStore
+  /** Optional for embedders; the real plugin always supplies its shared store. */
+  approvalStore?: ApprovalStore
   onExit: () => void
   /** Update the installed package and restart the current TUI process. */
   onUpdate?: () => void
   /** Open the current-working-directory session picker after the first frame. */
   openResumePickerOnStart?: boolean
+  /** `--yolo` resumed an existing session; require a user upgrade decision. */
+  yoloResumeUpgrade?: boolean
 }) {
+  // Keep small standalone/headless Chat mounts compatible. The production
+  // plugin passes a shared store that is also wired to DSH's approval
+  // waterfall; a local empty store merely leaves the panel absent.
+  const approvalStore = React.useMemo(
+    () => suppliedApprovalStore ?? new ApprovalStore(),
+    [suppliedApprovalStore],
+  )
   // Re-render whenever the channel mutates; rows/status are read fresh below.
   React.useSyncExternalStore(channel.subscribe, () => channel.version)
   // Re-render on language switches so the whole UI hot-swaps its strings.
@@ -126,6 +143,10 @@ export function Chat({
   const questionSnapshot = React.useSyncExternalStore(
     listener => questionStore.subscribe(listener),
     () => questionStore.getSnapshot(),
+  )
+  const approvalSnapshot = React.useSyncExternalStore(
+    listener => approvalStore.subscribe(listener),
+    () => approvalStore.getSnapshot(),
   )
   // When a questionnaire batch completes, fold a Q&A summary into the
   // transcript (the tool card itself is hidden from the message list).
@@ -183,6 +204,11 @@ export function Chat({
   const [rewindConfirm, setRewindConfirm] = React.useState<ChatRow | null>(null)
   /** Startup context panel: expanded by header click or Ctrl+T. */
   const [loadedContextOpen, setLoadedContextOpen] = React.useState(false)
+  const [permissionPickerOpen, setPermissionPickerOpen] = React.useState(false)
+  const [permissionIndex, setPermissionIndex] = React.useState(0)
+  const [permissionConfirm, setPermissionConfirm] = React.useState<{
+    fromYoloResume: boolean
+  } | null>(null)
   /** `/` transcript search (less-style incsearch, ported from CC's REPL). */
   const [searchOpen, setSearchOpen] = React.useState(false)
   const [searchQuery, setSearchQuery] = React.useState('')
@@ -307,6 +333,47 @@ export function Chat({
     startupResumeOpenedRef.current = true
     openStartupResumePicker()
   }, [openResumePickerOnStart, openStartupResumePicker])
+
+  // A bare `--resume` starts a temporary fresh yolo session, then swaps to
+  // the selected durable session. Track prompt decisions per agent/session
+  // rather than once per mount so the selected restricted session still gets
+  // its explicit upgrade interlock.
+  const yoloResumePromptedSessionsRef = React.useRef(new Set<string>())
+  React.useEffect(() => {
+    if (!yoloResumeUpgrade) return
+    const sessionId = channel.agentId
+    if (yoloResumePromptedSessionsRef.current.has(sessionId)) return
+    if (channel.permissions === undefined) {
+      yoloResumePromptedSessionsRef.current.add(sessionId)
+      channel.notify('Yolo upgrade unavailable: permission service is not loaded', { color: 'warning' })
+      return
+    }
+    if (channel.permissions.current === 'danger-full-access') {
+      yoloResumePromptedSessionsRef.current.add(sessionId)
+      return
+    }
+    yoloResumePromptedSessionsRef.current.add(sessionId)
+    setPermissionConfirm({ fromYoloResume: true })
+  }, [channel, channel.agentId, channel.permissions?.current, yoloResumeUpgrade])
+
+  /** Route every UI initiated permission change through the DSH command path. */
+  const requestPermission = (presetId: string, fromYoloResume = false): void => {
+    const permissions = channel.permissions
+    if (permissions === undefined) {
+      channel.notify('Permission switching unavailable in this profile', { color: 'warning' })
+      return
+    }
+    if (!permissions.options.some(option => option.id === presetId)) {
+      channel.notify(`Unknown permission preset: ${presetId}`, { color: 'error' })
+      return
+    }
+    setPermissionPickerOpen(false)
+    if (presetId === 'danger-full-access') {
+      setPermissionConfirm({ fromYoloResume })
+      return
+    }
+    void channel.switchPermission(presetId)
+  }
 
   /**
    * Dispatch a slash command; false lets the input flow to the model.
@@ -637,11 +704,34 @@ export function Chat({
       case 'logout':
         channel.notify(t('login-logout-hint'))
         return true
+      case 'permission': {
+        const presetId = rawInput.trim()
+        setHelpOpen(false)
+        if (presetId !== '') {
+          requestPermission(presetId)
+          return true
+        }
+        const permissions = channel.permissions
+        if (permissions === undefined) {
+          channel.notify('Permission switching unavailable in this profile', { color: 'warning' })
+          return true
+        }
+        setPermissionIndex(Math.max(0, permissions.options.findIndex(option => option.id === permissions.current)))
+        setPermissionPickerOpen(true)
+        return true
+      }
       case 'permissions':
         setHelpOpen(false)
+        if (channel.permissions === undefined) {
+          channel.pushLocal('/permissions', ['Permission switching is unavailable in this profile.'])
+          return true
+        }
         channel.pushLocal('/permissions', [
-          t('permissions-policy-hint'),
-          t('permissions-approval-hint'),
+          `Current preset: ${channel.permissions.current}`,
+          ...channel.permissions.options.map(option =>
+            `${option.id === channel.permissions?.current ? '✓ ' : '  '}${option.name} — ${option.description}`,
+          ),
+          'Use /permission to switch the current session.',
         ])
         return true
       case 'add-dir':
@@ -651,23 +741,9 @@ export function Chat({
           t('permissions-path-hint'),
         ])
         return true
-      case 'hooks':
-        setHelpOpen(false)
-        channel.pushLocal('/hooks', [
-          t('hooks-not-mounted'),
-          t('hooks-mount-hint'),
-        ])
-        return true
       case 'mcp':
         setHelpOpen(false)
         channel.pushLocal('/mcp', channel.mcpStatus())
-        return true
-      case 'memory':
-        setHelpOpen(false)
-        channel.pushLocal('/memory', [
-          t('memory-none'),
-          t('memory-hint'),
-        ])
         return true
       case 'update':
         setHelpOpen(false)
@@ -680,19 +756,12 @@ export function Chat({
           onUpdate()
         }
         return true
-      case 'vim':
-        channel.notify(t('vim-not-implemented'))
-        return true
       case 'terminal-setup':
         setHelpOpen(false)
         channel.pushLocal('/terminal-setup', [
           t('terminal-setup-hint'),
           t('terminal-paste-hint'),
         ])
-        return true
-      case 'connect':
-        setHelpOpen(false)
-        channel.pushLocal('/connect', [t('connect-none')])
         return true
       case 'audit':
       case 'bug':
@@ -875,6 +944,29 @@ export function Chat({
     // panel's own useInput handles ↑/↓/Space/Tab/Enter/Esc; the prompt
     // input is unmounted, so nothing else should see these keys).
     if (questionSnapshot !== null) return
+    if (approvalSnapshot !== null) {
+      if (key.return) approvalStore.allowCurrent()
+      else if (key.escape || (key.ctrl && input === 'c')) approvalStore.cancelCurrent()
+      else if (input === 'd' || input === 'D') approvalStore.rejectCurrent()
+      event.stopImmediatePropagation()
+      return
+    }
+    if (permissionConfirm !== null) {
+      if (key.return) {
+        const fromYoloResume = permissionConfirm.fromYoloResume
+        setPermissionConfirm(null)
+        void channel.switchPermission('danger-full-access').then((ok) => {
+          if (ok && fromYoloResume) channel.notify('Yolo upgrade enabled for this resumed session')
+        })
+      } else if (key.escape) {
+        if (permissionConfirm.fromYoloResume) {
+          channel.notify('Yolo upgrade declined; preserved this session\'s existing permission')
+        }
+        setPermissionConfirm(null)
+      }
+      event.stopImmediatePropagation()
+      return
+    }
     // Mouse wheel scrolls the transcript — in fullscreen there is no
     // terminal scrollback (alt-screen), so this is the only way back.
     // Imperative scrollBy: no React re-render per notch (CC semantics).
@@ -968,6 +1060,22 @@ export function Chat({
         }
       } else if (key.escape) {
         setThinkingOpen(false)
+      }
+      return
+    }
+    if (permissionPickerOpen) {
+      const options = channel.permissions?.options ?? []
+      if (options.length === 0) {
+        setPermissionPickerOpen(false)
+      } else if (key.upArrow) {
+        setPermissionIndex(index => (index <= 0 ? options.length - 1 : index - 1))
+      } else if (key.downArrow) {
+        setPermissionIndex(index => (index >= options.length - 1 ? 0 : index + 1))
+      } else if (key.return) {
+        const option = options[permissionIndex]
+        if (option !== undefined) requestPermission(option.id)
+      } else if (key.escape) {
+        setPermissionPickerOpen(false)
       }
       return
     }
@@ -1331,6 +1439,18 @@ export function Chat({
             confirmationPending={thinkingConfirm}
           />
         )}
+        {permissionConfirm !== null && (
+          <FullAccessConfirm fromYoloResume={permissionConfirm.fromYoloResume} />
+        )}
+        {permissionPickerOpen && channel.permissions !== undefined && (
+          <Box flexDirection="column" marginTop={1}>
+            <PermissionPicker
+              options={channel.permissions.options}
+              focusIndex={permissionIndex}
+              currentPreset={channel.permissions.current}
+            />
+          </Box>
+        )}
         {resumePickerOpen && resumeSessions.length > 0 && (
           <Box flexDirection="column" marginTop={1}>
             <ResumePicker
@@ -1396,6 +1516,7 @@ export function Chat({
         )}
         {searchOpen && <TranscriptSearchBar query={searchQuery} cursorOffset={searchCursor} count={searchCount} current={searchCurrent} />}
         <GoalTodoPanel channel={channel} />
+        {approvalSnapshot !== null && <ApprovalPanel approval={approvalSnapshot} />}
         {questionSnapshot !== null && (
           <AskUserQuestionPanel
             key={questionSnapshot.key}
@@ -1407,7 +1528,7 @@ export function Chat({
             onCancel={() => questionStore.cancelCurrent()}
           />
         )}
-        {questionSnapshot === null && (
+        {questionSnapshot === null && approvalSnapshot === null && (
           <PromptInput
             channel={channel}
             helpOpen={helpOpen}

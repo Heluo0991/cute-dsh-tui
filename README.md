@@ -121,9 +121,9 @@ TUI 启动后会在后台检查 npm 是否有新版本；发现更新时会提�
 | 会话 | `/new` 新会话 · `/resume` 恢复 · `/clear` 清屏 · `/compact` 压缩 · `/export` 导出 Markdown |
 | 状态 | `/status` 会话信息 · `/cost` token 用量 · `/doctor` 环境自检 · `/config` 配置来源 · `/init` 创建 AGENTS.md |
 | 模型 | `/model` 选择器 · `/thinking` 思考显示 · `/tokens` token 明细 · `/theme` 主题选择器 · `/lang` 中英界面切换 |
-| 账号/策略 | `/login` 凭证状态 · `/logout` 登出说明 · `/permissions` 权限说明 · `/add-dir` 文件策略范围 · `/hooks` · `/mcp` · `/memory` |
+| 账号/策略 | `/login` 凭证状态 · `/logout` 登出说明 · `/permission` 切换当前会话权限 · `/permissions` 查看当前策略 · `/add-dir` 文件策略范围 · `/mcp` |
 | 技能 | `/audit` 代码审计 · `/bug` bug 报告 · `/review` 代码评审 · `/practice` 编程练习 · `/pr_comments` PR 评论 · `/release-notes` 发布说明 · `/vuln-check` 漏洞检查 |
-| 其它 | `/agents` 子代理列表 · `/update` 自动更新并重启 · `/vim` · `/terminal-setup` · `/connect` · `/help` · `/exit` |
+| 其它 | `/agents` 子代理列表 · `/update` 自动更新并重启 · `/terminal-setup` · `/help` · `/exit` |
 | 注册表 | `/plan` `/goal`（DSH 命令注册表插件，随插件自动并入 `/` 菜单） |
 
 ## 文档
@@ -152,6 +152,10 @@ TUI 启动后会在后台检查 npm 是否有新版本；发现更新时会提�
 - **MCP**：通过 `@deepseek-ai/dsh-mcp-client` 挂载服务器，工具以
   `mcp__<服务器>__<工具>` 注册；`/mcp` 查看连接状态。
   详见[配置参考](docs/configuration.md#mcp)。
+- **权限与审批**：新会话默认 `workspace-write + ask`；`/permission` 选择 DSH
+  原生预设并只影响当前会话，工具需要一次性确认时会显示允许/拒绝面板。`--yolo`
+  是显式的 `danger-full-access + never` 启动方式；若它恢复的是受限会话，TUI 会要求
+  再次确认升级。
 
 ## 工作方式
 
@@ -186,20 +190,19 @@ compaction 和持久化继续由 DSH 服务拥有。更详细的模块边界与�
   的 log-only `activity/status` 事件（与 Web UI 同一数据源）。
 - **终端粘贴**：raw 模式下 Ctrl+V 由应用接管——PowerShell `Get-Clipboard` 读取，
   Explorer 复制的文件/图片插入文件路径，纯文本原样插入光标处。
+- **动态注入上下文**：plugin source 写入的模型可见内容显示为带来源名称、可展开的
+  transcript 行，并计入 prompt 上下文分段，不再伪装成用户消息。
 
-## 已知限制
+## 运行行为与已知限制
 
-- 注入上下文（plugin source 内容）未做独立展示，随系统提示词并入进度条统计。
 - `/model` 实时切换走"会话 fork 续聊"（DSH 无原位换模型 API）：历史原样保留，
   新会话路由到新模型，旧会话仍留在 `/resume` 列表里；选择写入
   `~/.dsh-cc/model.json`，重启与 `/new` 均沿用。
 - `Ctrl+V` 读剪贴板依赖 PowerShell `Get-Clipboard`：剪贴板被其他进程短暂锁定
   时自动重试，持续锁定时静默放弃。
 - 退出时以进程退出收尾，不等待 agent 异步落盘（持久化由 persistence 插件兜底）。
-- DSH 的 `/permission`（沙箱模式切换）未适配：需要 approval 服务 + 审批 UI，
-  当前 TUI 不消费审批流，刻意不挂。
-- `/vim` `/connect` `/hooks` `/memory` 为 CC 同名占位：对应能力在 DSH 侧无等价
-  机制，命令会给出明确说明而非静默。
+- 没有一套需要真实模型凭证的自动化端到端测试；CI 使用 headless renderer 与假服务，
+  真实模型集成仍需要在目标终端手动验证。
 
 完整已知限制与安全边界见[架构与限制](docs/architecture.md)。
 
@@ -219,9 +222,10 @@ pnpm smoke
 ## 权限与安全边界
 
 `dsh-TUI` 不实现独立沙箱，而是使用当前 DSH profile 的文件、Shell、sandbox 与
-approval 策略。仓库提供的 profile 在非 Windows 平台默认采用工作区约束与审批；
-Windows 当前没有对应的沙箱后端，组合会退回到 `danger-full-access` 且不弹审批。
-在包含敏感凭证或不可信仓库的环境中启动前，请先检查 profile 配置。
+approval 策略。仓库 profile 在所有平台默认采用 `workspace-write + ask`；Windows
+DSH RC6 使用 PowerShell/Windows ACL sandbox。`/permission` 可在会话内切换 DSH 原生
+预设，`--yolo` 才会启用 `danger-full-access + never`。在包含敏感凭证或不可信仓库的
+环境中启动前，请先检查实际 profile 配置。
 
 详见[权限边界与已知限制](docs/architecture.md#权限与安全边界)。
 

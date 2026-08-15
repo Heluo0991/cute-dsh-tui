@@ -284,6 +284,7 @@ export function MessageList({
               key={row.id}
               rowId={row.id}
               kind={row.kind}
+              label={row.label}
               text={row.text}
               streaming={row.streaming === true}
               durationMs={row.durationMs}
@@ -329,6 +330,7 @@ export function MessageList({
 type MemoRowProps = {
   rowId: number
   kind: ChatRow['kind']
+  label: string | undefined
   text: string
   streaming: boolean
   durationMs: number | undefined
@@ -365,6 +367,7 @@ type MemoRowProps = {
 function TranscriptRow({
   rowId,
   kind,
+  label,
   text,
   streaming,
   durationMs,
@@ -411,6 +414,28 @@ function TranscriptRow({
             isExpanded={isExpanded}
             onClick={onClick}
           />
+        </Box>
+      )
+    case 'context':
+      return (
+        <Box
+          marginTop={addMargin ? 1 : 0}
+          paddingLeft={2}
+          backgroundColor={background}
+          ref={ref}
+          onClick={onClick}
+        >
+          {expanded || isExpanded ? (
+            <Box flexDirection="column">
+              <Text color="permission" bold>⌁ {label ?? 'Injected context'}</Text>
+              <Text dimColor wrap="wrap">{text}</Text>
+            </Box>
+          ) : (
+            <Text dimColor italic>
+              ⌁ {label ?? 'Injected context'} — {compactPreview(text)}{' '}
+              <KeyboardShortcutHint shortcut="ctrl+o" action="expand" parens />
+            </Text>
+          )}
         </Box>
       )
     case 'assistant':
