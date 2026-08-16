@@ -4,13 +4,20 @@
  * like `./src/*` whose source directory is absent from `files`.
  */
 import { execFileSync } from 'node:child_process'
-import { readFileSync } from 'node:fs'
+import { mkdirSync, readFileSync } from 'node:fs'
+import { tmpdir } from 'node:os'
+import { join } from 'node:path'
 
 const packageJson = JSON.parse(readFileSync(new URL('../package.json', import.meta.url), 'utf8'))
 const npmCommand = process.platform === 'win32' ? 'npm.cmd' : 'npm'
+// WSL roots can be read-only while $HOME/.npm is still on that filesystem.
+// A dry-run pack never needs a shared cache, so isolate it under tmpdir
+// unless the caller explicitly configured one.
+const npmCache = process.env.npm_config_cache ?? join(tmpdir(), 'cute-dsh-tui-npm-cache')
+mkdirSync(npmCache, { recursive: true })
 const stdout = execFileSync(npmCommand, ['pack', '--dry-run', '--json'], {
   encoding: 'utf8',
-  env: process.env,
+  env: { ...process.env, npm_config_cache: npmCache },
   maxBuffer: 16 * 1024 * 1024,
 })
 const [packed] = JSON.parse(stdout)
