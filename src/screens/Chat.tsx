@@ -249,6 +249,7 @@ export function Chat({
   const [searchCount, setSearchCount] = React.useState(0)
   const [searchCurrent, setSearchCurrent] = React.useState(0)
   const [btwOpenId, setBtwOpenId] = React.useState<string | null>(null)
+  const [btwPendingId, setBtwPendingId] = React.useState<string | null>(null)
   const [btwDraft, setBtwDraft] = React.useState('')
   const [pluginConfirm, setPluginConfirm] = React.useState<PluginAction | null>(null)
   /** `/login` never uses the regular prompt, so an API key cannot hit history. */
@@ -467,6 +468,27 @@ export function Chat({
         }, remaining)
       })
   }
+
+  /**
+   * Open a BTW thread without stealing the main view while a turn is
+   * running: the child starts immediately, the pane opens once the main
+   * agent settles.
+   */
+  const openBtwWhenSettled = (id: string) => {
+    setBtwDraft('')
+    if (channel.working) {
+      setBtwPendingId(id)
+      channel.notify(t('btw-background-started'))
+    } else {
+      setBtwOpenId(id)
+    }
+  }
+  React.useEffect(() => {
+    if (btwPendingId === null || channel.working) return
+    if (!channel.btwThreads.some(thread => thread.id === btwPendingId)) return
+    setBtwOpenId(btwPendingId)
+    setBtwPendingId(null)
+  }, [btwPendingId, channel.working, channel.btwThreads])
 
   /**
    * Dispatch a slash command; false lets the input flow to the model.
@@ -710,17 +732,11 @@ export function Chat({
         if (question === '') {
           const latest = channel.btwThreads.at(-1)
           if (latest === undefined) channel.notify(t('btw-none-yet'))
-          else {
-            setBtwDraft('')
-            setBtwOpenId(latest.id)
-          }
+          else openBtwWhenSettled(latest.id)
           return true
         }
         void channel.startBtw(question).then(id => {
-          if (id !== undefined) {
-            setBtwDraft('')
-            setBtwOpenId(id)
-          }
+          if (id !== undefined) openBtwWhenSettled(id)
         })
         return true
       }

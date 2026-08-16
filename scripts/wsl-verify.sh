@@ -84,6 +84,7 @@ if [ "$target" = "all" ] || [ "$target" = "tsx" ]; then
   run_tsx scripts/verify-session-credential.ts
   run_tsx scripts/verify-input-highlight.ts
   run_tsx scripts/verify-input-highlight-render.tsx
+  run_tsx scripts/verify-working-commands.tsx
   run_tsx scripts/verify-cjk-truncate.tsx
   run_tsx scripts/repro-askpanel.tsx
   run_tsx scripts/repro-toolcards.tsx

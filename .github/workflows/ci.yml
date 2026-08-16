@@ -72,6 +72,8 @@ jobs:
 
       - run: node --import tsx/esm scripts/verify-input-highlight-render.tsx
 
+      - run: node --import tsx/esm scripts/verify-working-commands.tsx
+
       - run: node --import tsx/esm scripts/verify-channel-goal-todo.mjs
 
       # effort 配置链路回归（issue #51）：cordis 配置的 effort 必须进入实际

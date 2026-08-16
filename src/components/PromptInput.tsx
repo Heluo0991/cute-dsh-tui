@@ -517,8 +517,10 @@ export function PromptInput({
      * Unified Enter semantics (both the parsed `return` key and the raw
      * CR/LF line from Windows cmd pipelines):
      * - command menu open → run the SELECTED command (never send `/mo`);
-     * - model working → STEER into the running turn (next step boundary,
-     *   agent continues — the "immediate" send; Codex/pi semantics);
+     * - slash command (e.g. `/btw …`) → dispatch FIRST, even while a turn
+     *   is running; only non-command text is steered;
+     * - model working + plain text → STEER into the running turn (next step
+     *   boundary, agent continues — the "immediate" send);
      * - otherwise → submit directly (or run a unique command).
      */
     const handleEnter = () => {
@@ -544,11 +546,15 @@ export function PromptInput({
           return
         }
       }
-      if (channel.working && value.trim() !== '') {
-        steerSend(value)
-        return
+      // Slash commands must keep working while a turn runs; only plain text
+      // falls through to the working-turn steer path below.
+      if (!tryRunCommand(value)) {
+        if (channel.working && value.trim() !== '') {
+          steerSend(value)
+          return
+        }
+        submitText(value)
       }
-      if (!tryRunCommand(value)) submitText(value)
     }
 
     // Whole-line input from Windows ConPTY pipelines (cmd batch -> node):

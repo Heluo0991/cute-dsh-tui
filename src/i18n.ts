@@ -217,6 +217,7 @@ const dict = {
   'btw-pane-hint': { zh: '已复制上下文 · 主会话不受影响 · Esc 返回 · Ctrl+C 停止 · Ctrl+O 详情', en: 'Forked context · main conversation is unchanged · Esc returns · Ctrl+C stops · Ctrl+O details' },
   'btw-working': { zh: '旁路会话正在工作…', en: 'Working in side conversation…' },
   'btw-placeholder': { zh: '继续追问…', en: 'Ask a follow-up…' },
+  'btw-background-started': { zh: 'BTW 已在后台启动；当前回合结束后自动打开，不会打断主对话', en: 'BTW started in the background; it will open after the current turn without interrupting the main conversation' },
 
   // ── design-system action labels ─────────────────────────────────────
   'action-navigate': { zh: '移动', en: 'navigate' },

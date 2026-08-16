@@ -45,8 +45,8 @@
 ## 5. Ctrl+O 展开时 `/` 触发第二输入行
 
 **现状**：当前源码中 transcript 搜索已绑定 Ctrl+F，`/` 预留给命令。
-需写 headless 回归验证“expanded 模式下按 `/` 只进入 PromptInput，不出现
-TranscriptSearchBar”，并确认用户看到的现象是否来自旧安装版本。
+**待办**：写 headless 回归验证“expanded 模式下按 `/` 只进入 PromptInput，
+不出现 TranscriptSearchBar”；用户复现时先确认其运行版本是否为旧安装。
 
 ## 6. Goal 完成后仍被反复投喂轮次
 
@@ -72,3 +72,11 @@ BtwPane，主对话在后台继续但用户看不到，容易被误认为“主 
 
 **目标**：主回合运行时启动 BTW 不立即抢走主视图；回合结束后再自动打开，或
 提供明确的“后台 BTW 已启动”提示与切换入口。
+
+**已修复**：
+- `PromptInput` 的 Enter 处理现在**先 dispatch slash command，再 steer 普通文本**；
+  主回合运行中输入 `/btw <问题>` 不再被当成 steer 文本。
+- `/btw` 启动后若主回合仍在运行，先显示“BTW 已在后台启动”通知，主回合结束后
+  自动打开 BTW 面板，不再立即抢走主对话视图。
+- 新增回归 `scripts/verify-working-commands.tsx`，覆盖 working 状态下命令 dispatch
+  与普通文本 steer 两条路径。

@@ -723,6 +723,10 @@ declare const dict: {
         readonly zh: "继续追问…";
         readonly en: "Ask a follow-up…";
     };
+    readonly 'btw-background-started': {
+        readonly zh: "BTW 已在后台启动；当前回合结束后自动打开，不会打断主对话";
+        readonly en: "BTW started in the background; it will open after the current turn without interrupting the main conversation";
+    };
     readonly 'action-navigate': {
         readonly zh: "移动";
         readonly en: "navigate";

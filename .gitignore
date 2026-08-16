@@ -4,3 +4,6 @@ node_modules/
 *.tsbuildinfo
 *.tgz
 AGENTS.md
+
+# local user transcript/debug captures
+logs.txt

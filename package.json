@@ -67,6 +67,7 @@
     "verify:session-credential": "node --import tsx/esm scripts/verify-session-credential.ts",
     "verify:input-highlight": "node --import tsx/esm scripts/verify-input-highlight.ts",
     "verify:input-highlight-render": "node --import tsx/esm scripts/verify-input-highlight-render.tsx",
+    "verify:working-commands": "node --import tsx/esm scripts/verify-working-commands.tsx",
     "verify:package-exports": "node scripts/verify-package-exports.mjs",
     "verify:profile-manifest-recovery": "node scripts/verify-profile-manifest-recovery.mjs",
     "verify:i18n": "node scripts/verify-i18n.mjs"
