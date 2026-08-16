@@ -144,6 +144,14 @@ npm 包 @heluo0991/cute-dsh-tui (package.json)
   `git tag v1.2.0`。
 - 状态：已完成。
 
+### 10. npm 安装时的 ERESOLVE peer 警告
+- 原因：DSH Web UI 客户端包 peer 要求 react ^18；本包渲染器需要 React 19
+  （react-reconciler 0.33 的 peer 是 ^19.2.0）。npm 自动覆盖后仍安装成功。
+- 结论：警告可忽略；Web UI 包不参与 TUI 运行。
+- 已做：README/Getting-started 增加说明，推荐
+  `npm install -g @heluo0991/cute-dsh-tui --legacy-peer-deps`。
+- 状态：文档已处理；如上游客户端包升级到 React 19，再评估移除提示。
+
 ## 5. 验证门禁
 
 ```sh

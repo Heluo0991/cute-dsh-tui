@@ -17,6 +17,14 @@ npm install -g @heluo0991/cute-dsh-tui
 cdsh
 ```
 
+> npm 7+ may print several `ERESOLVE overriding peer dependency` warnings:
+> DSH's web UI client packages declare `react ^18`, while CuteDshTui's renderer
+> requires React 19. Those web packages are not used by the TUI runtime, so the
+> install still succeeds and the warnings are safe to ignore. To hide them:
+> `npm install -g @heluo0991/cute-dsh-tui --legacy-peer-deps` (or add
+> `legacy-peer-deps=true` to your user `~/.npmrc`; that setting affects all npm
+> projects, so choose deliberately).
+
 Linux compiles the local terminal bridge for `node-pty`. If a minimal image reports a `pty.node` error, install the prerequisites once:
 
 ```sh

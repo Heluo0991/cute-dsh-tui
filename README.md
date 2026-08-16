@@ -46,6 +46,12 @@ npm install -g @heluo0991/cute-dsh-tui
 cdsh
 ```
 
+> npm 7+ 可能打印多条 `ERESOLVE overriding peer dependency` 警告：DSH 的 Web UI
+> 客户端包声明 `react ^18`，而 CuteDshTui 的渲染器需要 React 19。这些 Web UI 包
+> 不参与 TUI 运行，安装仍成功，警告可忽略。若想隐藏：
+> `npm install -g @heluo0991/cute-dsh-tui --legacy-peer-deps`（或在用户 `~/.npmrc`
+> 写入 `legacy-peer-deps=true`，但该设置会影响所有 npm 项目，需自行权衡）。
+
 Linux 的 `node-pty` 需要本机 C/C++ 编译工具。大多数开发镜像已具备；若首次启动提示 `node-pty` 或 `pty.node` 构建失败，执行一次 `sudo apt-get install -y build-essential python3` 后重新运行 `cdsh`。启动器会自动重试原生模块构建。
 
 安装完成后，进入任意项目目录执行 `cdsh` 即可。首次启动会创建隔离的 `cute-dsh-tui` profile 并安装当前版本；无需复制 `.cmd` 文件、手动配置 PATH 或全局安装 pnpm。`cute-dsh-tui` 仍保留为兼容别名。
