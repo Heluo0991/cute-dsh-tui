@@ -1,5 +1,6 @@
 import React from 'react'
 import { Box, Text } from '../ui.js'
+import { t } from '../i18n.js'
 import type { ChatRow } from '../channel.js'
 import { Pane } from './design-system/Pane.js'
 import { ListItem } from './design-system/ListItem.js'
@@ -26,17 +27,15 @@ export function RewindPicker({
       <Pane color="permission">
         <Box flexDirection="column">
           <Box marginBottom={1}>
-            <Text color="remember" bold>
-              Rewind conversation to this message?
-            </Text>
+            <Text color="remember" bold>{t('rewind-picker-confirm')}</Text>
           </Box>
-          <ListItem isFocused={false} description="conversation restarts here">
+          <ListItem isFocused={false} description={t('rewind-row-description')}>
             {preview(confirmRow.text)}
           </ListItem>
           <Text dimColor italic>
             <Byline>
-              <KeyboardShortcutHint shortcut="Enter" action="rewind" bold />
-              <KeyboardShortcutHint shortcut="Esc" action="back" />
+              <KeyboardShortcutHint shortcut="Enter" action={t('action-rewind')} bold />
+              <KeyboardShortcutHint shortcut="Esc" action={t('action-back')} />
             </Byline>
           </Text>
         </Box>
@@ -48,19 +47,17 @@ export function RewindPicker({
     <Pane color="permission">
       <Box flexDirection="column">
         <Box marginBottom={1}>
-          <Text color="remember" bold>
-            Rewind
-          </Text>
-          <Text dimColor>Pick a message to rewind the conversation to</Text>
+          <Text color="remember" bold>{t('rewind-picker-title')}</Text>
+          <Text dimColor>{t('rewind-picker-subtitle')}</Text>
         </Box>
         {rows.length === 0 ? (
-          <ListItem isFocused={false}>No messages to rewind to</ListItem>
+          <ListItem isFocused={false}>{t('rewind-no-rows')}</ListItem>
         ) : (
           rows.map((row, index) => (
             <ListItem
               key={row.id}
               isFocused={index === focusIndex}
-              description={index === 0 ? 'last message' : undefined}
+              description={index === 0 ? t('rewind-row-last') : undefined}
             >
               {preview(row.text)}
             </ListItem>
@@ -69,8 +66,8 @@ export function RewindPicker({
       </Box>
       <Text dimColor italic>
         <Byline>
-          <KeyboardShortcutHint shortcut="Enter" action="select" bold />
-          <KeyboardShortcutHint shortcut="Esc" action="exit" />
+          <KeyboardShortcutHint shortcut="Enter" action={t('action-select')} bold />
+          <KeyboardShortcutHint shortcut="Esc" action={t('action-exit')} />
         </Byline>
       </Text>
     </Pane>

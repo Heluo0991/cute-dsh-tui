@@ -985,7 +985,7 @@ export function createChannel(
       Math.round((remaining / state.contextWindow) * 100),
     )
     state.notify(
-      `Context low (${percentLeft}% remaining) · Run /clear or start a new session`,
+      t('context-low', { percent: percentLeft }),
       { color: 'warning', timeoutMs: 8000 },
     )
   }
@@ -1348,7 +1348,7 @@ export function createChannel(
         | { create(options: CreateAgentOptions): Promise<AgentHandle> }
         | undefined
       if (!sessions || !agents) {
-        state.notify('Rewind unavailable — session services not loaded', { color: 'error' })
+        state.notify(t('rewind-unavailable'), { color: 'error' })
         return null
       }
       // Stop a running turn first and WAIT for its turn/end to land — fork
@@ -1360,7 +1360,7 @@ export function createChannel(
       if (wasWorking) {
         const turnSettled = await waitForTurnEnd(agent.session, cancelSeq, 30000)
         if (!turnSettled) {
-          state.notify('Cannot rewind — the turn is still settling, try again in a moment', { color: 'error' })
+          state.notify(t('rewind-settling'), { color: 'error' })
           return null
         }
       }
@@ -1394,7 +1394,7 @@ export function createChannel(
         seed = sessions.fork(agent.session, boundary).events
       } catch (error) {
         const message = error instanceof Error ? error.message : String(error)
-        state.notify(`Cannot rewind to this point · ${message}`, { color: 'error' })
+        state.notify(t('rewind-to-point-failed', { error: message }), { color: 'error' })
         return null
       }
       let handle: AgentHandle
@@ -1420,7 +1420,7 @@ export function createChannel(
           ...(rewindComposed.setup === undefined ? {} : { setup: rewindComposed.setup }),
         })
       } catch {
-        state.notify('Rewind failed — could not create the replacement session', { color: 'error' })
+        state.notify(t('rewind-failed'), { color: 'error' })
         return null
       }
       // Replay the forked history into a fresh transcript (tokens/spinner
@@ -1475,7 +1475,7 @@ export function createChannel(
       // loads the history immediately (the `--resume` launcher path keeps
       // resolving through CUTE_DSH_TUI_RESUME_SESSION at boot).
       if (state.working) {
-        state.notify('Cannot resume while a turn is running', { color: 'warning' })
+        state.notify(t('resume-running'), { color: 'warning' })
         return false
       }
       const agents = ctx.get('agents') as
@@ -1488,7 +1488,7 @@ export function createChannel(
         }
         | undefined
       if (!agents) {
-        state.notify('Resume unavailable — agents service not loaded', { color: 'error' })
+        state.notify(t('resume-unavailable'), { color: 'error' })
         return false
       }
       let handle: AgentHandle
@@ -1515,7 +1515,7 @@ export function createChannel(
         })
       } catch (error) {
         const message = error instanceof Error ? error.message : String(error)
-        state.notify(`Resume failed · ${message}`, { color: 'error', timeoutMs: 8000 })
+        state.notify(t('resume-failed', { error: message }), { color: 'error', timeoutMs: 8000 })
         return false
       }
       // Replay the persisted history into a fresh transcript (same reset as
@@ -1583,7 +1583,7 @@ export function createChannel(
       // transcript reset, the `--resume` marker forgotten (the old session
       // stays persisted for /resume). Same reset shape as rewindTo/resumeTo.
       if (state.working) {
-        state.notify('Cannot start a new session while a turn is running', {
+        state.notify(t('new-session-running'), {
           color: 'warning',
         })
         return false
@@ -1592,7 +1592,7 @@ export function createChannel(
         | { create(options: CreateAgentOptions): Promise<AgentHandle> }
         | undefined
       if (!agents) {
-        state.notify('New session unavailable — agents service not loaded', {
+        state.notify(t('new-session-unavailable'), {
           color: 'error',
         })
         return false
@@ -1645,7 +1645,7 @@ export function createChannel(
         })
       } catch (error) {
         const message = error instanceof Error ? error.message : String(error)
-        state.notify(`New session failed · ${message}`, {
+        state.notify(t('new-session-failed', { error: message }), {
           color: 'error',
           timeoutMs: 8000,
         })
@@ -1704,7 +1704,7 @@ export function createChannel(
       // routed to the chosen model. Same reset shape as rewindTo/resumeTo;
       // the history replays unchanged, only the request model changes.
       if (state.working) {
-        state.notify('Cannot switch models while a turn is running', {
+        state.notify(t('model-switch-running'), {
           color: 'warning',
         })
         return false
@@ -1716,7 +1716,7 @@ export function createChannel(
         | { create(options: CreateAgentOptions): Promise<AgentHandle> }
         | undefined
       if (!sessions || !agents) {
-        state.notify('Model switch unavailable — session services not loaded', {
+        state.notify(t('model-switch-unavailable'), {
           color: 'error',
         })
         return false
@@ -1727,7 +1727,7 @@ export function createChannel(
         seed = sessions.fork(agent.session).events
       } catch (error) {
         const message = error instanceof Error ? error.message : String(error)
-        state.notify(`Cannot switch models · ${message}`, { color: 'error' })
+        state.notify(t('model-switch-fork-failed', { error: message }), { color: 'error' })
         return false
       }
       const childId = SessionId(randomUUID())
@@ -1752,7 +1752,7 @@ export function createChannel(
         })
       } catch (error) {
         const message = error instanceof Error ? error.message : String(error)
-        state.notify(`Model switch failed · ${message}`, { color: 'error', timeoutMs: 8000 })
+        state.notify(t('model-switch-failed', { error: message }), { color: 'error', timeoutMs: 8000 })
         return false
       }
       streaming = undefined
@@ -1817,7 +1817,7 @@ export function createChannel(
         })
       }
       if (effort !== undefined && !writeEffortPref(effort)) {
-        state.notify('Reasoning depth changed, but the preference could not be saved', { color: 'warning' })
+        state.notify(t('reasoning-pref-failed'), { color: 'warning' })
       }
       return true
     },
@@ -1833,7 +1833,7 @@ export function createChannel(
       state.rows.push({
         id: nextRowId,
         kind: 'notice',
-        text: 'Session cleared',
+        text: t('clear-session-done'),
       })
       nextRowId += 1
       state.emit()
@@ -1971,7 +1971,7 @@ export function createChannel(
         | { create(options: CreateAgentOptions): Promise<AgentHandle> }
         | undefined
       if (sessions === undefined || agents === undefined) {
-        state.notify('BTW is unavailable: session services are not loaded', { color: 'error' })
+        state.notify(t('btw-unavailable'), { color: 'error' })
         return undefined
       }
       let seed: readonly SessionEvent[]
@@ -1983,12 +1983,12 @@ export function createChannel(
           ? [...agent.session.events].reverse().find(event => event.type === 'turn/end')?.seq
           : undefined
         if (state.working && boundary === undefined) {
-          state.notify('BTW needs one completed main turn before it can run in parallel', { color: 'warning' })
+          state.notify(t('btw-needs-main-turn'), { color: 'warning' })
           return undefined
         }
         seed = sessions.fork(agent.session, boundary).events
       } catch (error) {
-        state.notify(`BTW could not fork this conversation: ${error instanceof Error ? error.message : String(error)}`, { color: 'error' })
+        state.notify(t('btw-fork-failed', { error: error instanceof Error ? error.message : String(error) }), { color: 'error' })
         return undefined
       }
       const id = randomUUID()
@@ -2167,7 +2167,7 @@ export function createChannel(
       const thread = state.btwThreads.find(item => item.id === id) as MutableBtwThread | undefined
       if (thread !== undefined) {
         thread.working = false
-        thread.rows.push({ id: thread.rows.length + 1, kind: 'notice', text: 'BTW cancelled' })
+        thread.rows.push({ id: thread.rows.length + 1, kind: 'notice', text: t('btw-cancelled') })
       }
       state.emit()
     },
@@ -2190,20 +2190,20 @@ export function createChannel(
     },
     async switchPermission(presetId) {
       if (state.working) {
-        state.notify('Cannot switch permissions while a turn is running', { color: 'warning' })
+        state.notify(t('permission-switch-running'), { color: 'warning' })
         return false
       }
       const permissions = permissionStateFor(agent)
       if (permissions === undefined) {
-        state.notify('Permission switching unavailable in this profile', { color: 'error' })
+        state.notify(t('permission-unavailable-profile'), { color: 'error' })
         return false
       }
       if (!permissions.options.some(option => option.id === presetId)) {
-        state.notify(`Unknown permission preset: ${presetId}`, { color: 'error' })
+        state.notify(t('unknown-permission-preset', { preset: presetId }), { color: 'error' })
         return false
       }
       if (!commandService) {
-        state.notify('Permission switching unavailable: command service not loaded', { color: 'error' })
+        state.notify(t('permission-command-unavailable'), { color: 'error' })
         return false
       }
       try {
@@ -2213,7 +2213,7 @@ export function createChannel(
           new AbortController().signal,
         )
         if (execution === undefined) {
-          state.notify('Permission switching unavailable: DSH /permission is not registered', { color: 'error' })
+          state.notify(t('permission-command-not-registered'), { color: 'error' })
           return false
         }
         const message = execution.result.text
@@ -2227,7 +2227,7 @@ export function createChannel(
         return true
       } catch (error) {
         state.notify(
-          `Permission switch failed 路 ${error instanceof Error ? (error.message ?? String(error)) : String(error)}`,
+          t('permission-switch-failed', { error: error instanceof Error ? (error.message ?? String(error)) : String(error) }),
           { color: 'error', timeoutMs: 8000 },
         )
         return false
@@ -2382,25 +2382,25 @@ export function createChannel(
           ): Promise<unknown>
         }>(ctx, agent, 'compaction')
       if (!compactService) {
-        state.notify('Compaction unavailable · no compaction service in this leaf', {
+        state.notify(t('compact-unavailable'), {
           color: 'warning',
         })
         return
       }
       if (state.working) {
-        state.notify('Cannot compact while a turn is running', { color: 'warning' })
+        state.notify(t('compact-running'), { color: 'warning' })
         return
       }
       const signal = new AbortController().signal
-      state.notify('Compacting conversation…')
+      state.notify(t('compacting'))
       void compactService
         .compactNow(agent, signal)
         .then((result) => {
-          state.notify(result ? 'Conversation compacted' : 'Nothing to compact')
+          state.notify(result ? t('compacted-done') : t('compact-nothing'))
         })
         .catch((error: unknown) => {
           state.notify(
-            `Compaction failed · ${error instanceof Error ? error.message : String(error)}`,
+            t('compaction-failed', { error: error instanceof Error ? error.message : String(error) }),
             { color: 'error', timeoutMs: 8000 },
           )
         })
@@ -2955,7 +2955,7 @@ ${output}
           event.data.source.plugin === 'compact'
         ) {
           const summary = textOf(event.data.content)
-          state.rows.push({ id: nextRowId, kind: 'notice', text: 'Conversation compacted' })
+          state.rows.push({ id: nextRowId, kind: 'notice', text: t('compacted-notice') })
           nextRowId += 1
           if (summary) {
             state.rows.push({ id: nextRowId, kind: 'compact', text: summary })
@@ -3005,7 +3005,7 @@ ${output}
             state.rows.push({
               id: nextRowId,
               kind: 'context',
-              label: `Injected context · ${event.data.source.plugin}`,
+              label: `${t('injected-context-label')} · ${event.data.source.plugin}`,
               text,
               seq: event.seq,
             })
@@ -3269,7 +3269,7 @@ ${output}
           state.rows.push({
             id: nextRowId,
             kind: 'interrupt',
-            text: 'Interrupted · What should Claude do instead?',
+            text: t('interrupted-what-instead'),
           })
           nextRowId += 1
           break

@@ -1,5 +1,6 @@
 import React from 'react'
 import { Box, Text, useTerminalSize, useTheme } from '../ui.js'
+import { t } from '../i18n.js'
 import { formatTokens } from '../cc/format.js'
 import { Byline } from '../components/design-system/Byline.js'
 import { KeyboardShortcutHint } from '../components/design-system/KeyboardShortcutHint.js'
@@ -49,7 +50,7 @@ export function StatusLine({
     const rate = total > 0 ? (usage.cacheRead / total) * 100 : 0
     contextParts.push(
       <Text key="cache">
-        <Text dimColor>cache </Text>
+        <Text dimColor>{t('status-cache-label')} </Text>
         <Text color="inactiveShimmer">{rate.toFixed(1)}%</Text>
       </Text>,
     )
@@ -125,11 +126,11 @@ export function StatusLine({
   // summary (the live working line itself moves to the spinner slot above
   // the input while a turn runs, so the two never duplicate).
   const hint = selectionActive
-    ? 'esc to return to input'
+    ? t('status-hint-selection')
     : channel.working
-      ? 'esc to interrupt'
+      ? t('status-hint-interrupt')
       : !helpOpen
-        ? '? for shortcuts'
+        ? t('status-hint-help')
         : ''
   const activity = channel.workingActivity
   const showActivity =

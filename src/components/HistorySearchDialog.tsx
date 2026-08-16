@@ -1,5 +1,6 @@
 import React from 'react'
 import { Box, Text } from '../ui.js'
+import { t } from '../i18n.js'
 import { useTerminalFocus } from '../ink/hooks/use-terminal-focus.js'
 import { Pane } from './design-system/Pane.js'
 import { ListItem } from './design-system/ListItem.js'
@@ -31,17 +32,17 @@ export function HistorySearchDialog({
     <Pane color="permission">
       <Box flexDirection="column" gap={1}>
         <Text bold color="permission">
-          Search history
+          {t('history-title')}
         </Text>
         <SearchBox
           query={query}
           cursorOffset={cursorOffset}
           isFocused
           isTerminalFocused={isTerminalFocused}
-          placeholder="Type to search…"
+          placeholder={t('history-placeholder')}
         />
         {matches.length === 0 ? (
-          <Text dimColor>No matching commands</Text>
+          <Text dimColor>{t('history-no-matches')}</Text>
         ) : (
           matches.map((entry, index) => (
             <ListItem
@@ -55,9 +56,9 @@ export function HistorySearchDialog({
         )}
         <Text dimColor italic>
           <Byline>
-            <KeyboardShortcutHint shortcut="↑/↓" action="navigate" />
-            <KeyboardShortcutHint shortcut="Enter" action="select" bold />
-            <KeyboardShortcutHint shortcut="Esc" action="cancel" />
+            <KeyboardShortcutHint shortcut="↑/↓" action={t('action-navigate')} />
+            <KeyboardShortcutHint shortcut="Enter" action={t('action-select')} bold />
+            <KeyboardShortcutHint shortcut="Esc" action={t('action-cancel')} />
           </Byline>
         </Text>
       </Box>
@@ -68,8 +69,8 @@ export function HistorySearchDialog({
 /** "now", "5m ago", "2h ago", "3d ago" — like CC's formatRelativeTimeAgo. */
 function formatRelativeAge(ts: number): string {
   const elapsed = Date.now() - ts
-  if (elapsed < 60_000) return 'now'
-  if (elapsed < 3_600_000) return `${Math.floor(elapsed / 60_000)}m ago`
-  if (elapsed < 86_400_000) return `${Math.floor(elapsed / 3_600_000)}h ago`
-  return `${Math.floor(elapsed / 86_400_000)}d ago`
+  if (elapsed < 60_000) return t('history-age-now')
+  if (elapsed < 3_600_000) return t('history-age-minutes', { n: Math.floor(elapsed / 60_000) })
+  if (elapsed < 86_400_000) return t('history-age-hours', { n: Math.floor(elapsed / 3_600_000) })
+  return t('history-age-days', { n: Math.floor(elapsed / 86_400_000) })
 }

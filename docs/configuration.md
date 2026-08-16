@@ -141,7 +141,8 @@ Profile 模式不再使用旧的 `CUTE_DSH_TUI_COMPACT_RATIO`、
 | `DSH_PERMISSION_MODE` | 所有平台的启动期 sandbox policy 覆盖，例如 `workspace-write` 或 `danger-full-access`；通常应优先使用会话内 `/permission` |
 | `CUTE_DSH_TUI_YOLO` | 强制 danger-full-access 并跳过审批（由 `dsh --yolo` 设置） |
 | `CUTE_DSH_TUI_WORKSPACE` | `cute-dsh-tui` 在 Windows、Linux、macOS 上采用的工作目录 |
-| `CUTE_DSH_TUI_DEBUG` | 启用写往 stderr 的 cute-dsh-tui 调试日志 |
+| `CUTE_DSH_TUI_DEBUG` | 启用写往 stderr 的 cute-dsh-tui 调试日志，并显示 profile 引导的原始 pnpm 输出 |
+| `CUTE_DSH_TUI_VERBOSE` | 单独显示 profile 引导/更新的原始 pnpm 输出，不开启其他调试日志 |
 | `CUTE_DSH_TUI_RENDER_LOG` | 指定文件路径，记录原始 ANSI 渲染帧用于取证 |
 
 `CUTE_DSH_TUI_RENDER_LOG` 可能捕获屏幕上可见的提示词、工具参数和输出，不应上传到

@@ -8,6 +8,14 @@ import type { Channel } from '../channel.js'
 import { canAcceptCommandSuggestion, filterCommands, parseCommandName } from '../commands.js'
 import { appendHistory } from '../history.js'
 import { mentionAtCaret } from '../utils/mentions.js'
+import {
+  tokenizePromptInput,
+  wrapToWidthRanges,
+  type InputToken,
+  type InputTokenKind,
+  type WrappedInputLine,
+} from '../utils/inputHighlight.js'
+import type { Theme } from '../theme.js'
 import { CommandSuggestions } from './CommandSuggestions.js'
 import { FileSuggestions } from './FileSuggestions.js'
 import { HelpMenu } from './HelpMenu.js'
@@ -44,6 +52,79 @@ function wordBoundaryRight(text: string, cursor: number): number {
 /** Max input rows before the visible viewport starts scrolling (CC's
  *  maxVisibleLines behavior — the box keeps a stable height). */
 const MAX_VISIBLE_LINES = 5
+
+/** Theme colors for the input tokenizer. No new theme keys are required. */
+const HIGHLIGHT_STYLES: Record<InputTokenKind, {
+  color?: keyof Theme
+  bold?: boolean
+}> = {
+  text: {},
+  command: { color: 'suggestion', bold: true },
+  'command-unknown': { color: 'warning' },
+  argument: { color: 'inactiveShimmer' },
+  mention: { color: 'professionalBlue' },
+}
+
+/** The source ranges of one visual row that overlap the token list. */
+function spansForLine(
+  line: WrappedInputLine,
+  tokens: readonly InputToken[],
+): Array<{ start: number; end: number; kind: InputTokenKind }> {
+  const spans: Array<{ start: number; end: number; kind: InputTokenKind }> = []
+  for (const token of tokens) {
+    const start = Math.max(token.start, line.start)
+    const end = Math.min(token.end, line.end)
+    if (end <= start) continue
+    spans.push({ start, end, kind: token.kind })
+  }
+  return spans
+}
+
+/**
+ * Render one highlighted visual row. The caret row additionally inverts the
+ * single character at `caret`, or renders a trailing inverse blank when the
+ * caret sits at the row end (the old plain-text renderer's exact contract).
+ */
+function renderHighlightedLine(
+  value: string,
+  line: WrappedInputLine,
+  tokens: readonly InputToken[],
+  caret: number | null,
+): React.ReactNode[] {
+  const nodes: React.ReactNode[] = []
+  const spans = spansForLine(line, tokens)
+  for (const span of spans) {
+    let position = span.start
+    const style = HIGHLIGHT_STYLES[span.kind]
+    if (caret !== null && caret >= position && caret < span.end) {
+      if (position < caret) {
+        nodes.push(
+          <Text key={`${position}-before`} color={style.color} bold={style.bold}>
+            {value.slice(position, caret)}
+          </Text>,
+        )
+      }
+      const caretEnd = Math.min(caret + 1, span.end)
+      nodes.push(
+        <Text key={`${caret}-caret`} color={style.color} bold={style.bold} inverse>
+          {value.slice(caret, caretEnd)}
+        </Text>,
+      )
+      position = caretEnd
+    }
+    if (position < span.end) {
+      nodes.push(
+        <Text key={`${position}-after`} color={style.color} bold={style.bold}>
+          {value.slice(position, span.end)}
+        </Text>,
+      )
+    }
+  }
+  if (caret !== null && caret >= line.end) {
+    nodes.push(<Text key={`${line.end}-trailing-caret`} inverse> </Text>)
+  }
+  return nodes
+}
 
 /**
  * Imperative handle for the Chat-level Ctrl+C rule: Chat's useInput listener
@@ -191,23 +272,36 @@ export function PromptInput({
   // appears.
   const [fileList, setFileList] = React.useState<readonly string[]>([])
   const [fileSelected, setFileSelected] = React.useState(0)
+  const fileRequest = React.useRef(0)
   const mention = mentionAtCaret(value, cursor)
   const atTrigger = mention !== undefined
   React.useEffect(() => {
-    if (atTrigger) {
-      void channel.listFiles().then(setFileList)
-    }
+    const request = ++fileRequest.current
+    if (!atTrigger) return
+    void channel.listFiles().then(list => {
+      // Fast typing can close/reopen the mention trigger before an earlier
+      // directory walk settles; only the latest request may populate the menu.
+      if (request === fileRequest.current) setFileList(list)
+    })
   }, [atTrigger, channel])
   const atRest = (mention?.query ?? '').toLowerCase()
   // Match the relative path prefix OR the basename (CC's IDE suggestions do
   // both): `@src/ink` and `@ink` both find `src/ink/Box.js`.
   const fileMatches = atTrigger
-    ? fileList.filter(file => {
+    ? fileList
+      .filter(file => {
         const lower = file.toLowerCase()
         if (lower.startsWith(atRest)) return true
         if (atRest.includes('/')) return false
         const base = lower.split('/').pop() ?? ''
         return base.startsWith(atRest)
+      })
+      .sort((a, b) => {
+        const dirOrder = Number(b.endsWith('/')) - Number(a.endsWith('/'))
+        if (dirOrder !== 0) return dirOrder
+        const aBase = (a.split('/').pop() ?? a).toLowerCase()
+        const bBase = (b.split('/').pop() ?? b).toLowerCase()
+        return aBase < bBase ? -1 : aBase > bBase ? 1 : 0
       })
     : []
   // Esc dismisses the overlay for the token being edited (it reopens once the
@@ -597,14 +691,37 @@ export function PromptInput({
       setCursor(previous => Math.min(value.length, previous + 1))
       return
     }
-    if (key.ctrl && key.leftArrow) {
+    if ((key.ctrl || key.meta) && key.leftArrow) {
       // Jump to the previous word boundary (readline alt+b).
       setCursor(previous => wordBoundaryLeft(value, previous))
       return
     }
-    if (key.ctrl && key.rightArrow) {
+    if ((key.ctrl || key.meta) && key.rightArrow) {
       // Jump to the next word boundary (readline alt+f).
       setCursor(previous => wordBoundaryRight(value, previous))
+      return
+    }
+    if (key.backspace && key.ctrl) {
+      // Delete the word before the caret, including its leading whitespace
+      // run (readline/CC convention).
+      if (cursor === 0) return
+      const before = value.slice(0, cursor)
+      let end = before.length
+      while (end > 0 && /\s/.test(before[end - 1]!)) end--
+      let start = end
+      while (start > 0 && !/\s/.test(before[start - 1]!)) start--
+      setValue(value.slice(0, start) + value.slice(cursor))
+      setCursor(start)
+      return
+    }
+    if (key.delete && key.ctrl) {
+      // Delete the word after the caret, including its trailing whitespace.
+      if (cursor >= value.length) return
+      const after = value.slice(cursor)
+      let end = 0
+      while (end < after.length && !/\s/.test(after[end]!)) end++
+      while (end < after.length && /\s/.test(after[end]!)) end++
+      setValue(value.slice(0, cursor) + after.slice(end))
       return
     }
     if (key.backspace) {
@@ -722,8 +839,8 @@ export function PromptInput({
       escPendingRef.current = true
       channel.notify(
         value.length === 0
-          ? 'Press Esc again to rewind'
-          : 'Press Esc again to clear',
+          ? t('input-esc-again-rewind')
+          : t('input-esc-again-clear'),
       )
       escTimerRef.current = setTimeout(() => {
         escPendingRef.current = false
@@ -747,10 +864,12 @@ export function PromptInput({
 
   // === Render: hard-wrap every logical line at the input width, then show
   // the window of visual lines with the caret row always visible (CC's
-  // maxVisibleLines behavior with automatic wrapping).
+  // maxVisibleLines behavior with automatic wrapping). Wrapping now returns
+  // source ranges so semantic highlighting can be sliced per visual row.
   const inputWidth = Math.max(10, columns - 3)
-  const visualLines = wrapToWidth(value, inputWidth)
-  const caretVisualLine = wrapToWidth(value.slice(0, cursor), inputWidth).length - 1
+  const visualLines = wrapToWidthRanges(value, inputWidth)
+  const caretVisualLine =
+    wrapToWidthRanges(value.slice(0, cursor), inputWidth).length - 1
   const windowStart = Math.max(
     0,
     Math.min(
@@ -762,45 +881,28 @@ export function PromptInput({
     windowStart,
     windowStart + MAX_VISIBLE_LINES,
   )
+  const inputTokens = React.useMemo(
+    () => tokenizePromptInput(value, channel.commandList),
+    [value, channel.commandList],
+  )
 
-  // Caret position in the caret's visual row, in two units:
-  // - char index (for slicing the row's characters in the render below)
-  // - visual column (for the physical cursor declaration — CJK characters
-  //   occupy TWO terminal columns, so the raw char count would park the
-  //   cursor mid-character and Windows Terminal would paint the IME
-  //   preedit (pinyin) over the surrounding text).
-  const caretCharCol = () => {
-    const before = value.slice(0, cursor)
-    const rows = wrapToWidth(before, inputWidth)
-    const last = rows[rows.length - 1] ?? ''
-    return last.length
-  }
+  // Visual column of the physical cursor declaration — CJK characters
+  // occupy TWO terminal columns, so the raw char count would park the
+  // cursor mid-character and Windows Terminal would paint the IME preedit
+  // (pinyin) over the surrounding text.
   const caretVisualCol = () => {
     const before = value.slice(0, cursor)
-    const rows = wrapToWidth(before, inputWidth)
-    const last = rows[rows.length - 1] ?? ''
-    return stringWidth(last)
+    const rows = wrapToWidthRanges(before, inputWidth)
+    const last = rows[rows.length - 1]
+    return last === undefined ? 0 : stringWidth(last.text)
   }
 
   const rendered = visibleLines.map((line, index) => {
     const absoluteLine = windowStart + index
-    if (absoluteLine !== caretVisualLine) {
-      return (
-        <Text key={absoluteLine} wrap="truncate-end">
-          {line}
-        </Text>
-      )
-    }
-    // Caret row: invert the char at the caret column (solid block).
-    const col = caretCharCol()
-    const before = line.slice(0, col)
-    const at = line[col] ?? ' '
-    const after = line.slice(col + 1)
+    const caret = absoluteLine === caretVisualLine ? cursor : null
     return (
       <Text key={absoluteLine} wrap="truncate-end">
-        {before}
-        <Text inverse>{at}</Text>
-        {after}
+        {renderHighlightedLine(value, line, inputTokens, caret)}
       </Text>
     )
   })
@@ -898,6 +1000,7 @@ export function PromptInput({
             commands={suggestions}
             selectedIndex={selectedCommand}
             columns={columns}
+            query={value}
           />
         </Box>
       )}
@@ -933,34 +1036,4 @@ export function PromptInput({
       </Box>
     </Box>
   )
-}
-
-/**
- * Hard-wrap text into visual rows of at most `width` columns (CJK-aware via
- * stringWidth). Used by the input renderer so long lines wrap instead of
- * truncating, with exact caret-row mapping.
- */
-function wrapToWidth(text: string, width: number): string[] {
-  const rows: string[] = []
-  for (const line of text.split('\n')) {
-    if (line === '') {
-      rows.push('')
-      continue
-    }
-    let current = ''
-    let currentWidth = 0
-    for (const ch of line) {
-      const w = stringWidth(ch)
-      if (currentWidth + w > width && current !== '') {
-        rows.push(current)
-        current = ch
-        currentWidth = w
-      } else {
-        current += ch
-        currentWidth += w
-      }
-    }
-    rows.push(current)
-  }
-  return rows
 }

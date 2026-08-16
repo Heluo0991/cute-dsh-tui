@@ -1,5 +1,6 @@
 import React from 'react'
 import { Box, ScrollBox, Text, type ScrollBoxHandle } from '../ui.js'
+import { t } from '../i18n.js'
 import type { BtwThread } from '../channel.js'
 import { Pane } from './design-system/Pane.js'
 import { MessageList } from './MessageList.js'
@@ -32,8 +33,8 @@ export function BtwPane({
   return (
     <Box flexDirection="column" flexGrow={1} width="100%">
       <Pane color="permission">
-        <Text color="remember" bold>BTW · side conversation</Text>
-        <Text dimColor>  Forked context · main conversation is unchanged · Esc returns · Ctrl+C stops · Ctrl+O details</Text>
+        <Text color="remember" bold>{t('btw-pane-title')}</Text>
+        <Text dimColor>  {t('btw-pane-hint')}</Text>
       </Pane>
       <ScrollBox ref={setHandle} flexDirection="column" flexGrow={1} flexShrink={1} stickyScroll>
         <MessageList
@@ -47,12 +48,12 @@ export function BtwPane({
           onToggleAll={() => {}}
           scrollHandle={handle}
         />
-        {thread.working && <Text color="remember">Working in side conversation…</Text>}
+        {thread.working && <Text color="remember">{t('btw-working')}</Text>}
       </ScrollBox>
       <Box borderStyle="round" borderColor="permission" paddingX={1} flexShrink={0}>
         <Text color="permission">❯ </Text>
         <Text>{draft}</Text>
-        <Text color="subtle">{draft === '' ? 'Ask a follow-up…' : ''}</Text>
+        <Text color="subtle">{draft === '' ? t('btw-placeholder') : ''}</Text>
       </Box>
     </Box>
   )

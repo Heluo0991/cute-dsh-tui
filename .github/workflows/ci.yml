@@ -16,7 +16,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, macos-latest]
+        os: [ubuntu-latest, macos-latest, windows-latest]
         node: [22, 24]
     steps:
       - uses: actions/checkout@v4
@@ -34,9 +34,13 @@ jobs:
 
       - run: pnpm build
 
+      # 构建产物必须与 src 同步提交：任何源码改动后未重建 lib/，
+      # 这里都会让 CI 失败，避免把过期产物发布到 npm。
+      - run: git diff --exit-code -- lib
+
       - run: node scripts/verify-launch-options.mjs
 
-      - run: npm pack --dry-run
+      - run: node scripts/verify-package-exports.mjs
 
       # 带断言的回归：提问面板内联输入（issue #9）+ 工具卡排版
       # （⎿ 缩进、diff 红绿行、信封剥离），失败即非零退出。
@@ -62,6 +66,12 @@ jobs:
 
       - run: node --import tsx/esm scripts/verify-compact.mjs
 
+      - run: node --import tsx/esm scripts/verify-session-credential.ts
+
+      - run: node --import tsx/esm scripts/verify-input-highlight.ts
+
+      - run: node --import tsx/esm scripts/verify-input-highlight-render.tsx
+
       - run: node --import tsx/esm scripts/verify-channel-goal-todo.mjs
 
       # effort 配置链路回归（issue #51）：cordis 配置的 effort 必须进入实际
@@ -75,6 +85,10 @@ jobs:
       # 模型路由原子解析回归（issue #67）：完整 config > pref > default 整对
       # 生效，provider-only pin 不得与另一半拼接出错配路由。
       - run: node scripts/verify-model-route.mjs
+
+      - run: node scripts/verify-profile-manifest-recovery.mjs
+
+      - run: node scripts/verify-i18n.mjs
 
       # CJK 显示宽度截断回归（issue #41）：4 处描述按终端显示宽度处理，
       # CJK 不劈字、窄终端布局不破。
@@ -102,6 +116,8 @@ jobs:
       - run: pnpm install --frozen-lockfile
 
       - run: pnpm build
+
+      - run: git diff --exit-code -- lib
 
       - run: npm install -g @deepseek-ai/dsh
 

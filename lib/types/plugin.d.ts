@@ -25,7 +25,7 @@ export declare function apply(ctx: Context, config: Config): Promise<void>;
  * is always observed). Exported for scripts/verify-teardown-exit.tsx.
  */
 export declare function createExitFunnel(deps: {
-    onUserExit: (error?: unknown) => void;
+    onUserExit: (error?: unknown) => void | Promise<void>;
 }): {
     handleExit: (error?: unknown) => void;
     markTeardown: () => void;

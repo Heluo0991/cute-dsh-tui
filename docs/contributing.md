@@ -90,6 +90,7 @@ Cordis config
 
 - 支持 Node `^22.19 || >=24`；CI 用 Node 24。
 - CI 与发布用 pnpm 11；开发也请用 pnpm。
+- 在 WSL 中只做混合验证，不重装依赖；见 [WSL 混合开发环境](development-wsl.md)。
 - 干净检出安装：`pnpm install --frozen-lockfile`。
 - `pnpm-lock.yaml` 是 CI 锁文件。`package-lock.json` 为 npm 用户跟踪但当前
   落后于包版本；不要把它当作依赖真源，也不要顺手改写。

@@ -1,5 +1,6 @@
 import React from 'react'
 import { Box, Text } from '../ui.js'
+import { t } from '../i18n.js'
 import type { LlmModelInfo } from '@deepseek-ai/dsh-llm'
 import { Pane } from './design-system/Pane.js'
 import { ListItem } from './design-system/ListItem.js'
@@ -43,8 +44,8 @@ export function ModelPicker({
       </Box>
       <Text dimColor italic>
         <Byline>
-          <KeyboardShortcutHint shortcut="Enter" action="choose depth" bold />
-          <KeyboardShortcutHint shortcut="Esc" action="exit" />
+          <KeyboardShortcutHint shortcut="Enter" action={t('action-choose-depth')} bold />
+          <KeyboardShortcutHint shortcut="Esc" action={t('action-exit')} />
         </Byline>
       </Text>
     </Pane>

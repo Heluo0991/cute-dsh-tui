@@ -9,13 +9,17 @@
  */
 process.env.FORCE_COLOR = '3'
 
-const [{ PassThrough, Writable }, React, { render }, { Chat }, { QuestionStore }] = await Promise.all([
+const [{ PassThrough, Writable }, React, { render }, { Chat }, { QuestionStore }, { setLang }] = await Promise.all([
   import('node:stream'),
   import('react'),
   import('../src/ui.js'),
   import('../src/screens/Chat.js'),
   import('../src/questions.js'),
+  import('../src/i18n.js'),
 ])
+
+// Smoke asserts English copy; pin the language before the first render.
+setLang('en')
 
 class FakeStdout extends Writable {
   columns = 100

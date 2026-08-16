@@ -147,7 +147,7 @@ export function LogoV2({
             {cwd}
           </Text>
           <Text wrap="truncate-end">
-            <Text dimColor>Tip: </Text>
+            <Text dimColor>{tr('logo-tip-label')}</Text>
             /model
             <Text dimColor> {tr('logo-tip-model')} · </Text>
             /help

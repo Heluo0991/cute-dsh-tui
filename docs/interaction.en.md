@@ -21,6 +21,7 @@
 | `Ctrl+T` | Expand or collapse the startup loaded-context panel |
 | `Ctrl+R` | Open input-history search; repeat or press `Down` for the next result |
 | `Ctrl+L` | Clear and force a physical terminal redraw |
+| `Ctrl+G` | Expand or fold the older messages hidden in long transcripts |
 | `?` | Open shortcut and command help when the input is empty |
 | `Shift+Up` | Enter message selection; arrows move, `Enter` expands one row, `Esc` exits |
 
@@ -35,12 +36,13 @@ move forward and backward through matches.
 | Key | Behavior |
 | --- | --- |
 | `Left/Right` | Move by character |
-| `Ctrl+Left/Right` | Move by word |
+| `Ctrl+Left/Right` (or `Alt+Left/Right`) | Move by word |
 | `Home/End` | Move to the start/end of the current logical line |
-| `Ctrl+A` / `Ctrl+E` | In the editor, move to the start/end of the current logical line; `Ctrl+E` also expands or folds hidden older rows in long transcripts |
+| `Ctrl+A` / `Ctrl+E` | In the editor, move to the start/end of the current logical line |
 | `Ctrl+U` | Delete before the caret |
 | `Ctrl+K` | Delete after the caret |
-| `Ctrl+W` | Delete the preceding word |
+| `Ctrl+W` / `Ctrl+Backspace` | Delete the preceding word |
+| `Ctrl+Delete` | Delete the following word |
 
 Bracketed paste from right-click or the terminal's native paste command is
 inserted verbatim, including newlines, and is never mistaken for an Enter key.
@@ -54,6 +56,22 @@ to the message automatically (0.3.7+).
 
 On `Ctrl+V`, files/images copied from Windows Explorer are inserted as file paths
 (quoted automatically when they contain spaces) instead of pasting the path text.
+
+### Input syntax highlighting
+
+The editor highlights text in real time: recognized `/commands` and subcommands
+use the theme accent, an unrecognized slash prefix uses the warning color,
+command arguments are dimmed, and `@file references` anywhere in the message
+use blue. Highlighting is display-only; the submitted text stays unchanged.
+
+### Clipboard platform support
+
+| Platform | `Ctrl+V` source |
+| --- | --- |
+| Windows | PowerShell `Get-Clipboard`, including file paths |
+| macOS | `pbpaste`, text |
+| Linux | `wl-paste` → `xclip` → `xsel`, text |
+| All platforms | Falls back to `Ctrl+Shift+V` / right-click native terminal paste |
 
 ## Interface language
 

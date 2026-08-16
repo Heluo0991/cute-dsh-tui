@@ -17,7 +17,7 @@
 
 ## Highlights
 
-- Terminal-native chat, Markdown, tool cards, file references, and command completion.
+- Terminal-native chat, Markdown, tool cards, file references, and command completion, with real-time semantic highlighting for `/commands`, arguments, and `@file` references in the editor.
 - Messages wordmark, pixel mascot, and a one-time startup shimmer that settles without continuous repainting.
 - Two-stage `/model`: choose a model and then its reasoning depth; Max briefly lights the input border.
 - `/resume`, `/new`, `/compact`, `/export`, fork-aware recovery, `/btw`, and profile plugin management.

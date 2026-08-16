@@ -26,7 +26,7 @@ import { truncateToWidth } from '../ink/truncateToWidth.js'
  * rows; `selectedId` highlights the selected row.
  */
 /** Render cap for very long sessions (CC's MAX_MESSAGES_WITHOUT_VIRTUALIZATION
- *  equivalent): older rows fold behind a Divider until Ctrl+E expands them. */
+ *  equivalent): older rows fold behind a Divider until Ctrl+G expands them. */
 const MAX_RENDERED_ROWS = 300
 
 // --- layout virtualization constants -------------------------------------
@@ -268,7 +268,7 @@ export function MessageList({
       )}
       {!showAll && hiddenCount > 0 && (
         <Box marginTop={1} onClick={onToggleAll}>
-          <Divider title={` ctrl+e to show ${hiddenCount} previous messages `} />
+          <Divider title={t('show-previous-messages', { count: hiddenCount })} />
         </Box>
       )}
       {topPad > 0 && <Box height={topPad} flexShrink={0} />}
@@ -427,13 +427,13 @@ function TranscriptRow({
         >
           {expanded || isExpanded ? (
             <Box flexDirection="column">
-              <Text color="permission" bold>⌁ {label ?? 'Injected context'}</Text>
+              <Text color="permission" bold>⌁ {label ?? t('injected-context-label')}</Text>
               <Text dimColor wrap="wrap">{text}</Text>
             </Box>
           ) : (
             <Text dimColor italic>
-              ⌁ {label ?? 'Injected context'} — {compactPreview(text)}{' '}
-              <KeyboardShortcutHint shortcut="ctrl+o" action="expand" parens />
+              ⌁ {label ?? t('injected-context-label')} — {compactPreview(text)}{' '}
+              <KeyboardShortcutHint shortcut="ctrl+o" action={t('action-expand')} parens />
             </Text>
           )}
         </Box>
@@ -580,7 +580,7 @@ function TranscriptRow({
           ) : (
             <Text dimColor italic>
               ∴ {t('compact-summary-folded')} · {compactPreview(text)}{' '}
-              <KeyboardShortcutHint shortcut="ctrl+o" action="expand" parens />
+              <KeyboardShortcutHint shortcut="ctrl+o" action={t('action-expand')} parens />
             </Text>
           )}
         </Box>
