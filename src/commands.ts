@@ -44,6 +44,7 @@ export const LOCAL_COMMANDS: LocalCommand[] = [
   // Session / environment
   { name: 'status', description: 'Show session status' },
   { name: 'cost', description: 'Show session token usage' },
+  { name: 'webui', description: 'Show the WebUI link and launch instructions' },
   { name: 'config', description: 'Show the cute-dsh-tui configuration source' },
   { name: 'doctor', description: 'Run environment checks' },
   { name: 'init', description: 'Create AGENTS.md in the working directory' },

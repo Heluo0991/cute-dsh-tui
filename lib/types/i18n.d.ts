@@ -567,6 +567,26 @@ declare const dict: {
         readonly zh: "标题   {{title}}";
         readonly en: "Title   {{title}}";
     };
+    readonly 'webui-url': {
+        readonly zh: "地址      {{url}}";
+        readonly en: "URL       {{url}}";
+    };
+    readonly 'webui-launch': {
+        readonly zh: "启动      终端运行 dsh web（或 dsh --profile web；使用同一个 DSH_HOME）";
+        readonly en: "Launch      run dsh web in a terminal (or dsh --profile web; same DSH_HOME)";
+    };
+    readonly 'webui-port': {
+        readonly zh: "端口      dsh web --port <端口>（默认 3080；0 由系统分配）";
+        readonly en: "Port        dsh web --port <port> (default 3080; 0 lets the OS choose)";
+    };
+    readonly 'webui-host': {
+        readonly zh: "地址      仅本机 127.0.0.1；Web profile 尚未允许 --host 0.0.0.0";
+        readonly en: "Host        loopback 127.0.0.1 only; the web profile rejects --host 0.0.0.0";
+    };
+    readonly 'webui-local-only': {
+        readonly zh: "说明      此命令只显示管理入口，不会写入会话日志或发送给模型";
+        readonly en: "Note        this command only shows the management entry; it writes nothing to the session log and sends nothing to the model";
+    };
     readonly 'cost-cache-hit-rate': {
         readonly zh: "缓存命中率 {{rate}}% · 缓存 {{read}} 读 / {{write}} 写";
         readonly en: "Cache hit rate {{rate}}% · cache {{read}} read / {{write}} write";

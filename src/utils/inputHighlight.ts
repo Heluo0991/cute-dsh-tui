@@ -161,6 +161,81 @@ export function tokenizePromptInput(
   return mergeAdjacent(tokens)
 }
 
+/** Where the caret sits in the wrapped layout (row index + display column). */
+export interface VisualCursorPosition {
+  line: number
+  column: number
+}
+
+/**
+ * Caret position in visual-row space. Uses the same wrapToWidthRanges
+ * projection as the renderer, so soft-wrapped long lines count as distinct
+ * rows and CJK characters count as two columns.
+ */
+export function visualCursorPosition(
+  value: string,
+  cursor: number,
+  width: number,
+): VisualCursorPosition {
+  const safeWidth = Math.max(1, width)
+  const before = value.slice(0, Math.max(0, Math.min(cursor, value.length)))
+  const rows = wrapToWidthRanges(before, safeWidth)
+  const last = rows[rows.length - 1]
+  return {
+    line: Math.max(0, rows.length - 1),
+    column: last === undefined ? 0 : stringWidth(last.text),
+  }
+}
+
+/**
+ * Map a visual column back to the UTF-16 caret offset inside one wrapped
+ * row. Wide characters are atomic: a target column that would land inside
+ * one returns the offset before it, never a mid-glyph cursor.
+ */
+export function cursorAtVisualColumn(
+  line: WrappedInputLine,
+  column: number,
+): number {
+  const target = Math.max(0, column)
+  let used = 0
+  let offset = 0
+  for (const char of line.text) {
+    const charWidth = stringWidth(char)
+    if (target < used + charWidth) return line.start + offset
+    used += charWidth
+    offset += char.length
+  }
+  return line.end
+}
+
+/** Direction for visual-row caret movement. */
+export type VerticalCursorDirection = 'up' | 'down'
+
+/**
+ * Move the caret to the nearest visual row above/below, preserving the
+ * current display column. Returns the new caret and whether the requested
+ * edge was already reached (the caller then falls back to history/overlay
+ * navigation — only the first/last visual row leaves the input).
+ */
+export function moveCursorVertically(
+  value: string,
+  cursor: number,
+  width: number,
+  direction: VerticalCursorDirection,
+): { cursor: number; atEdge: boolean } {
+  const safeWidth = Math.max(1, width)
+  const rows = wrapToWidthRanges(value, safeWidth)
+  if (rows.length === 0) return { cursor: 0, atEdge: true }
+  const position = visualCursorPosition(value, cursor, safeWidth)
+  const targetLine = direction === 'up' ? position.line - 1 : position.line + 1
+  const target = rows[targetLine]
+  if (target === undefined) return { cursor, atEdge: true }
+  return {
+    cursor: cursorAtVisualColumn(target, position.column),
+    atEdge: false,
+  }
+}
+
 /**
  * Hard-wrap text into visual rows of at most `width` display columns,
  * mirroring PromptInput's old `wrapToWidth` exactly while also returning the

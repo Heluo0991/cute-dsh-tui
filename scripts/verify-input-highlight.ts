@@ -4,7 +4,12 @@
  * wrapping must preserve CJK display width and source ranges.
  */
 import { LOCAL_COMMANDS } from '../src/commands.js'
-import { tokenizePromptInput, wrapToWidthRanges } from '../src/utils/inputHighlight.js'
+import {
+  cursorAtVisualColumn,
+  moveCursorVertically,
+  tokenizePromptInput,
+  wrapToWidthRanges,
+} from '../src/utils/inputHighlight.js'
 import type { LocalCommand } from '../src/commands.js'
 
 let failed = 0
@@ -48,7 +53,27 @@ const tokens = (value: string, commands: readonly LocalCommand[] = LOCAL_COMMAND
   check('quoted mention stays one token', quoted[0]?.kind === 'mention' && quoted[0]?.text === '@"my dir/a.ts"')
 }
 
-// 4. CJK-aware wrapping with source ranges.
+// 4. Visual-row caret movement (PromptInput Up/Down contract).
+{
+  const wrapped = wrapToWidthRanges('abcdef', 3)
+  const down = moveCursorVertically('abcdef', 1, 3, 'down')
+  check('down crosses a soft wrap to the next visual row', !down.atEdge && down.cursor === 4)
+  const up = moveCursorVertically('abcdef', 4, 3, 'up')
+  check('up crosses a soft wrap to the previous visual row', !up.atEdge && up.cursor === 1)
+  check('up from the first visual row is the history edge', moveCursorVertically('abcdef', 1, 3, 'up').atEdge)
+  check('down from the last visual row is the history edge', moveCursorVertically('abcdef', 6, 3, 'down').atEdge)
+  const hard = moveCursorVertically('ab\ncd', 1, 10, 'down')
+  check('down still crosses hard newlines', !hard.atEdge && hard.cursor === 4)
+  const cjkDown = moveCursorVertically('中ab', 1, 3, 'down')
+  check('wide glyphs move as visual rows without splitting', !cjkDown.atEdge && cjkDown.cursor === 3)
+  const cjkUp = moveCursorVertically('中ab', 3, 3, 'up')
+  check('wide glyph up move lands before the wide first row', !cjkUp.atEdge && cjkUp.cursor === 0)
+  const wideLine = wrapToWidthRanges('中ab', 3)[0]
+  const wideCursor = wideLine === undefined ? 0 : cursorAtVisualColumn(wideLine, 1)
+  check('cursorAtVisualColumn never splits a wide glyph', wideCursor === 0)
+}
+
+// 5. CJK-aware wrapping with source ranges.
 {
   const rows = wrapToWidthRanges('你好世界', 4)
   check('CJK wraps into two full-width rows', rows.length === 2 && rows[0]?.text === '你好' && rows[1]?.text === '世界')

@@ -43,6 +43,12 @@ function fgAt(x: number, y: number): number {
   if (!cell) return 0
   return cell.getFgColor() & 0xffffff
 }
+/** Background rgb (0xRRGGBB) of the cell at (x, y), or 0 when unset. */
+function bgAt(x: number, y: number): number {
+  const cell = term.buffer.active.getLine(y)?.getCell(x)
+  if (!cell) return 0
+  return cell.getBgColor() & 0xffffff
+}
 /** Locate the screen row containing `needle`; -1 when absent. */
 function rowOf(needle: string): number {
   const rows = lines()
@@ -100,16 +106,20 @@ async function show(key: string, tool: Record<string, unknown>, verbose = false)
   await sleep(250)
 }
 
-// 1. Settled Edit: diff body, red `- ` / green `+ ` lines under the ⎿ gutter.
+// 1. Settled Edit: hunk stats, then red/green diff rows under the ⎿ gutter.
 {
   const s = screen()
   check('编辑卡片标题为「Edit /tmp/a.ts」（非 JSON args）', s.includes('Edit /tmp/a.ts') && !s.includes('{"file_path"'))
+  const statsRow = rowOf('+1/-1')
   const delRow = rowOf('- const a = 1')
   const addRow = rowOf('+ const a = 2')
-  check('删除行带 ⎿ 缩进', delRow >= 0 && lines()[delRow]!.startsWith('  ⎿  - const a = 1'))
+  check('hunk 统计行带 ⎿ 缩进', statsRow >= 0 && lines()[statsRow]!.startsWith('  ⎿  +1/-1'))
+  check('删除行延续缩进', delRow >= 0 && lines()[delRow]!.startsWith('     - const a = 1'))
   check('新增行延续缩进', addRow >= 0 && lines()[addRow]!.startsWith('     + const a = 2'))
   check('删除行为红色系', delRow >= 0 && fgAt(7, delRow) === 0xb26671)
   check('新增行为绿色系', addRow >= 0 && fgAt(7, addRow) === 0x57956b)
+  check('删除行有红色背景', delRow >= 0 && bgAt(7, delRow) === 0x3e2a2c)
+  check('新增行有绿色背景', addRow >= 0 && bgAt(7, addRow) === 0x27392c)
 }
 
 // 2. Write 新建（oldText null）只有 + 行。
@@ -243,7 +253,73 @@ await show('multi-hunk', {
 })
 check('多 hunk 用 ⋯ 分隔', rowOf('⋯') >= 0 && rowOf('- l1') >= 0 && rowOf('+ l9c') >= 0)
 
-// 11. Grep 搜索卡：按文件分组的 matches。
+// 11. 多行 diff：hunk 计数 + N lines 标记 + 两侧背景色。
+await show('multi-line-diff', {
+  name: 'edit',
+  callView: { card: 'generic', title: 'Edit' },
+  resultView: {
+    card: 'diff',
+    title: 'Edit /tmp/multi.ts',
+    diffs: [{
+      path: '/tmp/multi.ts',
+      oldText: 'l1\nl2',
+      newText: 'n1\nn2\nn3',
+    }],
+  },
+})
+{
+  const s = screen()
+  check('多行 hunk 显示 +3/-2', s.includes('+3/-2'))
+  check('多行 hunk 显示 +3 lines 与 -2 lines', s.includes('+3 lines') && s.includes('-2 lines'))
+  const marker = rowOf('+3 lines')
+  check('+N lines 标记为绿色背景', marker >= 0 && bgAt(7, marker) === 0x27392c)
+  const removedMarker = rowOf('-2 lines')
+  check('-N lines 标记为红色背景', removedMarker >= 0 && bgAt(7, removedMarker) === 0x3e2a2c)
+}
+
+// 12. 多行正文忠实换行：空行与首尾空格保留，超长单行有展开提示。
+await show('multi-line-body', {
+  name: 'bash',
+  callView: { card: 'terminal', title: 'cat file' },
+  resultView: { card: 'terminal', output: '  first line\n\n  third line\n', exitCode: 0 },
+  resultFull: 'ignored',
+})
+{
+  const first = rowOf('first line')
+  const third = rowOf('third line')
+  check('terminal 多行按换行渲染', first >= 0 && third >= 0 && third - first >= 2)
+  const firstRow = first >= 0 ? lines()[first]! : ''
+  const gutter = firstRow.indexOf('⎿')
+  const leadingSpaceKept = gutter >= 0 && firstRow.slice(gutter + 1).startsWith('    first line')
+  check('行首空白保留', leadingSpaceKept)
+}
+await show('long-single-line', {
+  name: 'bash',
+  callView: { card: 'terminal', title: 'cat long' },
+  resultView: { card: 'terminal', output: 'x'.repeat(400), exitCode: 0 },
+  resultFull: 'ignored',
+})
+{
+  check('超长代码块显示展开提示', rowOf('… (ctrl+o to expand)') >= 0)
+}
+await show('long-tail-line', {
+  name: 'bash',
+  callView: { card: 'terminal', title: 'cat tail' },
+  resultView: { card: 'terminal', output: '1\n2\n3\n' + 'y'.repeat(400), exitCode: 0 },
+  resultFull: 'ignored',
+})
+{
+  check('超长尾部行被折叠在展开提示后', rowOf('… +1 lines (ctrl+o to expand)') >= 0 && rowOf('yyyy') === -1)
+}
+await show('long-single-line-open', {
+  name: 'bash',
+  callView: { card: 'terminal', title: 'cat long' },
+  resultView: { card: 'terminal', output: 'x'.repeat(400), exitCode: 0 },
+  resultFull: 'ignored',
+}, true)
+check('verbose 超长代码块不追加提示', rowOf('… (ctrl+o to expand)') === -1)
+
+// 13. Grep 搜索卡：按文件分组的 matches。
 await show('grep', {
   name: 'grep',
   callView: { card: 'generic', title: 'Grep TODO in src' },
@@ -262,7 +338,7 @@ await show('grep', {
   check('搜索卡按文件分组 + 截断计数', rowOf('src/a.ts') >= 0 && rowOf('12: // TODO fix') >= 0 && rowOf('(7 total)') >= 0)
 }
 
-// 12. Glob 搜索卡：paths 形状。
+// 14. Glob 搜索卡：paths 形状。
 await show('glob', {
   name: 'glob',
   callView: { card: 'generic', title: 'Glob **/*.ts' },

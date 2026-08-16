@@ -82,30 +82,41 @@ npm 包 @heluo0991/cute-dsh-tui (package.json)
 - 文件：`src/components/messages/AssistantToolUseMessage.tsx`
 - 目标：新增行绿色背景 + `+N lines`；删除行红色背景 + `-N lines`；
   hunk 显示 `+A/-D`；保留 CJK/截断/折叠与 `repro-toolcards` 回归。
-- 状态：未开始。
+- 状态：已完成。hunk 首行 `+A/-D`，多行 hunk 增加 `+N lines`/`-N lines`
+  标记，add/del 行使用主题 `diffAdded`/`diffRemoved` 背景；
+  `repro-toolcards.tsx` 已补背景色与计数断言。
 
 ### 2. 代码换行与折叠
 - 文件：同上，`viewLines()` / `capLines()`。
 - 目标：多行代码忠实显示换行；超长代码块明显可展开。
-- 状态：未开始。
+- 状态：已完成。structured/raw/terminal 正文统一 `contentTextLines`（保留
+  内部空行与行首空白）；`capLines()` 按软换行后的视觉行数折叠，超长单行
+  代码块会追加 `… (ctrl+o to expand)` 提示。
 
 ### 3. 状态栏补全
 - 文件：`src/screens/StatusLine.tsx`；必要时 `Chat.tsx` 传参。
 - 目标：显示权限等级（readonly/workspace/fullaccess）、当前模式；
   保留 git 分支和会话标题；品牌统一 `CuteDshTui`。
-- 状态：未开始。
+- 状态：已完成。左组加入 `CuteDshTui` 品牌、`channel.agentPreset` 当前
+  模式与权限等级（readonly/workspace/fullaccess，fullaccess 琥珀色）；
+  右组继续保留 git 分支、cwd 与会话标题。新增 `verify-status-line.tsx`。
 
 ### 4. WebUI 管理面板命令
 - 背景：DSH CLI 有 `dsh web` 命令；TUI 暂无入口。
 - 目标：新增 `/webui`（或等价命令），显示 WebUI 链接/管理入口，
   **不写入对话内容**。
-- 状态：未开始；需先确认 web profile 的端口/URL 与 TUI 内启动方式。
+- 状态：已完成。`/webui` 显示默认 `http://127.0.0.1:3080`（可用
+  `DSH_WEB_URL` 覆盖）、终端启动方式 `dsh web`、`--port` 与 loopback
+  限制说明；仅 `pushLocal` 本地报告，不 submit/steer 给模型。确认结论：
+  web profile 是独立进程，TUI 进程内不能直接 boot，因此命令只展示入口。
 
 ### 5. Ctrl+O 展开时 `/` 第二输入行
 - 当前源码：`/` 只给 slash command，transcript 搜索是 Ctrl+F。
 - 待办：写 headless 回归证明 expanded 下按 `/` 只进 PromptInput，不出现
   TranscriptSearchBar；并确认用户复现来自旧安装版本还是当前源码。
-- 状态：未开始。
+- 状态：已完成。新增 `verify-slash-expanded.tsx`：先按 Ctrl+O，再按 `/`
+  只进入 PromptInput；随后用 Ctrl+F 验证搜索栏检测器有效。结论：当前
+  源码无该 bug，用户复现应来自旧安装版本。
 
 ### 6. Goal Complete 后仍被 goal loop 驱动
 - 结论：不是仓库 `/goal` 代码问题；是外部 goal_round 机制持续注入。
@@ -117,18 +128,21 @@ npm 包 @heluo0991/cute-dsh-tui (package.json)
 - 现状：只按逻辑 `\n` 换行移动；单行长文本软换行时上下键进入历史。
 - 目标：基于 `wrapToWidthRanges` 实现视觉行移动，首/末视觉行才进入历史；
   补 headless 回归。
-- 状态：未开始。
+- 状态：已完成。`inputHighlight.ts` 新增 `moveCursorVertically` /
+  `cursorAtVisualColumn`（宽字符不可劈开），PromptInput Up/Down 改用视觉
+  行；首/末视觉行才进入历史。回归：`verify-input-highlight.ts` 纯函数
+  断言 + `verify-prompt-arrow-keys.tsx` headless 真实按键断言。
 
 ### 8. BTW 抢视图 / 主回合中无法执行 `/btw`
 - **已修复**：见第 3 节第 12 条，提交 `3f00a5e`。
-- 剩余验证：真实 TTY 上再跑一次 30s 命令期间 `/btw`。
+- 剩余验证：真实 TTY 上再跑一次 30s 命令期间 `/btw`（本会话未做，
+  仍需手动验收）。
 
 ### 9. npm 版本号与 git 提交同步
-- 现状：`package.json` 与 `package-lock.json` root 版本均为 `1.1.9`，
-  但已有多个未发布的功能/修复提交。
-- 目标：将版本同步升到 `1.2.0` 并提交（仅版本字段）；**不创建 tag**，
-  待用户决定发布时再 `git tag v1.2.0`。
-- 状态：本交接书提交时一并处理。
+- 现状：`package.json` 与 `package-lock.json` root 版本均为 `1.2.0`。
+- 目标：已随提交 `52c9c1c` 完成；**不创建 tag**，待用户决定发布时再
+  `git tag v1.2.0`。
+- 状态：已完成。
 
 ## 5. 验证门禁
 
@@ -141,9 +155,11 @@ npm 包 @heluo0991/cute-dsh-tui (package.json)
 ```
 
 修改以下区域时额外运行对应回归：
-- 输入/高亮：`verify-input-highlight*.ts`、`verify-working-commands.tsx`
+- 输入/高亮：`verify-input-highlight*.ts`、`verify-prompt-arrow-keys.tsx`、
+  `verify-working-commands.tsx`、`verify-slash-expanded.tsx`
 - 工具卡/diff：`repro-toolcards.tsx`、`verify-cjk-truncate.tsx`
-- 状态栏：`repro-toolcards.tsx`、`verify-cjk-truncate.tsx`
+- 状态栏：`verify-status-line.tsx`、`repro-toolcards.tsx`、
+  `verify-cjk-truncate.tsx`
 - 权限/凭据：`verify-session-credential.ts`、`verify-permissions.mjs`
 - launcher/profile：`verify-profile-manifest-recovery.mjs`、
   `verify-profile-native-build.mjs`、`verify-package-exports.mjs`

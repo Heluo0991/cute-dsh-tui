@@ -12,7 +12,7 @@
 | `Shift+Enter` | Insert a newline at the caret |
 | `Shift+Tab` | Cycle the current session permission preset; `danger-full-access` still requires confirmation |
 | `Alt/Option+Up` | Pull the latest undelivered message back into the editor |
-| `Up/Down` | Select menu items; in ordinary input, browse history or move through multiline text |
+| `Up/Down` | Select menu items; in ordinary input, move by visual row (including soft-wrapped lines); history is reached at the first/last visual row |
 | `Ctrl+V` | Insert system clipboard text; files/images copied in Windows Explorer insert paths |
 | `Esc` | Close the active menu, selection, or modal; clear input; interrupt a working model; double-tap on empty input to rewind |
 | `Ctrl+C` | Interrupt while working; clear non-empty idle input; press twice on empty input to exit |
@@ -25,9 +25,9 @@
 | `?` | Open shortcut and command help when the input is empty |
 | `Shift+Up` | Enter message selection; arrows move, `Enter` expands one row, `Esc` exits |
 
-`/` has two meanings. In normal input it opens slash-command completion. In
-the `Ctrl+O` transcript view it opens full-session search; use `n` and `N` to
-move forward and backward through matches.
+`/` always opens slash-command completion. In the `Ctrl+O` transcript view,
+full-session search is opened with `Ctrl+F`; use `n` and `N` to move forward
+and backward through matches.
 
 `/model` first selects a model route (such as Flash or Pro), then shows the reasoning depths available for that route. The session fork is created only after the second-stage confirmation; choosing `Max` briefly adds a sky-blue animated prompt effect.
 
@@ -180,7 +180,7 @@ to inspect the complete surface available in the current composition.
 | Group | Commands |
 | --- | --- |
 | Sessions | `/new`, `/resume`, `/btw <question>`, `/clear`, `/compact`, `/export` |
-| Status | `/status`, `/cost`, `/config`, `/doctor`, `/init`, `/agents` |
+| Status | `/status`, `/cost`, `/webui`, `/config`, `/doctor`, `/init`, `/agents` |
 | Model and display | `/model`, `/thinking`, `/tokens`, `/activity`, `/preset`, `/theme`, `/lang` |
 | Account and policy | `/login`, `/logout`, `/permission`, `/permissions`, `/add-dir`, `/mcp` |
 | Packaged skills | `/audit`, `/bug`, `/practice`, `/review`, `/pr_comments`, `/release-notes`, `/vuln-check` |
@@ -196,6 +196,8 @@ Additional forms:
   `/permission <id>` chooses one directly and `/permissions` reports policy.
 - `/theme <name>` and `/theme status` are described in the theme guide.
 - `/lang` toggles the interface language (see “Interface language”).
+- `/webui` shows the default WebUI URL and how to start it from a terminal
+  (`dsh web`); it sends nothing to the model.
 - After startup, the TUI checks npm for a newer version in the background and
   shows a notification when one is available. The check follows the npm
   registry configuration (`NPM_CONFIG_REGISTRY` or `~/.npmrc`), so mirror
