@@ -42,17 +42,15 @@ npm 包 @heluo0991/cute-dsh-tui (package.json)
 ## 2. 当前 git 状态
 
 - 分支：`personal/customization`
-- HEAD：`3f00a5e`（见下）
-- `origin/personal/customization` 落后本地 5 个提交（尚未推送）：
+- HEAD：`0b47a3a`（本机）
+- `origin/personal/customization` / `v1.2.0` tag 位于 `0e5af63`；
+  本机领先 1 个文档提交：
   ```text
-  d3b6492 feat: polish TUI UX, fix credentials/keybindings, harden launcher and CI
-  104a022 fix: isolate npm dry-run cache for WSL read-only roots
-  5e163ef ci: tolerate CRLF when checking generated lib artifacts on Windows
-  4c96506 docs: add pending issues checklist and BTW diagnosis
-  3f00a5e fix: dispatch slash commands during working turns and defer BTW view
+  0b47a3a docs: explain and mitigate npm ERESOLVE react peer warnings
   ```
 - 版本策略：发布由 `v*` git tag 触发，CI 校验 tag 与 `package.json.version`
-  完全一致。当前待办第 9 项会同步版本号；**未准备发布时不要创建 v* tag**。
+  完全一致。`v1.2.0` 已随云端同步创建；再次发版前先在本地改版本并重新
+  tag。
 
 ## 3. 已经解决并提交的问题
 
@@ -140,8 +138,8 @@ npm 包 @heluo0991/cute-dsh-tui (package.json)
 
 ### 9. npm 版本号与 git 提交同步
 - 现状：`package.json` 与 `package-lock.json` root 版本均为 `1.2.0`。
-- 目标：已随提交 `52c9c1c` 完成；**不创建 tag**，待用户决定发布时再
-  `git tag v1.2.0`。
+- 目标：已随提交 `52c9c1c` 完成；云端同步后 `v1.2.0` tag 已指向
+  `0e5af63`。
 - 状态：已完成。
 
 ### 10. npm 安装时的 ERESOLVE peer 警告
