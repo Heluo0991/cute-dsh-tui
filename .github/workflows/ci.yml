@@ -36,7 +36,7 @@ jobs:
 
       # 构建产物必须与 src 同步提交：任何源码改动后未重建 lib/，
       # 这里都会让 CI 失败，避免把过期产物发布到 npm。
-      - run: git diff --exit-code -- lib
+      - run: git diff --exit-code --ignore-cr-at-eol -- lib
 
       - run: node scripts/verify-launch-options.mjs
 
@@ -117,7 +117,7 @@ jobs:
 
       - run: pnpm build
 
-      - run: git diff --exit-code -- lib
+      - run: git diff --exit-code --ignore-cr-at-eol -- lib
 
       - run: npm install -g @deepseek-ai/dsh
 

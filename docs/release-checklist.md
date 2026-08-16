@@ -7,7 +7,7 @@
 
 ## 代码与产物
 
-- [ ] `pnpm build` 通过，且 `git diff --exit-code -- lib` 干净（CI 已强制）。
+- [ ] `pnpm build` 通过，且 `git diff --exit-code --ignore-cr-at-eol -- lib` 干净（CI 已强制；忽略 CRLF 差异以兼容 Windows runner）。
 - [ ] `./scripts/wsl-verify.sh all`（或 CI 等价矩阵）全部通过。
 - [ ] `node scripts/verify-package-exports.mjs` 通过：所有 `exports` / `bin` /
       `cordis.patch.yml` 目标都在 tarball 内。
