@@ -72,6 +72,33 @@ export type ToolCallView =
   | { readonly card: 'terminal'; readonly title: string; readonly description?: string; readonly cwd?: string }
   | { readonly card: 'diff'; readonly title: string; readonly diffs: readonly ToolFileDiff[] }
 
+/**
+ * Bash heredoc/tee write patterns → a file-diff preview. `cat > path <<'EOF'
+ * … EOF` (and `tee path <<'EOF'`, `cat >> path`) is the model's habitual way
+ * to write files inside WSL/bash, but the bash tool presents such a call as a
+ * terminal card with the whole command truncated into the header. Recognizing
+ * the pattern renders the edit like the write tool's diff card — green add
+ * rows plus folding — so bash edits keep the native tool-chain look. Any
+ * other command returns undefined and keeps the terminal card.
+ */
+export function bashHeredocWriteDiff(command: string): ToolCallView | undefined {
+  const lines = command.split('\n')
+  if (lines.length < 2) return undefined
+  const head = lines[0]!.trim()
+  const match = /^(?:cat\s+>\s*|cat\s+>>\s*|tee(?:\s+-[A-Za-z])?\s+)(\S+)\s*<<\s*(?:'|")?([A-Za-z_][A-Za-z0-9_]*)(?:'|")?\s*$/.exec(head)
+  if (match === null) return undefined
+  const path = match[1]!
+  const mark = match[2]!
+  const endIndex = lines.findIndex((line, index) => index > 0 && line.trim() === mark)
+  if (endIndex === -1) return undefined
+  const content = lines.slice(1, endIndex).join('\n')
+  return {
+    card: 'diff',
+    title: `Bash ${path}`,
+    diffs: [{ path, oldText: null, newText: content }],
+  }
+}
+
 /** Completed-call render intent (structural subset of dsh-tools
  *  ToolResultView). `web` results and unknown shapes fall back to raw text. */
 export type ToolResultView =
@@ -2809,6 +2836,17 @@ ${output}
    *  args, or a throwing presenter all degrade to the plain text card. */
   const presentCallView = (name: string, rawArgs: string): ToolCallView | undefined => {
     try {
+      // Bash heredoc writes render as file diffs (green add rows + folding)
+      // so WSL-style edits keep the native tool-chain look instead of a
+      // flat terminal card with the whole command in the header.
+      if (name === 'bash' || name === 'shell') {
+        const parsed: unknown = JSON.parse(rawArgs)
+        const command = (parsed as { command?: unknown }).command
+        if (typeof command === 'string') {
+          const diff = bashHeredocWriteDiff(command)
+          if (diff !== undefined) return diff
+        }
+      }
       const tool = toolsRegistry?.get(name, agent)
       if (tool?.presentCall === undefined) return undefined
       return tool.presentCall(JSON.parse(rawArgs)) as ToolCallView | undefined

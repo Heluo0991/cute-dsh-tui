@@ -5,6 +5,7 @@ import { useAnimationFrame } from '../../ink/hooks/use-animation-frame.js'
 import type { ToolCallView, ToolFileDiff, ToolResultView, ToolRow } from '../../channel.js'
 import { ToolUseLoader } from '../ToolUseLoader.js'
 import { formatDuration } from '../../cc/format.js'
+import { getCliHighlightPromise, type CliHighlight } from '../../cc/cliHighlight.js'
 
 type Props = {
   tool: ToolRow
@@ -62,6 +63,100 @@ const add = (text: string): BodyLine => ({ text, tone: 'add' })
 const del = (text: string): BodyLine => ({ text, tone: 'del' })
 const dim = (text: string): BodyLine => ({ text, tone: 'dim' })
 const plain = (text: string): BodyLine => ({ text, tone: 'plain' })
+
+/** Terminal-card command highlight language by tool id; the model's bash
+ *  habits are bash, the native PowerShell tool stays PowerShell (highlight.js
+ *  registers both; a miss falls back to plain text in HighlightedCode). */
+function commandLanguage(name: string): string {
+  switch (name) {
+    case 'pwsh':
+    case 'powershell':
+      return 'powershell'
+    default:
+      return 'bash'
+  }
+}
+
+/** Async cli-highlight renderer: same lazy-load pipeline as Markdown code
+ *  blocks; ANSI output renders inside raw Text (the ported Ink core
+ *  preserves ANSI in children). Falls back to plain text while loading or
+ *  when the language is unsupported. */
+function HighlightedCode({
+  code,
+  language,
+  dimColor = false,
+}: {
+  code: string
+  language: string
+  dimColor?: boolean
+}): React.ReactNode {
+  const [highlight, setHighlight] = React.useState<CliHighlight | null>(null)
+  React.useEffect(() => {
+    let alive = true
+    void getCliHighlightPromise().then((loaded) => {
+      if (alive) setHighlight(loaded)
+    })
+    return () => {
+      alive = false
+    }
+  }, [])
+  const rendered = React.useMemo(() => {
+    if (highlight === null) return code
+    try {
+      return highlight.highlight(code, { language })
+    } catch {
+      return code
+    }
+  }, [code, language, highlight])
+  return <Text dimColor={dimColor}>{rendered}</Text>
+}
+
+/** The terminal card's command block: the full command under the header
+ *  instead of a truncated header line, folded past TEXT_BODY_MAX_LINES and
+ *  syntax-highlighted by tool language (bash / powershell). */
+function CommandLines({
+  command,
+  language,
+  verbose,
+  columns,
+}: {
+  command: string
+  language: string
+  verbose: boolean
+  columns: number
+}): React.ReactNode {
+  const lines = contentTextLines(command)
+  if (lines.length === 0) return null
+  const capped = capLines(lines.map(plain), TEXT_BODY_MAX_LINES, verbose, columns)
+  const code = capped.filter(line => line.tone === 'plain').map(line => line.text).join('\n')
+  const hints = capped.filter(line => line.tone !== 'plain')
+  return (
+    <>
+      {code !== '' && (
+        <Box flexDirection="row" width="100%">
+          <Box width={5} flexShrink={0}>
+            <Text dimColor>{GUTTER_FIRST}</Text>
+          </Box>
+          <Box flexGrow={1}>
+            <HighlightedCode code={code} language={language} />
+          </Box>
+        </Box>
+      )}
+      {hints.map((line, index) => (
+        <Box key={`hint-${index}`} flexDirection="row" width="100%">
+          <Box width={5} flexShrink={0}>
+            <Text dimColor>{GUTTER_REST}</Text>
+          </Box>
+          <Box flexGrow={1}>
+            <Text dimColor wrap="wrap">
+              {line.text}
+            </Text>
+          </Box>
+        </Box>
+      ))}
+    </>
+  )
+}
 
 /** Text → display lines (upstream contentLines rule): empty text is zero
  *  lines; one trailing newline is a terminator, not a line; interior blank
@@ -296,6 +391,11 @@ export function AssistantToolUseMessage({
   // command) — then the call view's title stands.
   const headerTitle = tool.resultView?.title ?? tool.callView?.title
   const headerIsTerminal = view?.card === 'terminal'
+  // The terminal card's command block comes from the CALL view's title (the
+  // full command); result-side titles are output-only and must not re-enter
+  // the command area.
+  const command =
+    headerIsTerminal && tool.callView?.card === 'terminal' ? tool.callView.title : ''
 
   // Live elapsed clock while the call runs (CC's bash elapsed timer): the
   // 1s tick re-renders the card; elapsed derives from wall-clock refs.
@@ -346,13 +446,27 @@ export function AssistantToolUseMessage({
             isUnresolved={isRunning}
             isError={isError}
           />
-          <HeaderTitle name={name} title={headerTitle} isTerminal={headerIsTerminal} displayArgs={displayArgs} />
+          {headerIsTerminal ? (
+            <Box flexShrink={0}>
+              <Text bold wrap="truncate-end">{name}</Text>
+            </Box>
+          ) : (
+            <HeaderTitle name={name} title={headerTitle} isTerminal={false} displayArgs={displayArgs} />
+          )}
           {!isRunning && (
             <Box flexWrap="nowrap">
               <Text dimColor>{elapsedText}</Text>
             </Box>
           )}
         </Box>
+        {command !== '' && (
+          <CommandLines
+            command={command}
+            language={commandLanguage(tool.name)}
+            verbose={verbose}
+            columns={columns}
+          />
+        )}
         {lines.map((line, index) => (
           <Box
             key={index}
