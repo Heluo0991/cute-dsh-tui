@@ -165,6 +165,12 @@ export interface PromptInputProps {
   controllerRef?: React.RefObject<PromptController | null>
   /** True only while an eligible Max-model route is being switched. */
   modelSwitching?: boolean
+  /**
+   * False while another view (e.g. the BTW pane) owns the keyboard: the
+   * input stays mounted so its draft survives the switch, but every
+   * keystroke is ignored (useInput isActive).
+   */
+  active?: boolean
 }
 
 /**
@@ -208,6 +214,7 @@ export function PromptInput({
   onCyclePermission,
   controllerRef,
   modelSwitching = false,
+  active = true,
 }: PromptInputProps) {
   const [value, setValue] = React.useState('')
   const [cursor, setCursor] = React.useState(0)
@@ -468,7 +475,7 @@ export function PromptInput({
   }
 
   useInput((input, key, event) => {
-    if (selectionActive) return
+    if (selectionActive || !active) return
 
     /** Insert text at the caret (typing, paste) and dismiss overlays. */
     const insertAtCaret = (text: string) => {
@@ -479,7 +486,6 @@ export function PromptInput({
       setSelectedCommand(0)
       setFileSelected(0)
     }
-
     // Bracketed paste (terminal paste — Ctrl+Shift+V / right-click): insert
     // verbatim at the caret. Paste content may contain newlines — that is
     // NOT Enter — so this branch runs before the whole-line submit rule.

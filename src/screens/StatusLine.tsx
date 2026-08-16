@@ -37,10 +37,16 @@ export function StatusLine({
   channel,
   selectionActive = false,
   helpOpen = false,
+  btwUnseen = 0,
+  btwViewActive = false,
 }: {
   channel: Channel
   selectionActive?: boolean
   helpOpen?: boolean
+  /** Completed BTW threads not currently in view (badge count). */
+  btwUnseen?: number
+  /** True while the BTW view owns the screen (hint line switches). */
+  btwViewActive?: boolean
 }) {
   const { columns } = useTerminalSize()
   const [themeName] = useTheme()
@@ -142,6 +148,13 @@ export function StatusLine({
     <Text key="tokens" color="inactiveShimmer">
       {formatTokens(channel.tokens.input)}→{formatTokens(channel.tokens.output)}
     </Text>,
+    ...(btwUnseen > 0
+      ? [
+          <Text key="btw" color="remember">
+            {t('btw-done-badge', { n: String(btwUnseen) })}
+          </Text>,
+        ]
+      : []),
   ]
 
   // Right group: git branch in muted steel blue, cwd a soft white, the
@@ -169,13 +182,15 @@ export function StatusLine({
   // Row 3: the mode hint — and, while idle, the working-activity turn
   // summary (the live working line itself moves to the spinner slot above
   // the input while a turn runs, so the two never duplicate).
-  const hint = selectionActive
-    ? t('status-hint-selection')
-    : channel.working
-      ? t('status-hint-interrupt')
-      : !helpOpen
-        ? t('status-hint-help')
-        : ''
+  const hint = btwViewActive
+    ? t('btw-view-hint')
+    : selectionActive
+      ? t('status-hint-selection')
+      : channel.working
+        ? t('status-hint-interrupt')
+        : !helpOpen
+          ? t('status-hint-help')
+          : ''
   const activity = channel.workingActivity
   const showActivity =
     !channel.working &&

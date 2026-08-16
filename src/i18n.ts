@@ -121,6 +121,8 @@ const dict = {
   'permission-no-presets': { zh: '当前 profile 没有可用的权限预设', en: 'No permission presets are available in this profile' },
   'new-session-started': { zh: '新会话已开始', en: 'New session started' },
   'btw-none-yet': { zh: '还没有 BTW 旁路会话。使用 /btw <问题>。', en: 'No BTW conversation yet. Use /btw <question>.' },
+  'btw-done-badge': { zh: 'BTW 完成 {{n}}', en: 'BTW done {{n}}' },
+  'btw-view-hint': { zh: 'BTW 视图 · Ctrl+B 返回主会话', en: 'BTW view · Ctrl+B back to main' },
   'plugin-no-matches': { zh: '没有匹配的已安装或已加载插件。`/plugin search` 只过滤本地列表，不会搜索 npm。', en: 'No matching installed or loaded plugins. `/plugin search` filters this local list; it does not search npm.' },
   'plugin-usage': { zh: '用法: /plugin [list|search <词>|add <spec>|remove <包>|update [包]]', en: 'Usage: /plugin [list|search <text>|add <spec>|remove <package>|update [package]]' },
   'plugin-profile-required': { zh: '插件变更需要通过 dsh --profile <名称> 启动。', en: 'Plugin changes require launching with dsh --profile <name>.' },
@@ -219,7 +221,7 @@ const dict = {
 
   // ── components/BtwPane.tsx ─────────────────────────────────────────
   'btw-pane-title': { zh: 'BTW · 旁路会话', en: 'BTW · side conversation' },
-  'btw-pane-hint': { zh: '已复制上下文 · 主会话不受影响 · Esc 返回 · Ctrl+C 停止 · Ctrl+O 详情', en: 'Forked context · main conversation is unchanged · Esc returns · Ctrl+C stops · Ctrl+O details' },
+  'btw-pane-hint': { zh: '已复制上下文 · 主会话不受影响 · Ctrl+B/Esc 返回 · Ctrl+C 停止 · Ctrl+O 详情', en: 'Forked context · main conversation is unchanged · Ctrl+B/Esc back · Ctrl+C stops · Ctrl+O details' },
   'btw-working': { zh: '旁路会话正在工作…', en: 'Working in side conversation…' },
   'btw-placeholder': { zh: '继续追问…', en: 'Ask a follow-up…' },
   'btw-background-started': { zh: 'BTW 已在后台启动；当前回合结束后自动打开，不会打断主对话', en: 'BTW started in the background; it will open after the current turn without interrupting the main conversation' },

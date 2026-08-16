@@ -52,6 +52,16 @@ export type ToolCallView = {
     readonly title: string;
     readonly diffs: readonly ToolFileDiff[];
 };
+/**
+ * Bash heredoc/tee write patterns → a file-diff preview. `cat > path <<'EOF'
+ * … EOF` (and `tee path <<'EOF'`, `cat >> path`) is the model's habitual way
+ * to write files inside WSL/bash, but the bash tool presents such a call as a
+ * terminal card with the whole command truncated into the header. Recognizing
+ * the pattern renders the edit like the write tool's diff card — green add
+ * rows plus folding — so bash edits keep the native tool-chain look. Any
+ * other command returns undefined and keeps the terminal card.
+ */
+export declare function bashHeredocWriteDiff(command: string): ToolCallView | undefined;
 /** Completed-call render intent (structural subset of dsh-tools
  *  ToolResultView). `web` results and unknown shapes fall back to raw text. */
 export type ToolResultView = {

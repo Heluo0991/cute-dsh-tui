@@ -64,6 +64,7 @@
     "verify:model-switch-glow": "node --import tsx/esm scripts/verify-model-switch-glow.ts",
     "verify:inline-thinking": "node --import tsx/esm scripts/verify-inline-thinking.tsx",
     "verify:btw-plugin": "node --import tsx/esm scripts/verify-btw-plugin.ts",
+    "verify:bash-heredoc": "node --import tsx/esm scripts/verify-bash-heredoc.ts",
     "verify:session-credential": "node --import tsx/esm scripts/verify-session-credential.ts",
     "verify:input-highlight": "node --import tsx/esm scripts/verify-input-highlight.ts",
     "verify:input-highlight-render": "node --import tsx/esm scripts/verify-input-highlight-render.tsx",

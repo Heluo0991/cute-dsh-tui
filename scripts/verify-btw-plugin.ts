@@ -38,6 +38,10 @@ assert.match(chat, /key\.ctrl && input === 'o'/)
 
 const btwPane = readFileSync(new URL('../src/components/BtwPane.tsx', import.meta.url), 'utf8')
 assert.match(btwPane, /<MessageList/)
-assert.match(btwPane, /Forked context/)
+// The pane's header copy lives in the i18n dictionary (btw-pane-hint), not
+// hardcoded in the component — assert the en template keeps its lineage
+// marker ("Forked context") so the pane stays recognizably a fork.
+const i18n = readFileSync(new URL('../src/i18n.ts', import.meta.url), 'utf8')
+assert.match(i18n, /'btw-pane-hint': \{ zh: '[^']*', en: 'Forked context[^']*' \}/)
 
 console.log('btw, plugin, and lineage wiring verification passed')

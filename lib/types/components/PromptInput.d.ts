@@ -37,6 +37,12 @@ export interface PromptInputProps {
     controllerRef?: React.RefObject<PromptController | null>;
     /** True only while an eligible Max-model route is being switched. */
     modelSwitching?: boolean;
+    /**
+     * False while another view (e.g. the BTW pane) owns the keyboard: the
+     * input stays mounted so its draft survives the switch, but every
+     * keystroke is ignored (useInput isActive).
+     */
+    active?: boolean;
 }
 /**
  * Claude Code style prompt input: rounded border box (top+bottom borders
@@ -67,5 +73,5 @@ export interface PromptInputProps {
  * working) interrupts the turn and delivers them right away; Ctrl+Enter
  * aborts the turn and sends the current input immediately.
  */
-export declare function PromptInput({ channel, helpOpen, onToggleHelp, onRunCommand, selectionActive, fillText, onFillConsumed, onRewindRequest, onCyclePermission, controllerRef, modelSwitching, }: PromptInputProps): React.JSX.Element;
+export declare function PromptInput({ channel, helpOpen, onToggleHelp, onRunCommand, selectionActive, fillText, onFillConsumed, onRewindRequest, onCyclePermission, controllerRef, modelSwitching, active, }: PromptInputProps): React.JSX.Element;
 //# sourceMappingURL=PromptInput.d.ts.map

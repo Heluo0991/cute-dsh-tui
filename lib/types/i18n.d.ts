@@ -355,6 +355,14 @@ declare const dict: {
         readonly zh: "还没有 BTW 旁路会话。使用 /btw <问题>。";
         readonly en: "No BTW conversation yet. Use /btw <question>.";
     };
+    readonly 'btw-done-badge': {
+        readonly zh: "BTW 完成 {{n}}";
+        readonly en: "BTW done {{n}}";
+    };
+    readonly 'btw-view-hint': {
+        readonly zh: "BTW 视图 · Ctrl+B 返回主会话";
+        readonly en: "BTW view · Ctrl+B back to main";
+    };
     readonly 'plugin-no-matches': {
         readonly zh: "没有匹配的已安装或已加载插件。`/plugin search` 只过滤本地列表，不会搜索 npm。";
         readonly en: "No matching installed or loaded plugins. `/plugin search` filters this local list; it does not search npm.";
@@ -732,8 +740,8 @@ declare const dict: {
         readonly en: "BTW · side conversation";
     };
     readonly 'btw-pane-hint': {
-        readonly zh: "已复制上下文 · 主会话不受影响 · Esc 返回 · Ctrl+C 停止 · Ctrl+O 详情";
-        readonly en: "Forked context · main conversation is unchanged · Esc returns · Ctrl+C stops · Ctrl+O details";
+        readonly zh: "已复制上下文 · 主会话不受影响 · Ctrl+B/Esc 返回 · Ctrl+C 停止 · Ctrl+O 详情";
+        readonly en: "Forked context · main conversation is unchanged · Ctrl+B/Esc back · Ctrl+C stops · Ctrl+O details";
     };
     readonly 'btw-working': {
         readonly zh: "旁路会话正在工作…";

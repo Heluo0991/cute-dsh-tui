@@ -41,6 +41,14 @@ npm install -g @heluo0991/cute-dsh-tui
 cdsh
 ```
 
+> npm 7+ may print several `ERESOLVE overriding peer dependency` warnings:
+> DSH's web UI client packages declare `react ^18`, while CuteDshTui's renderer
+> requires React 19. Those web packages are not used by the TUI runtime, so the
+> install still succeeds and the warnings are safe to ignore. To hide them:
+> `npm install -g @heluo0991/cute-dsh-tui --legacy-peer-deps` (or add
+> `legacy-peer-deps=true` to your user `~/.npmrc`; that setting affects all npm
+> projects, so choose deliberately).
+
 On Linux, `node-pty` needs local C/C++ build tools. Most development images already include them; if the first launch reports a `node-pty` or `pty.node` build failure, run `sudo apt-get install -y build-essential python3` once and retry `cdsh`. The launcher automatically retries the native build.
 
 Run `cdsh` from any project thereafter. Its first launch creates the isolated `cute-dsh-tui` profile. No batch-file copying, manual PATH edits, or global pnpm install is required. `cute-dsh-tui` remains a compatibility alias.

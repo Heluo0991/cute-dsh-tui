@@ -7,3 +7,6 @@ AGENTS.md
 
 # local user transcript/debug captures
 logs.txt
+
+# pnpm store materialized under the project tree during local reinstalls
+.pnpm-store/
