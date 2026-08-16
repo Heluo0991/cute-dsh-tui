@@ -15,6 +15,7 @@ the `.en.md` suffix.
 | 键盘、鼠标与命令 / Keyboard, mouse, and commands | [交互与命令](interaction.md) | [Interaction and commands](interaction.en.md) |
 | 运行链路、性能、安全与限制 / Runtime, performance, security, and limitations | [架构与限制](architecture.md) | [Architecture and limitations](architecture.en.md) |
 | WSL 混合开发环境 / WSL development environment | [WSL 混合开发](development-wsl.md) | — |
+| 待解决清单 / Pending issues | [待解决清单](pending-issues.md) | — |
 | 发布检查清单 / Release checklist | [发布检查清单](release-checklist.md) | — |
 | 与 upstream 的同步策略 / Upstream policy | [upstream policy](upstream-policy.md) | — |
 | 贡献与开发约定 / Contributing and development rules | [贡献指南](contributing.md) | [Contributing](contributing.en.md) |
