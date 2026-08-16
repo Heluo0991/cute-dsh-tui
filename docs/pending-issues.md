@@ -1,82 +1,157 @@
-# 待解决清单（CuteDshTui）
+# CuteDshTui 交接与待办清单
 
-> 由当前实施会话维护。已完成并提交的历史工作见 git log；本文件只列尚未落地的项目。
+> **新对话请先完整读本文件，再动代码。** 本文件是当前会话的交接书，
+> 包含项目链路、已完成事项、当前待办和验证方式。除非待办条目明确要求，
+> 不要重新通读仓库；按“关键文件”做定向查看即可。
 
-## 0. 上下文控制
+## 0. 上下文节约约定
 
-- 当前会话上下文曾达到 402k，不再整文件重读；以 git HEAD、本清单和定向
-  grep/sed 为准。
-- 后续每完成一项，删除对应条目并提交，保持本文件是唯一“活清单”。
+- 仓库在 `/mnt/g/dsh/dsh-tui`，当前为 WSL 混合环境：源码留在 Windows 挂载盘，
+  WSL 只跑 git/tsc/纯 Node；tsx 回归由 `scripts/wsl-verify.sh` 自动经
+  Windows `node.exe` 调用。
+- **禁止在 WSL 中执行 `pnpm install`**，会破坏 Windows 平台的
+  `node_modules`。详见 `docs/development-wsl.md`。
+- `logs.txt` 是本地用户转录，已在 `.gitignore`，不要提交、不要引用内容。
+- 声称“验证通过”前至少运行对应脚本；完整门禁是
+  `./scripts/wsl-verify.sh all`。
+- 依赖真源是 `pnpm-lock.yaml`；`package-lock.json` 只允许在版本号同步时
+  更新 root `version`，不要顺手改依赖树。
 
-## 1. Diff 展示增强
+## 1. 项目链路（简版）
 
-**现状**：`AssistantToolUseMessage.tsx` 的 `diffLines()` 只输出 `- / +` 行，
-颜色只作用文字；没有绿色/红色背景，也没有每个文件/hunk 的增删行数统计。
+```text
+npm 包 @heluo0991/cute-dsh-tui (package.json)
+  → bin: cute-dsh-tui.js / launch-options.js / lib/types/profileManager.js
+  → 创建 $DSH_HOME/profiles/cute-dsh-tui（DSH profile）
+  → cordis.patch.yml（服务叠加层）
+  → src/index.ts（插件入口） → src/plugin.ts（生命周期）
+  → src/channel.ts（DSH 会话事件 → UI 状态）
+  → src/screens/Chat.tsx（键盘/模式编排）
+  → src/components/*（视图） → src/ui.ts → src/ink/*（vendored 渲染器）
+```
 
-**目标**：
-- 新增行：绿色背景 + `+N lines`；
-- 删除行：红色背景 + `-N lines`；
-- 混合 hunk 显示 `+A/-D`；
-- 保留现有 CJK 宽度、截断、折叠和 `repro-toolcards` 回归。
+关键文件：
+- 输入：`src/components/PromptInput.tsx`、`src/utils/inputHighlight.ts`
+- 命令：`src/commands.ts`、`src/screens/Chat.tsx` 的 `runCommand`
+- 状态栏：`src/screens/StatusLine.tsx`、`src/screens/StatusMetrics.ts`
+- 工具卡/diff：`src/components/messages/AssistantToolUseMessage.tsx`
+- 凭据：`src/credentials.ts`、`src/sessionCredential.ts`、`src/plugin.ts`
+- profile/launcher：`src/profileManager.ts`、根 `cute-dsh-tui.js`
+- 回归脚本：`scripts/verify-*.{mjs,ts,tsx}`、`scripts/wsl-verify.sh`
 
-## 2. 代码内容换行与折叠
+## 2. 当前 git 状态
 
-**现状**：`viewLines()` 把 diff 与普通文本转成行，`capLines()` 折叠；
-需要确认多行代码的换行忠实渲染，并对超长代码块做更明显的可展开折叠。
+- 分支：`personal/customization`
+- HEAD：`3f00a5e`（见下）
+- `origin/personal/customization` 落后本地 5 个提交（尚未推送）：
+  ```text
+  d3b6492 feat: polish TUI UX, fix credentials/keybindings, harden launcher and CI
+  104a022 fix: isolate npm dry-run cache for WSL read-only roots
+  5e163ef ci: tolerate CRLF when checking generated lib artifacts on Windows
+  4c96506 docs: add pending issues checklist and BTW diagnosis
+  3f00a5e fix: dispatch slash commands during working turns and defer BTW view
+  ```
+- 版本策略：发布由 `v*` git tag 触发，CI 校验 tag 与 `package.json.version`
+  完全一致。当前待办第 9 项会同步版本号；**未准备发布时不要创建 v* tag**。
 
-## 3. 状态栏信息补全
+## 3. 已经解决并提交的问题
 
-**现状**：`StatusLine.tsx` 有 model/tokens/cache/git/cwd/title，但没有权限
-等级和模式。
+1. WSL 混合工具链：`scripts/wsl-env.sh`、`scripts/wsl-verify.sh`、
+   `docs/development-wsl.md`。
+2. 输入栏三级语义高亮：`/命令`、参数、`@引用`；CJK 安全换行和光标映射。
+3. 补全菜单：选中背景、匹配前缀高亮、底部操作提示。
+4. HelpMenu：i18n、修正 Shift+Tab 说明、命令列表上限。
+5. 键位：Ctrl+G 显示旧消息，Ctrl+E 归编辑器；Ctrl+Backspace/Delete 删词；
+   Alt+Left/Right 按词移动。
+6. `/login` 拒绝保存后当前会话真实生效，退出/reload 恢复原凭据。
+7. 剪贴板：Windows/macOS/Linux 适配器 + 终端原生粘贴回退。
+8. 全量 i18n 迁移 + `scripts/verify-i18n.mjs` 静态防回归。
+9. launcher：pnpm 成功静默、失败输出、超时、build-script 白名单；
+   profile 损坏 manifest 备份重建；node-pty 平台化错误提示。
+10. CI：Windows 矩阵、lib 产物一致性闸门（CRLF 兼容）。
+11. npm 包：删除不存在的 `./src/*` export；`verify-package-exports.mjs`
+    校验 exports/bin/patch 均在 tarball 内。
+12. BTW：working 中 `/btw <问题>` 先 dispatch 命令，不再被 steer；
+    BTW 主回合运行时后台启动、回合结束后自动打开，不抢主视图。
+13. 文档：`docs/development-wsl.md`、`docs/release-checklist.md`、
+    `docs/upstream-policy.md` 和本清单。
 
-**目标**：
-- 显示当前权限：readonly / workspace / fullaccess；
-- 显示模式：普通 / verbose / 其他活动模式；
-- git 分支、会话标题保留；
-- 品牌显示统一为 `CuteDshTui`，不再出现 `dsh-tui`。
+## 4. 待办清单
 
-## 4. WebUI 管理面板命令
+### 1. Diff 显示增强
+- 文件：`src/components/messages/AssistantToolUseMessage.tsx`
+- 目标：新增行绿色背景 + `+N lines`；删除行红色背景 + `-N lines`；
+  hunk 显示 `+A/-D`；保留 CJK/截断/折叠与 `repro-toolcards` 回归。
+- 状态：未开始。
 
-**现状**：DSH CLI 提供 `dsh web`。TUI 内没有对应 slash command。
+### 2. 代码换行与折叠
+- 文件：同上，`viewLines()` / `capLines()`。
+- 目标：多行代码忠实显示换行；超长代码块明显可展开。
+- 状态：未开始。
 
-**目标**：新增 `/webui`（或类似命令），启动/显示 WebUI 链接，但不把该命令
-或链接写入对话内容。
+### 3. 状态栏补全
+- 文件：`src/screens/StatusLine.tsx`；必要时 `Chat.tsx` 传参。
+- 目标：显示权限等级（readonly/workspace/fullaccess）、当前模式；
+  保留 git 分支和会话标题；品牌统一 `CuteDshTui`。
+- 状态：未开始。
 
-## 5. Ctrl+O 展开时 `/` 触发第二输入行
+### 4. WebUI 管理面板命令
+- 背景：DSH CLI 有 `dsh web` 命令；TUI 暂无入口。
+- 目标：新增 `/webui`（或等价命令），显示 WebUI 链接/管理入口，
+  **不写入对话内容**。
+- 状态：未开始；需先确认 web profile 的端口/URL 与 TUI 内启动方式。
 
-**现状**：当前源码中 transcript 搜索已绑定 Ctrl+F，`/` 预留给命令。
-**待办**：写 headless 回归验证“expanded 模式下按 `/` 只进入 PromptInput，
-不出现 TranscriptSearchBar”；用户复现时先确认其运行版本是否为旧安装。
+### 5. Ctrl+O 展开时 `/` 第二输入行
+- 当前源码：`/` 只给 slash command，transcript 搜索是 Ctrl+F。
+- 待办：写 headless 回归证明 expanded 下按 `/` 只进 PromptInput，不出现
+  TranscriptSearchBar；并确认用户复现来自旧安装版本还是当前源码。
+- 状态：未开始。
 
-## 6. Goal 完成后仍被反复投喂轮次
+### 6. Goal Complete 后仍被 goal loop 驱动
+- 结论：不是仓库 `/goal` 代码问题；是外部 goal_round 机制持续注入。
+- 对策：在待办清空前不声明 GOAL COMPLETE；每轮以实际 git diff 为准。
+- 状态：外部问题，无本地代码改动。
 
-**结论**：不是仓库 `/goal` 插件逻辑问题；是外部 goal loop 在 goal complete
-后继续注入 `goal_round`。日志见用户提供的 `logs.txt`（不入库）。
-**对策**：完成后续清单前不再声明 GOAL COMPLETE；每轮以实际 diff 为准。
+### 7. 输入框方向键按视觉行移动
+- 文件：`src/components/PromptInput.tsx` 的 Up/Down 分支。
+- 现状：只按逻辑 `\n` 换行移动；单行长文本软换行时上下键进入历史。
+- 目标：基于 `wrapToWidthRanges` 实现视觉行移动，首/末视觉行才进入历史；
+  补 headless 回归。
+- 状态：未开始。
 
-## 7. 输入框方向键视觉行移动
+### 8. BTW 抢视图 / 主回合中无法执行 `/btw`
+- **已修复**：见第 3 节第 12 条，提交 `3f00a5e`。
+- 剩余验证：真实 TTY 上再跑一次 30s 命令期间 `/btw`。
 
-**现状**：`PromptInput.tsx` 的 Up/Down 只处理逻辑换行；单逻辑行长到软换行时，
-按上/下不会在视觉行间移动，而是进入历史。
+### 9. npm 版本号与 git 提交同步
+- 现状：`package.json` 与 `package-lock.json` root 版本均为 `1.1.9`，
+  但已有多个未发布的功能/修复提交。
+- 目标：将版本同步升到 `1.2.0` 并提交（仅版本字段）；**不创建 tag**，
+  待用户决定发布时再 `git tag v1.2.0`。
+- 状态：本交接书提交时一并处理。
 
-**目标**：基于 `wrapToWidthRanges` 实现视觉行上下移动；仅在首/末视觉行时
-才进入历史，并补 headless 回归。
+## 5. 验证门禁
 
-## 8. `/btw` 运行中主对话视图被切走
+```sh
+./scripts/wsl-verify.sh all     # 完整本地门禁
+./scripts/wsl-verify.sh tsc     # 仅类型
+./scripts/wsl-verify.sh node    # 纯 Node 回归
+./scripts/wsl-verify.sh tsx     # tsx 回归（Windows node.exe）
+./scripts/wsl-verify.sh pack    # npm pack + exports 校验
+```
 
-**现状**：`/btw <问题>` 成功后立刻 `setBtwOpenId(id)`，整个 Chat 渲染切换为
-BtwPane，主对话在后台继续但用户看不到，容易被误认为“主 agent 被打断”。
+修改以下区域时额外运行对应回归：
+- 输入/高亮：`verify-input-highlight*.ts`、`verify-working-commands.tsx`
+- 工具卡/diff：`repro-toolcards.tsx`、`verify-cjk-truncate.tsx`
+- 状态栏：`repro-toolcards.tsx`、`verify-cjk-truncate.tsx`
+- 权限/凭据：`verify-session-credential.ts`、`verify-permissions.mjs`
+- launcher/profile：`verify-profile-manifest-recovery.mjs`、
+  `verify-profile-native-build.mjs`、`verify-package-exports.mjs`
 
-**结论**：不是 minimal 模式缺少子代理；BTW 使用 `agents.create(origin:
-'subagent')`，不依赖 subagent 服务。minimal 的 preset 仍可创建子会话。
+## 6. 新对话建议开局步骤
 
-**目标**：主回合运行时启动 BTW 不立即抢走主视图；回合结束后再自动打开，或
-提供明确的“后台 BTW 已启动”提示与切换入口。
-
-**已修复**：
-- `PromptInput` 的 Enter 处理现在**先 dispatch slash command，再 steer 普通文本**；
-  主回合运行中输入 `/btw <问题>` 不再被当成 steer 文本。
-- `/btw` 启动后若主回合仍在运行，先显示“BTW 已在后台启动”通知，主回合结束后
-  自动打开 BTW 面板，不再立即抢走主对话视图。
-- 新增回归 `scripts/verify-working-commands.tsx`，覆盖 working 状态下命令 dispatch
-  与普通文本 steer 两条路径。
+1. `git status --porcelain && git log origin/personal/customization..HEAD --oneline`
+2. 读本文件待办，挑选一项。
+3. 定向查看对应文件，改完运行第 5 节门禁。
+4. 提交时更新本清单状态（已修复则删除/标记）。
+5. 除非用户明确要求，不推送、不创建 `v*` tag。
