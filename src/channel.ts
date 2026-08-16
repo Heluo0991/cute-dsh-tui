@@ -1149,6 +1149,12 @@ export function createChannel(
     working: boolean
   }
   const btwHandles = new Map<string, { handle: AgentHandle; dispose: () => void }>()
+  /** Immutably update one BTW thread so React consumers (view badge, pending
+   *  resolution) see the change through `state.btwThreads` reference. Rows
+   *  stay the same array, so in-flight pushes remain visible. */
+  const updateBtwThread = (id: string, patch: Partial<Pick<MutableBtwThread, 'working'>>) => {
+    state.btwThreads = state.btwThreads.map(item => (item.id === id ? { ...item, ...patch } : item))
+  }
   let state!: ChannelState
 
   /** A current, bounded view of the main agent for BTW prompt assembly. */
@@ -2054,7 +2060,7 @@ export function createChannel(
           },
         })
       } catch (error) {
-        thread.working = false
+        updateBtwThread(id, { working: false })
         thread.rows.push({ id: 1, kind: 'notice', text: `BTW failed to start: ${error instanceof Error ? error.message : String(error)}` })
         state.emit()
         return undefined
@@ -2140,7 +2146,7 @@ export function createChannel(
           if (reasoning !== undefined) reasoning.streaming = false
           streaming = undefined
           reasoning = undefined
-          thread.working = false
+          updateBtwThread(id, { working: false })
           if (event.data.reason.kind !== 'completed') {
             thread.rows.push({ id: nextId++, kind: 'notice', text: `BTW ${event.data.reason.kind}` })
           }
@@ -2154,7 +2160,7 @@ export function createChannel(
           source: { kind: 'user' },
         }))
       } catch (error) {
-        thread.working = false
+        updateBtwThread(id, { working: false })
         thread.rows.push({ id: nextId++, kind: 'notice', text: `BTW send failed: ${error instanceof Error ? error.message : String(error)}` })
         state.emit()
       }
@@ -2166,7 +2172,7 @@ export function createChannel(
       entry.handle.agent.cancel({ kind: 'user' })
       const thread = state.btwThreads.find(item => item.id === id) as MutableBtwThread | undefined
       if (thread !== undefined) {
-        thread.working = false
+        updateBtwThread(id, { working: false })
         thread.rows.push({ id: thread.rows.length + 1, kind: 'notice', text: t('btw-cancelled') })
       }
       state.emit()
@@ -2176,7 +2182,7 @@ export function createChannel(
       const entry = btwHandles.get(id)
       const thread = state.btwThreads.find(item => item.id === id) as MutableBtwThread | undefined
       if (entry === undefined || thread === undefined || prompt === '') return
-      thread.working = true
+      updateBtwThread(id, { working: true })
       try {
         entry.handle.agent.followup(createUserMessage({
           content: [{ type: 'text', text: prompt }],

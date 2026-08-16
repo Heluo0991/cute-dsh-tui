@@ -1149,6 +1149,17 @@ export function Chat({
       event.stopImmediatePropagation()
       return
     }
+    // Ctrl+B: switch between the main view and the latest BTW thread. Both
+    // views stay mounted, so the switch never loses scroll or draft state.
+    if (key.ctrl && input === 'b') {
+      if (btwOpenId !== null) setBtwOpenId(null)
+      else {
+        const latest = channel.btwThreads.at(-1)
+        if (latest !== undefined) setBtwOpenId(latest.id)
+      }
+      event.stopImmediatePropagation()
+      return
+    }
     if (btwOpenId !== null) {
       if (key.escape) setBtwOpenId(null)
       else if (key.ctrl && input === 'c') channel.cancelBtw(btwOpenId)
@@ -1619,10 +1630,22 @@ export function Chat({
     loginOpen || pendingLoginKey !== null || credentialDeleteConfirm
 
   const btwThread = btwOpenId === null ? undefined : channel.btwThreads.find(thread => thread.id === btwOpenId)
-  if (btwThread !== undefined) return <BtwPane thread={btwThread} draft={btwDraft} expanded={expanded} />
+  const btwViewActive = btwThread !== undefined
+  // Completed BTW threads not currently in view (status-line badge).
+  const btwUnseen = channel.btwThreads.reduce(
+    (count, thread) => (thread.working || thread.id === btwOpenId ? count : count + 1),
+    0,
+  )
 
   return (
     <Box flexDirection="column" flexGrow={1} width="100%">
+      {/* Main view: hidden (not unmounted) while the BTW view is active, so
+          scroll position and the prompt draft survive the switch. */}
+      <Box
+        display={btwViewActive ? 'none' : 'flex'}
+        flexDirection="column"
+        flexGrow={1}
+      >
       {!isSticky && channel.lastUserText && (
         <StickyPromptHeader
           text={channel.lastUserText}
@@ -1913,14 +1936,31 @@ export function Chat({
             onRewindRequest={openRewind}
             onCyclePermission={cyclePermission}
             controllerRef={promptControllerRef}
+            active={!btwViewActive}
           />
         )}
-        <StatusLine
-          channel={channel}
-          selectionActive={selectionActive}
-          helpOpen={helpOpen}
-        />
       </Box>
+      </Box>
+      {/* BTW view: mounted alongside the main view; hidden while inactive so
+          its scroll position and draft survive the switch back. */}
+      {channel.btwThreads.length > 0 && (
+        <Box
+          display={btwViewActive ? 'flex' : 'none'}
+          flexDirection="column"
+          flexGrow={1}
+        >
+          {btwThread !== undefined && (
+            <BtwPane thread={btwThread} draft={btwDraft} expanded={expanded} />
+          )}
+        </Box>
+      )}
+      <StatusLine
+        channel={channel}
+        selectionActive={selectionActive}
+        helpOpen={helpOpen}
+        btwUnseen={btwUnseen}
+        btwViewActive={btwViewActive}
+      />
     </Box>
   )
 }
