@@ -1,5 +1,6 @@
 import React from 'react'
 import { Box, Text } from '../ui.js'
+import { t } from '../i18n.js'
 import { stringWidth } from '../ink/stringWidth.js'
 import { truncateToWidth } from '../ink/truncateToWidth.js'
 import type { LocalCommand } from '../commands.js'
@@ -14,10 +15,13 @@ export function CommandSuggestions({
   commands,
   selectedIndex,
   columns,
+  query = '',
 }: {
   commands: readonly LocalCommand[]
   selectedIndex: number
   columns: number
+  /** Raw prompt value, used to brighten the matched prefix. */
+  query?: string
 }): React.ReactNode {
   if (commands.length === 0) return null
 
@@ -46,6 +50,12 @@ export function CommandSuggestions({
         const padded =
           command.name +
           ' '.repeat(Math.max(0, nameWidth - stringWidth(command.name)))
+        // filterCommands guarantees a prefix match; highlight exactly the
+        // typed run (slash + following text) without changing column widths.
+        const typed = query.replace(/^\//, '').toLowerCase()
+        const matchLength = command.name.toLowerCase().startsWith(typed)
+          ? Math.min(typed.length, command.name.length)
+          : 0
         const tagText = command.tag ? `[${command.tag}] ` : ''
         const tagWidth = stringWidth(tagText)
         const descriptionWidth = Math.max(
@@ -57,17 +67,38 @@ export function CommandSuggestions({
             ? truncateToWidth(command.description, descriptionWidth - 1) + '…'
             : command.description
         return (
-          <Text key={command.name} wrap="truncate">
-            <Text color={isSelected ? 'suggestion' : undefined} dimColor={!isSelected}>
-              {padded}
+          <Box
+            key={command.name}
+            width="100%"
+            paddingLeft={1}
+            paddingRight={1}
+            backgroundColor={isSelected ? 'selectionBg' : undefined}
+          >
+            <Text wrap="truncate">
+              <Text color={isSelected ? 'suggestion' : undefined} dimColor={!isSelected} bold={isSelected}>
+                {matchLength > 0 ? padded.slice(0, matchLength) : ''}
+              </Text>
+              {matchLength > 0 && (
+                <Text color={isSelected ? 'suggestion' : 'inactiveShimmer'} dimColor={!isSelected}>
+                  {padded.slice(matchLength)}
+                </Text>
+              )}
+              {matchLength === 0 && (
+                <Text color={isSelected ? 'suggestion' : undefined} dimColor={!isSelected}>
+                  {padded}
+                </Text>
+              )}
+              {tagText ? <Text dimColor>{tagText}</Text> : null}
+              <Text color={isSelected ? 'suggestion' : undefined} dimColor={!isSelected}>
+                {description}
+              </Text>
             </Text>
-            {tagText ? <Text dimColor>{tagText}</Text> : null}
-            <Text color={isSelected ? 'suggestion' : undefined} dimColor={!isSelected}>
-              {description}
-            </Text>
-          </Text>
+          </Box>
         )
       })}
+      <Box paddingLeft={1} marginTop={0}>
+        <Text dimColor>{t('suggestions-command-hint')}</Text>
+      </Box>
     </Box>
   )
 }

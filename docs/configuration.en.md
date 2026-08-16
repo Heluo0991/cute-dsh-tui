@@ -149,7 +149,8 @@ for the complete field reference.
 | `DSH_PERMISSION_MODE` | Override startup sandbox policy on any platform, such as `workspace-write` or `danger-full-access`; prefer in-session `/permission` when possible |
 | `CUTE_DSH_TUI_YOLO` | Force danger-full-access and skip approvals (set by `dsh --yolo`) |
 | `CUTE_DSH_TUI_WORKSPACE` | Working directory used by `cute-dsh-tui` on Windows, Linux, and macOS |
-| `CUTE_DSH_TUI_DEBUG` | Enable cute-dsh-tui diagnostics on stderr |
+| `CUTE_DSH_TUI_DEBUG` | Enable cute-dsh-tui diagnostics on stderr, including raw pnpm output during profile bootstrap |
+| `CUTE_DSH_TUI_VERBOSE` | Show raw pnpm output during profile bootstrap/update without enabling other debug logging |
 | `CUTE_DSH_TUI_RENDER_LOG` | File path for raw ANSI frame capture |
 
 `CUTE_DSH_TUI_RENDER_LOG` may capture visible prompts, tool arguments, and output.

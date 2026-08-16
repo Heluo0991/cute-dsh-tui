@@ -42,8 +42,8 @@ export function ActivityPicker({
         />
         <Text dimColor italic>
           <Byline>
-            <KeyboardShortcutHint shortcut="Enter" action="confirm" bold />
-            <KeyboardShortcutHint shortcut="Esc" action="exit" />
+            <KeyboardShortcutHint shortcut="Enter" action={t('action-confirm')} bold />
+            <KeyboardShortcutHint shortcut="Esc" action={t('action-exit')} />
           </Byline>
         </Text>
       </Box>

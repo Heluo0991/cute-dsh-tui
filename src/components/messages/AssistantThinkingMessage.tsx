@@ -1,5 +1,6 @@
 import React from 'react'
 import { Box, Text, useAnimationFrame } from '../../ui.js'
+import { t } from '../../i18n.js'
 import { KeyboardShortcutHint } from '../design-system/KeyboardShortcutHint.js'
 import { Markdown } from '../Markdown.js'
 import { formatDuration } from '../../cc/format.js'
@@ -54,9 +55,9 @@ export function AssistantThinkingMessage({
         onClick={onClick}
       >
         <Text dimColor italic>
-          {streaming ? <Text color="claude">{frame} Thinking</Text> : '∴ Thinking'}{duration}{' '}
+          {streaming ? <Text color="claude">{frame} {t('thinking-label')}</Text> : `∴ ${t('thinking-label')}`}{duration}{' '}
           <Text dimColor>
-            <KeyboardShortcutHint shortcut="ctrl+o" action="expand" parens />
+            <KeyboardShortcutHint shortcut="ctrl+o" action={t('action-expand')} parens />
           </Text>
         </Text>
       </Box>
@@ -74,7 +75,7 @@ export function AssistantThinkingMessage({
       onClick={onClick}
     >
       <Text dimColor italic>
-        {streaming ? <Text color="claude">{frame} Thinking</Text> : '∴ Thinking'}{duration}…
+        {streaming ? <Text color="claude">{frame} {t('thinking-label')}</Text> : `∴ ${t('thinking-label')}`}{duration}…
       </Text>
       <Box paddingLeft={2}>
         <Markdown dimColor>{thinking}</Markdown>

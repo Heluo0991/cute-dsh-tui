@@ -1,5 +1,6 @@
 import React from 'react'
 import { Box, Text } from '../ui.js'
+import { t } from '../i18n.js'
 import type { LlmModelInfo } from '@deepseek-ai/dsh-llm'
 import type { ReasoningEffortOption } from '../channel.js'
 import { Pane } from './design-system/Pane.js'
@@ -23,7 +24,7 @@ export function ReasoningEffortPicker({
     <Pane color="permission">
       <Box flexDirection="column">
         <Box flexDirection="column" marginBottom={1}>
-          <Text color="remember" bold>Reasoning depth · step 2 of 2</Text>
+          <Text color="remember" bold>{t('effort-picker-title')}</Text>
           <Text dimColor>{model.name}</Text>
         </Box>
         {efforts.map((effort, index) => (
@@ -39,8 +40,8 @@ export function ReasoningEffortPicker({
       </Box>
       <Text dimColor italic>
         <Byline>
-          <KeyboardShortcutHint shortcut="Enter" action="switch model" bold />
-          <KeyboardShortcutHint shortcut="Esc" action="back" />
+          <KeyboardShortcutHint shortcut="Enter" action={t('action-switch-model')} bold />
+          <KeyboardShortcutHint shortcut="Esc" action={t('action-back')} />
         </Byline>
       </Text>
     </Pane>

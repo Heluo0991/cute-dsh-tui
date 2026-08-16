@@ -1,5 +1,6 @@
 import React from 'react'
 import { Box, Text } from '../ui.js'
+import { t } from '../i18n.js'
 import { stringWidth } from '../ink/stringWidth.js'
 import { truncateToWidth } from '../ink/truncateToWidth.js'
 
@@ -38,19 +39,30 @@ export function FileSuggestions({
         const descriptionWidth = Math.max(0, columns - 24)
         const description = isDir ? 'directory' : 'file'
         return (
-          <Text key={file} wrap="truncate">
-            <Text color={isSelected ? 'suggestion' : undefined} dimColor={!isSelected}>
-              + {name}
+          <Box
+            key={file}
+            width="100%"
+            paddingLeft={1}
+            paddingRight={1}
+            backgroundColor={isSelected ? 'selectionBg' : undefined}
+          >
+            <Text wrap="truncate">
+              <Text color={isSelected ? 'suggestion' : undefined} dimColor={!isSelected} bold={isSelected}>
+                + {name}
+              </Text>
+              <Text color={isSelected ? 'suggestion' : undefined} dimColor={!isSelected}>
+                {' '.repeat(Math.max(1, 20 - stringWidth(name)))}
+                {stringWidth(description) > descriptionWidth
+                  ? truncateToWidth(description, descriptionWidth - 1) + '…'
+                  : description}
+              </Text>
             </Text>
-            <Text color={isSelected ? 'suggestion' : undefined} dimColor={!isSelected}>
-              {' '.repeat(Math.max(1, 20 - stringWidth(name)))}
-              {stringWidth(description) > descriptionWidth
-                ? truncateToWidth(description, descriptionWidth - 1) + '…'
-                : description}
-            </Text>
-          </Text>
+          </Box>
         )
       })}
+      <Box paddingLeft={1} marginTop={0}>
+        <Text dimColor>{t('suggestions-file-hint')}</Text>
+      </Box>
     </Box>
   )
 }

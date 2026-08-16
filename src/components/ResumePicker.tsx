@@ -1,5 +1,6 @@
 import React from 'react'
 import { Box, Text } from '../ui.js'
+import { t } from '../i18n.js'
 import type { SessionRecord } from '../sessionHistory.js'
 import { Pane } from './design-system/Pane.js'
 import { ListItem } from './design-system/ListItem.js'
@@ -77,9 +78,9 @@ export function ResumePicker({
       </Box>
       <Text dimColor italic>
         <Byline>
-          <KeyboardShortcutHint shortcut="Enter" action="confirm" bold />
-          <KeyboardShortcutHint shortcut="→/←" action="expand/collapse fork group" />
-          <KeyboardShortcutHint shortcut="Esc" action="exit" />
+          <KeyboardShortcutHint shortcut="Enter" action={t('action-confirm')} bold />
+          <KeyboardShortcutHint shortcut="→/←" action={t('action-expand-collapse-fork')} />
+          <KeyboardShortcutHint shortcut="Esc" action={t('action-exit')} />
         </Byline>
       </Text>
     </Pane>

@@ -1,5 +1,6 @@
 import React from 'react'
 import { Box, Text } from '../ui.js'
+import { t } from '../i18n.js'
 import { Pane } from './design-system/Pane.js'
 import { Select } from './Select.js'
 import { Byline } from './design-system/Byline.js'
@@ -27,13 +28,13 @@ export function ThinkingToggle({
   const options = [
     {
       value: 'true',
-      label: 'Enabled',
-      description: 'DeepSeek will think before responding',
+      label: t('thinking-enabled'),
+      description: t('thinking-enabled-desc'),
     },
     {
       value: 'false',
-      label: 'Disabled',
-      description: 'DeepSeek will respond without extended thinking',
+      label: t('thinking-disabled'),
+      description: t('thinking-disabled-desc'),
     },
   ]
 
@@ -41,20 +42,14 @@ export function ThinkingToggle({
     <Pane color="permission">
       <Box flexDirection="column">
         <Box marginBottom={1} flexDirection="column">
-          <Text color="remember" bold>
-            Toggle thinking mode
-          </Text>
-          <Text dimColor>Enable or disable thinking for this session.</Text>
+          <Text color="remember" bold>{t('thinking-toggle-title')}</Text>
+          <Text dimColor>{t('thinking-toggle-subtitle')}</Text>
         </Box>
 
         {confirmationPending !== null ? (
           <Box flexDirection="column" marginBottom={1} gap={1}>
-            <Text color="warning">
-              Changing thinking mode mid-conversation will increase latency and
-              may reduce quality. For best results, set this at the start of a
-              session.
-            </Text>
-            <Text color="warning">Do you want to proceed?</Text>
+            <Text color="warning">{t('thinking-warning')}</Text>
+            <Text color="warning">{t('thinking-confirm-question')}</Text>
           </Box>
         ) : (
           <Box flexDirection="column" marginBottom={1}>
@@ -69,10 +64,10 @@ export function ThinkingToggle({
       </Box>
       <Text dimColor italic>
         <Byline>
-          <KeyboardShortcutHint shortcut="Enter" action="confirm" bold />
+          <KeyboardShortcutHint shortcut="Enter" action={t('action-confirm')} bold />
           <KeyboardShortcutHint
             shortcut="Esc"
-            action={confirmationPending !== null ? 'cancel' : 'exit'}
+            action={confirmationPending !== null ? t('action-cancel') : t('action-exit')}
           />
         </Byline>
       </Text>

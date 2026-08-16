@@ -1,6 +1,6 @@
 {
   "name": "@heluo0991/cute-dsh-tui",
-  "version": "1.1.9",
+  "version": "1.2.0",
   "description": "Claude Code style interactive TUI front door for DeepSeek Harness agents, built on the ported Ink core.",
   "license": "MIT",
   "repository": {
@@ -35,8 +35,7 @@
       "default": "./lib/invariant.js"
     },
     "./cordis.patch.yml": "./cordis.patch.yml",
-    "./package.json": "./package.json",
-    "./src/*": "./src/*"
+    "./package.json": "./package.json"
   },
   "files": [
     "cute-dsh-tui.js",
@@ -64,7 +63,14 @@
     "verify:profile-native-build": "pnpm run build && node scripts/verify-profile-native-build.mjs",
     "verify:model-switch-glow": "node --import tsx/esm scripts/verify-model-switch-glow.ts",
     "verify:inline-thinking": "node --import tsx/esm scripts/verify-inline-thinking.tsx",
-    "verify:btw-plugin": "node --import tsx/esm scripts/verify-btw-plugin.ts"
+    "verify:btw-plugin": "node --import tsx/esm scripts/verify-btw-plugin.ts",
+    "verify:session-credential": "node --import tsx/esm scripts/verify-session-credential.ts",
+    "verify:input-highlight": "node --import tsx/esm scripts/verify-input-highlight.ts",
+    "verify:input-highlight-render": "node --import tsx/esm scripts/verify-input-highlight-render.tsx",
+    "verify:working-commands": "node --import tsx/esm scripts/verify-working-commands.tsx",
+    "verify:package-exports": "node scripts/verify-package-exports.mjs",
+    "verify:profile-manifest-recovery": "node scripts/verify-profile-manifest-recovery.mjs",
+    "verify:i18n": "node scripts/verify-i18n.mjs"
   },
   "peerDependencies": {
     "@deepseek-ai/cordis": "^4.0.1",

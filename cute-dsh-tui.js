@@ -137,7 +137,15 @@ if (!profileHasNativePty(profileDir)) {
   }
   if (rebuildCode !== 0 || !profileHasNativePty(profileDir)) {
     console.error('[cute-dsh-tui] node-pty is required for the local shell but could not be built.')
-    if (process.platform === 'linux') console.error('Run: sudo apt-get install -y build-essential python3; then run cdsh again.')
+    if (process.platform === 'linux') {
+      console.error('On Debian/Ubuntu run: sudo apt-get install -y build-essential python3; then run cdsh again.')
+      console.error('On Alpine run: apk add --no-cache build-base python3; then run cdsh again.')
+    } else if (process.platform === 'darwin') {
+      console.error('Run: xcode-select --install; then run cdsh again.')
+    } else {
+      console.error('Reinstall @heluo0991/cute-dsh-tui and run cdsh again.')
+    }
+    console.error('If the error above is a network/registry/proxy failure, fix that first — the compiler toolchain may already be fine.')
     process.exit(rebuildCode || 1)
   }
 }

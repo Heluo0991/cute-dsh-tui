@@ -1,5 +1,6 @@
 import React from 'react'
 import { Box, Text, useInput } from '../ui.js'
+import { t } from '../i18n.js'
 import { Pane } from './design-system/Pane.js'
 import { Byline } from './design-system/Byline.js'
 import { KeyboardShortcutHint } from './design-system/KeyboardShortcutHint.js'
@@ -24,7 +25,7 @@ export function LoginDialog({
     }
     if (key.return) {
       if (value.trim() === '') {
-        setError('Enter an API key first.')
+        setError(t('login-error-empty'))
       } else {
         onSubmit(value)
       }
@@ -67,18 +68,16 @@ export function LoginDialog({
   return (
     <Pane color="permission">
       <Box flexDirection="column" gap={1}>
-        <Text color="remember" bold>Connect DeepSeek</Text>
-        <Text wrap="wrap">
-          Paste a DeepSeek API key. It is masked, never added to command history, and applies immediately to this session.
-        </Text>
-        <Text>{`API key  ${shown}`}</Text>
-        {saving && <Text color="warning" wrap="wrap">No key exists in this terminal. Confirm on the next screen to save it for future cdsh launches.</Text>}
+        <Text color="remember" bold>{t('login-title')}</Text>
+        <Text wrap="wrap">{t('login-body')}</Text>
+        <Text>{`${t('login-api-key-label')}  ${shown}`}</Text>
+        {saving && <Text color="warning" wrap="wrap">{t('login-save-warning')}</Text>}
         {error !== null && <Text color="error">{error}</Text>}
       </Box>
       <Text dimColor italic>
         <Byline>
-          <KeyboardShortcutHint shortcut="Enter" action="continue" bold />
-          <KeyboardShortcutHint shortcut="Esc" action="cancel" />
+          <KeyboardShortcutHint shortcut="Enter" action={t('login-action-continue')} bold />
+          <KeyboardShortcutHint shortcut="Esc" action={t('login-action-cancel')} />
         </Byline>
       </Text>
     </Pane>
@@ -99,11 +98,9 @@ export function CredentialSaveConfirm({
   return (
     <Pane color="warning">
       <Box flexDirection="column" gap={1}>
-        <Text color="warning" bold>Save API key for future cdsh launches?</Text>
-        <Text wrap="wrap">
-          Windows saves it as your user environment variable. macOS/Linux save it through DSH's owner-only credential store, which is applied immediately and reused by later cdsh launches.
-        </Text>
-        <Text dimColor>Enter saves · Esc keeps it for this session only.</Text>
+        <Text color="warning" bold>{t('login-save-title')}</Text>
+        <Text wrap="wrap">{t('login-save-body')}</Text>
+        <Text dimColor>{t('login-save-hint')}</Text>
       </Box>
     </Pane>
   )
@@ -123,9 +120,9 @@ export function CredentialDeleteConfirm({
   return (
     <Pane color="warning">
       <Box flexDirection="column" gap={1}>
-        <Text color="warning" bold>Forget the saved API key?</Text>
-        <Text wrap="wrap">This removes the credential previously saved by CuteDshTui. Keys supplied by your shell are never changed.</Text>
-        <Text dimColor>Enter removes it · Esc keeps it.</Text>
+        <Text color="warning" bold>{t('login-delete-title')}</Text>
+        <Text wrap="wrap">{t('login-delete-body')}</Text>
+        <Text dimColor>{t('login-delete-hint')}</Text>
       </Box>
     </Pane>
   )

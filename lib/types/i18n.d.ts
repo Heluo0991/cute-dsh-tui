@@ -179,6 +179,10 @@ declare const dict: {
         readonly zh: "- 保持与现有代码风格一致";
         readonly en: "- Keep consistent with the existing code style";
     };
+    readonly 'clear-session-done': {
+        readonly zh: "会话已清空";
+        readonly en: "Session cleared";
+    };
     readonly 'doctor-api-key': {
         readonly zh: "API key: {{state}}";
         readonly en: "API key: {{state}}";
@@ -323,6 +327,118 @@ declare const dict: {
         readonly zh: "请使用 vuln-check 技能对当前项目做一次安全漏洞检查。";
         readonly en: "Use the vuln-check skill to run a security vulnerability check on the current project.";
     };
+    readonly 'exit-ctrl-c-again': {
+        readonly zh: "再按一次 Ctrl+C 退出";
+        readonly en: "Press Ctrl+C again to exit";
+    };
+    readonly 'yolo-upgrade-unavailable': {
+        readonly zh: "Yolo 升级不可用：未挂载权限服务";
+        readonly en: "Yolo upgrade unavailable: permission service is not loaded";
+    };
+    readonly 'permission-unavailable-profile': {
+        readonly zh: "当前 profile 未提供权限切换";
+        readonly en: "Permission switching unavailable in this profile";
+    };
+    readonly 'permission-switch-running': {
+        readonly zh: "回合运行中无法切换权限";
+        readonly en: "Cannot switch permissions while a turn is running";
+    };
+    readonly 'permission-no-presets': {
+        readonly zh: "当前 profile 没有可用的权限预设";
+        readonly en: "No permission presets are available in this profile";
+    };
+    readonly 'new-session-started': {
+        readonly zh: "新会话已开始";
+        readonly en: "New session started";
+    };
+    readonly 'btw-none-yet': {
+        readonly zh: "还没有 BTW 旁路会话。使用 /btw <问题>。";
+        readonly en: "No BTW conversation yet. Use /btw <question>.";
+    };
+    readonly 'plugin-no-matches': {
+        readonly zh: "没有匹配的已安装或已加载插件。`/plugin search` 只过滤本地列表，不会搜索 npm。";
+        readonly en: "No matching installed or loaded plugins. `/plugin search` filters this local list; it does not search npm.";
+    };
+    readonly 'plugin-usage': {
+        readonly zh: "用法: /plugin [list|search <词>|add <spec>|remove <包>|update [包]]";
+        readonly en: "Usage: /plugin [list|search <text>|add <spec>|remove <package>|update [package]]";
+    };
+    readonly 'plugin-profile-required': {
+        readonly zh: "插件变更需要通过 dsh --profile <名称> 启动。";
+        readonly en: "Plugin changes require launching with dsh --profile <name>.";
+    };
+    readonly 'login-inherited-source': {
+        readonly zh: "来源：启动环境变量（本次会话只读）。";
+        readonly en: "Source: launch environment (read-only for this running session).";
+    };
+    readonly 'login-inherited-change-hint': {
+        readonly zh: "如需更换，请在 shell 中更新 DEEPSEEK_API_KEY 并重启 cdsh。";
+        readonly en: "To change it, update DEEPSEEK_API_KEY in the shell and restart cdsh.";
+    };
+    readonly 'logout-env-key': {
+        readonly zh: "API key 来自启动环境变量。请在 shell 中清除后重启 cdsh。";
+        readonly en: "The API key came from the launch environment. Clear it in the shell and restart cdsh.";
+    };
+    readonly 'logout-cleared-no-saved': {
+        readonly zh: "已清除本次会话的 API key；未改动 CuteDshTui 保存的凭证。";
+        readonly en: "API key cleared for this session. No CuteDshTui-saved credential was changed.";
+    };
+    readonly 'permissions-unavailable': {
+        readonly zh: "当前 profile 未提供权限切换。";
+        readonly en: "Permission switching is unavailable in this profile.";
+    };
+    readonly 'permissions-use-hint': {
+        readonly zh: "使用 /permission 切换当前会话。";
+        readonly en: "Use /permission to switch the current session.";
+    };
+    readonly 'rewind-none': {
+        readonly zh: "还没有可回退的消息";
+        readonly en: "Nothing to rewind yet";
+    };
+    readonly 'rewound-edit-resend': {
+        readonly zh: "已回退——编辑后按 Enter 重新发送";
+        readonly en: "Rewound — edit and press Enter to resend";
+    };
+    readonly 'yolo-enabled-resumed': {
+        readonly zh: "已为这个恢复的会话启用 Yolo 升级";
+        readonly en: "Yolo upgrade enabled for this resumed session";
+    };
+    readonly 'yolo-declined-preserved': {
+        readonly zh: "已拒绝 Yolo 升级；保留该会话原有权限";
+        readonly en: "Yolo upgrade declined; preserved this session's existing permission";
+    };
+    readonly 'session-resumed': {
+        readonly zh: "会话已恢复";
+        readonly en: "Session resumed";
+    };
+    readonly 'logout-saved-kept': {
+        readonly zh: "已清除会话 API key，保留已保存凭证。";
+        readonly en: "Session API key cleared. The saved credential was kept.";
+    };
+    readonly 'credential-saved-applied': {
+        readonly zh: "API key 已保存供以后 cdsh 启动使用，并已应用到本次会话。";
+        readonly en: "API key saved for future cdsh launches and applied to this session.";
+    };
+    readonly 'credential-save-failed': {
+        readonly zh: "无法保存或应用 API key。请检查终端错误信息后重试。";
+        readonly en: "Could not save or apply the API key. Check the terminal error message and try again.";
+    };
+    readonly 'credential-removed': {
+        readonly zh: "已移除 CuteDshTui 保存的凭证。";
+        readonly en: "Saved CuteDshTui credential removed.";
+    };
+    readonly 'credential-remove-failed': {
+        readonly zh: "无法移除已保存凭证。";
+        readonly en: "Could not remove the saved credential.";
+    };
+    readonly 'plugin-confirm-title': {
+        readonly zh: "确认插件变更";
+        readonly en: "Confirm plugin change";
+    };
+    readonly 'plugin-confirm-hint': {
+        readonly zh: "这将重启 CuteDshTui 并恢复当前主会话。Enter 继续 · Esc 取消。";
+        readonly en: "This will restart CuteDshTui and restore the current main session. Enter to continue · Esc to cancel.";
+    };
     readonly 'context-loaded': {
         readonly zh: "已加载上下文";
         readonly en: "Context loaded";
@@ -451,6 +567,26 @@ declare const dict: {
         readonly zh: "标题   {{title}}";
         readonly en: "Title   {{title}}";
     };
+    readonly 'webui-url': {
+        readonly zh: "地址      {{url}}";
+        readonly en: "URL       {{url}}";
+    };
+    readonly 'webui-launch': {
+        readonly zh: "启动      终端运行 dsh web（或 dsh --profile web；使用同一个 DSH_HOME）";
+        readonly en: "Launch      run dsh web in a terminal (or dsh --profile web; same DSH_HOME)";
+    };
+    readonly 'webui-port': {
+        readonly zh: "端口      dsh web --port <端口>（默认 3080；0 由系统分配）";
+        readonly en: "Port        dsh web --port <port> (default 3080; 0 lets the OS choose)";
+    };
+    readonly 'webui-host': {
+        readonly zh: "地址      仅本机 127.0.0.1；Web profile 尚未允许 --host 0.0.0.0";
+        readonly en: "Host        loopback 127.0.0.1 only; the web profile rejects --host 0.0.0.0";
+    };
+    readonly 'webui-local-only': {
+        readonly zh: "说明      此命令只显示管理入口，不会写入会话日志或发送给模型";
+        readonly en: "Note        this command only shows the management entry; it writes nothing to the session log and sends nothing to the model";
+    };
     readonly 'cost-cache-hit-rate': {
         readonly zh: "缓存命中率 {{rate}}% · 缓存 {{read}} 读 / {{write}} 写";
         readonly en: "Cache hit rate {{rate}}% · cache {{read}} read / {{write}} write";
@@ -518,6 +654,306 @@ declare const dict: {
     readonly 'login-logout-hint': {
         readonly zh: "DSH 凭证可来自环境变量或已保存的凭证存储。/logout 只会移除 CuteDshTui 保存的凭证。";
         readonly en: "DSH credentials may come from the environment or saved credential store. /logout removes only credentials saved by CuteDshTui.";
+    };
+    readonly 'login-session-applied': {
+        readonly zh: "API key 已用于本次 CuteDshTui 会话。";
+        readonly en: "API key set for this CuteDshTui session only.";
+    };
+    readonly 'login-session-applied-exit': {
+        readonly zh: "API key 已用于本次会话；退出 TUI 时恢复原状态。";
+        readonly en: "API key set for this session only. It is restored when the TUI exits.";
+    };
+    readonly 'login-session-failed': {
+        readonly zh: "无法应用本次会话专用的 API key。";
+        readonly en: "Could not apply the session-only API key.";
+    };
+    readonly 'login-session-unavailable': {
+        readonly zh: "当前启动方式不支持仅本次会话的 API key。";
+        readonly en: "Session-only API keys are unavailable in this launch mode.";
+    };
+    readonly 'login-release-failed': {
+        readonly zh: "无法释放本次会话专用的 API key。";
+        readonly en: "Could not release the session-only API key.";
+    };
+    readonly 'login-title': {
+        readonly zh: "连接 DeepSeek";
+        readonly en: "Connect DeepSeek";
+    };
+    readonly 'login-body': {
+        readonly zh: "粘贴 DeepSeek API key。输入已掩码、不会进入命令历史，并立即应用到本次会话。";
+        readonly en: "Paste a DeepSeek API key. It is masked, never added to command history, and applies immediately to this session.";
+    };
+    readonly 'login-api-key-label': {
+        readonly zh: "API key";
+        readonly en: "API key";
+    };
+    readonly 'login-save-warning': {
+        readonly zh: "当前终端没有 key。下一屏确认后才会保存，供以后 cdsh 启动使用。";
+        readonly en: "No key exists in this terminal. Confirm on the next screen to save it for future cdsh launches.";
+    };
+    readonly 'login-error-empty': {
+        readonly zh: "请先输入 API key。";
+        readonly en: "Enter an API key first.";
+    };
+    readonly 'login-action-continue': {
+        readonly zh: "继续";
+        readonly en: "continue";
+    };
+    readonly 'login-action-cancel': {
+        readonly zh: "取消";
+        readonly en: "cancel";
+    };
+    readonly 'login-save-title': {
+        readonly zh: "保存 API key 供以后 cdsh 启动使用？";
+        readonly en: "Save API key for future cdsh launches?";
+    };
+    readonly 'login-save-body': {
+        readonly zh: "Windows 会保存为用户环境变量。macOS/Linux 通过 DSH 的仅属主凭证存储保存，立即生效并供以后 cdsh 启动复用。";
+        readonly en: "Windows saves it as your user environment variable. macOS/Linux save it through DSH's owner-only credential store, which is applied immediately and reused by later cdsh launches.";
+    };
+    readonly 'login-save-hint': {
+        readonly zh: "Enter 保存 · Esc 仅本次会话使用";
+        readonly en: "Enter saves · Esc keeps it for this session only";
+    };
+    readonly 'login-delete-title': {
+        readonly zh: "忘记已保存的 API key？";
+        readonly en: "Forget the saved API key?";
+    };
+    readonly 'login-delete-body': {
+        readonly zh: "这将移除 CuteDshTui 之前保存的凭证；shell 提供的 key 永远不会被改动。";
+        readonly en: "This removes the credential previously saved by CuteDshTui. Keys supplied by your shell are never changed.";
+    };
+    readonly 'login-delete-hint': {
+        readonly zh: "Enter 移除 · Esc 保留";
+        readonly en: "Enter removes it · Esc keeps it";
+    };
+    readonly 'btw-pane-title': {
+        readonly zh: "BTW · 旁路会话";
+        readonly en: "BTW · side conversation";
+    };
+    readonly 'btw-pane-hint': {
+        readonly zh: "已复制上下文 · 主会话不受影响 · Esc 返回 · Ctrl+C 停止 · Ctrl+O 详情";
+        readonly en: "Forked context · main conversation is unchanged · Esc returns · Ctrl+C stops · Ctrl+O details";
+    };
+    readonly 'btw-working': {
+        readonly zh: "旁路会话正在工作…";
+        readonly en: "Working in side conversation…";
+    };
+    readonly 'btw-placeholder': {
+        readonly zh: "继续追问…";
+        readonly en: "Ask a follow-up…";
+    };
+    readonly 'btw-background-started': {
+        readonly zh: "BTW 已在后台启动；当前回合结束后自动打开，不会打断主对话";
+        readonly en: "BTW started in the background; it will open after the current turn without interrupting the main conversation";
+    };
+    readonly 'action-navigate': {
+        readonly zh: "移动";
+        readonly en: "navigate";
+    };
+    readonly 'action-select': {
+        readonly zh: "选择";
+        readonly en: "select";
+    };
+    readonly 'action-cancel': {
+        readonly zh: "取消";
+        readonly en: "cancel";
+    };
+    readonly 'action-confirm': {
+        readonly zh: "确认";
+        readonly en: "confirm";
+    };
+    readonly 'action-exit': {
+        readonly zh: "退出";
+        readonly en: "exit";
+    };
+    readonly 'action-back': {
+        readonly zh: "返回";
+        readonly en: "back";
+    };
+    readonly 'action-switch-model': {
+        readonly zh: "切换模型";
+        readonly en: "switch model";
+    };
+    readonly 'action-choose-depth': {
+        readonly zh: "选择深度";
+        readonly en: "choose depth";
+    };
+    readonly 'action-rewind': {
+        readonly zh: "回退";
+        readonly en: "rewind";
+    };
+    readonly 'action-allow-once': {
+        readonly zh: "允许一次";
+        readonly en: "allow once";
+    };
+    readonly 'action-deny': {
+        readonly zh: "拒绝";
+        readonly en: "deny";
+    };
+    readonly 'action-enable-full': {
+        readonly zh: "启用完整访问";
+        readonly en: "enable full access";
+    };
+    readonly 'action-keep-permission': {
+        readonly zh: "保持当前权限";
+        readonly en: "keep current permission";
+    };
+    readonly 'action-expand': {
+        readonly zh: "展开";
+        readonly en: "expand";
+    };
+    readonly 'action-expand-collapse-fork': {
+        readonly zh: "展开/折叠 fork 组";
+        readonly en: "expand/collapse fork group";
+    };
+    readonly 'injected-context-label': {
+        readonly zh: "注入的上下文";
+        readonly en: "Injected context";
+    };
+    readonly 'thinking-label': {
+        readonly zh: "思考";
+        readonly en: "Thinking";
+    };
+    readonly 'approval-title': {
+        readonly zh: "需要审批";
+        readonly en: "Approval required";
+    };
+    readonly 'approval-tool': {
+        readonly zh: "工具";
+        readonly en: "Tool";
+    };
+    readonly 'approval-reason': {
+        readonly zh: "原因";
+        readonly en: "Reason";
+    };
+    readonly 'approval-call': {
+        readonly zh: "调用";
+        readonly en: "Call";
+    };
+    readonly 'approval-queued': {
+        readonly zh: "另有 {{count}} 个审批请求排队。";
+        readonly en: "{{count}} additional approval request(s) queued.";
+    };
+    readonly 'history-title': {
+        readonly zh: "搜索历史";
+        readonly en: "Search history";
+    };
+    readonly 'history-placeholder': {
+        readonly zh: "输入以搜索…";
+        readonly en: "Type to search…";
+    };
+    readonly 'history-no-matches': {
+        readonly zh: "无匹配命令";
+        readonly en: "No matching commands";
+    };
+    readonly 'history-age-now': {
+        readonly zh: "刚刚";
+        readonly en: "now";
+    };
+    readonly 'history-age-minutes': {
+        readonly zh: "{{n}} 分钟前";
+        readonly en: "{{n}}m ago";
+    };
+    readonly 'history-age-hours': {
+        readonly zh: "{{n}} 小时前";
+        readonly en: "{{n}}h ago";
+    };
+    readonly 'history-age-days': {
+        readonly zh: "{{n}} 天前";
+        readonly en: "{{n}}d ago";
+    };
+    readonly 'interrupted-label': {
+        readonly zh: "已打断";
+        readonly en: "Interrupted";
+    };
+    readonly 'interrupted-question': {
+        readonly zh: "· 你希望 DeepSeek 接下来做什么？";
+        readonly en: "· What should DeepSeek do instead?";
+    };
+    readonly 'permission-picker-title': {
+        readonly zh: "权限";
+        readonly en: "Permissions";
+    };
+    readonly 'permission-picker-subtitle': {
+        readonly zh: "作用于本次会话及其后续工具调用。";
+        readonly en: "Applies to this session and its future tool calls.";
+    };
+    readonly 'full-access-title': {
+        readonly zh: "启用完整访问？";
+        readonly en: "Enable full access?";
+    };
+    readonly 'full-access-body': {
+        readonly zh: "完整访问会移除工作区边界，并关闭本次会话的审批提示；命令可以读取、修改或执行项目之外的内容。";
+        readonly en: "Full access removes the workspace boundary and disables approval prompts for this session. Commands may read, modify, or execute outside the current project.";
+    };
+    readonly 'full-access-yolo-body': {
+        readonly zh: "这个恢复的会话此前受限。`--yolo` 请求升级权限；确认后立即应用。";
+        readonly en: "This resumed session was previously restricted. `--yolo` requested an upgrade; confirm to apply it now.";
+    };
+    readonly 'rewind-picker-title': {
+        readonly zh: "回退";
+        readonly en: "Rewind";
+    };
+    readonly 'rewind-picker-subtitle': {
+        readonly zh: "选择要回退到的消息";
+        readonly en: "Pick a message to rewind the conversation to";
+    };
+    readonly 'rewind-picker-confirm': {
+        readonly zh: "回退会话到这条消息？";
+        readonly en: "Rewind conversation to this message?";
+    };
+    readonly 'rewind-row-description': {
+        readonly zh: "会话从这里重新开始";
+        readonly en: "conversation restarts here";
+    };
+    readonly 'rewind-row-last': {
+        readonly zh: "最后一条消息";
+        readonly en: "last message";
+    };
+    readonly 'rewind-no-rows': {
+        readonly zh: "没有可回退的消息";
+        readonly en: "No messages to rewind to";
+    };
+    readonly 'thinking-toggle-title': {
+        readonly zh: "切换思考模式";
+        readonly en: "Toggle thinking mode";
+    };
+    readonly 'thinking-toggle-subtitle': {
+        readonly zh: "启用或禁用本次会话的扩展思考。";
+        readonly en: "Enable or disable thinking for this session.";
+    };
+    readonly 'thinking-enabled': {
+        readonly zh: "启用";
+        readonly en: "Enabled";
+    };
+    readonly 'thinking-disabled': {
+        readonly zh: "禁用";
+        readonly en: "Disabled";
+    };
+    readonly 'thinking-enabled-desc': {
+        readonly zh: "DeepSeek 回答前先进行思考";
+        readonly en: "DeepSeek will think before responding";
+    };
+    readonly 'thinking-disabled-desc': {
+        readonly zh: "DeepSeek 不进行扩展思考，直接回答";
+        readonly en: "DeepSeek will respond without extended thinking";
+    };
+    readonly 'thinking-warning': {
+        readonly zh: "会话中途切换思考模式会增加延迟并可能降低质量。建议在会话开始时设置。";
+        readonly en: "Changing thinking mode mid-conversation will increase latency and may reduce quality. For best results, set this at the start of a session.";
+    };
+    readonly 'thinking-confirm-question': {
+        readonly zh: "确认继续吗？";
+        readonly en: "Do you want to proceed?";
+    };
+    readonly 'effort-picker-title': {
+        readonly zh: "推理深度 · 第 2 步 / 共 2 步";
+        readonly en: "Reasoning depth · step 2 of 2";
+    };
+    readonly 'logo-tip-label': {
+        readonly zh: "提示: ";
+        readonly en: "Tip: ";
     };
     readonly 'permissions-root-hint': {
         readonly zh: "当前文件系统策略以工作目录为根：{{cwd}}";
@@ -603,6 +1039,134 @@ declare const dict: {
         readonly zh: "推理强度 → {{name}}";
         readonly en: "Reasoning effort → {{name}}";
     };
+    readonly 'rewind-unavailable': {
+        readonly zh: "回退不可用——未加载会话服务";
+        readonly en: "Rewind unavailable — session services not loaded";
+    };
+    readonly 'rewind-settling': {
+        readonly zh: "当前回合仍在收尾，暂不能回退，请稍后再试";
+        readonly en: "Cannot rewind — the turn is still settling, try again in a moment";
+    };
+    readonly 'rewind-failed': {
+        readonly zh: "回退失败——无法创建替代会话";
+        readonly en: "Rewind failed — could not create the replacement session";
+    };
+    readonly 'resume-running': {
+        readonly zh: "回合运行中无法恢复会话";
+        readonly en: "Cannot resume while a turn is running";
+    };
+    readonly 'resume-unavailable': {
+        readonly zh: "恢复不可用——未加载 agents 服务";
+        readonly en: "Resume unavailable — agents service not loaded";
+    };
+    readonly 'new-session-running': {
+        readonly zh: "回合运行中无法开始新会话";
+        readonly en: "Cannot start a new session while a turn is running";
+    };
+    readonly 'new-session-unavailable': {
+        readonly zh: "新会话不可用——未加载 agents 服务";
+        readonly en: "New session unavailable — agents service not loaded";
+    };
+    readonly 'model-switch-running': {
+        readonly zh: "回合运行中无法切换模型";
+        readonly en: "Cannot switch models while a turn is running";
+    };
+    readonly 'model-switch-unavailable': {
+        readonly zh: "模型切换不可用——未加载会话服务";
+        readonly en: "Model switch unavailable — session services not loaded";
+    };
+    readonly 'reasoning-pref-failed': {
+        readonly zh: "推理深度已切换，但偏好写入失败（重启后不保留）";
+        readonly en: "Reasoning depth changed, but the preference could not be saved";
+    };
+    readonly 'btw-unavailable': {
+        readonly zh: "BTW 不可用：未加载会话服务";
+        readonly en: "BTW is unavailable: session services are not loaded";
+    };
+    readonly 'btw-needs-main-turn': {
+        readonly zh: "BTW 需要主会话至少完成一个回合后才能并行运行";
+        readonly en: "BTW needs one completed main turn before it can run in parallel";
+    };
+    readonly 'btw-cancelled': {
+        readonly zh: "BTW 已取消";
+        readonly en: "BTW cancelled";
+    };
+    readonly 'permission-command-unavailable': {
+        readonly zh: "权限切换不可用：未加载命令服务";
+        readonly en: "Permission switching unavailable: command service not loaded";
+    };
+    readonly 'permission-command-not-registered': {
+        readonly zh: "权限切换不可用：DSH /permission 未注册";
+        readonly en: "Permission switching unavailable: DSH /permission is not registered";
+    };
+    readonly 'permission-switch-failed': {
+        readonly zh: "权限切换失败 · {{error}}";
+        readonly en: "Permission switch failed · {{error}}";
+    };
+    readonly 'compact-unavailable': {
+        readonly zh: "压缩不可用——当前组合没有 compaction 服务";
+        readonly en: "Compaction unavailable · no compaction service in this leaf";
+    };
+    readonly 'compact-running': {
+        readonly zh: "回合运行中无法压缩";
+        readonly en: "Cannot compact while a turn is running";
+    };
+    readonly compacting: {
+        readonly zh: "正在压缩会话…";
+        readonly en: "Compacting conversation…";
+    };
+    readonly 'compacted-notice': {
+        readonly zh: "会话已压缩";
+        readonly en: "Conversation compacted";
+    };
+    readonly 'interrupted-what-instead': {
+        readonly zh: "已打断 · 你希望接下来做什么？";
+        readonly en: "Interrupted · What should Claude do instead?";
+    };
+    readonly 'context-low': {
+        readonly zh: "上下文偏低（剩余 {{percent}}%）· 可运行 /clear 或开始新会话";
+        readonly en: "Context low ({{percent}}% remaining) · Run /clear or start a new session";
+    };
+    readonly 'rewind-to-point-failed': {
+        readonly zh: "无法回退到该位置 · {{error}}";
+        readonly en: "Cannot rewind to this point · {{error}}";
+    };
+    readonly 'resume-failed': {
+        readonly zh: "恢复失败 · {{error}}";
+        readonly en: "Resume failed · {{error}}";
+    };
+    readonly 'new-session-failed': {
+        readonly zh: "新会话失败 · {{error}}";
+        readonly en: "New session failed · {{error}}";
+    };
+    readonly 'model-switch-fork-failed': {
+        readonly zh: "无法切换模型 · {{error}}";
+        readonly en: "Cannot switch models · {{error}}";
+    };
+    readonly 'model-switch-failed': {
+        readonly zh: "模型切换失败 · {{error}}";
+        readonly en: "Model switch failed · {{error}}";
+    };
+    readonly 'btw-fork-failed': {
+        readonly zh: "BTW 无法派生会话：{{error}}";
+        readonly en: "BTW could not fork this conversation: {{error}}";
+    };
+    readonly 'unknown-permission-preset': {
+        readonly zh: "未知权限预设：{{preset}}";
+        readonly en: "Unknown permission preset: {{preset}}";
+    };
+    readonly 'compacted-done': {
+        readonly zh: "会话已压缩";
+        readonly en: "Conversation compacted";
+    };
+    readonly 'compact-nothing': {
+        readonly zh: "没有可压缩的内容";
+        readonly en: "Nothing to compact";
+    };
+    readonly 'compaction-failed': {
+        readonly zh: "压缩失败 · {{error}}";
+        readonly en: "Compaction failed · {{error}}";
+    };
     readonly 'logo-tagline': {
         readonly zh: "探索未至之境！";
         readonly en: "Explore the uncharted!";
@@ -651,6 +1215,14 @@ declare const dict: {
         readonly zh: "剪贴板为空";
         readonly en: "Clipboard is empty";
     };
+    readonly 'input-esc-again-rewind': {
+        readonly zh: "再按 Esc 回退";
+        readonly en: "Press Esc again to rewind";
+    };
+    readonly 'input-esc-again-clear': {
+        readonly zh: "再按 Esc 清空";
+        readonly en: "Press Esc again to clear";
+    };
     readonly 'input-pending-steer-label': {
         readonly zh: "插话 · 下一步送达";
         readonly en: "Steer · delivered next";
@@ -662,6 +1234,114 @@ declare const dict: {
     readonly 'input-pending-actions-hint': {
         readonly zh: "撤回 · Esc 打断并立即发送";
         readonly en: "Retract · Esc interrupts and sends immediately";
+    };
+    readonly 'help-shortcut-slash': {
+        readonly zh: "/ 打开命令";
+        readonly en: "/ for commands";
+    };
+    readonly 'help-shortcut-question': {
+        readonly zh: "? 打开帮助";
+        readonly en: "? for this help";
+    };
+    readonly 'help-shortcut-verbose': {
+        readonly zh: "ctrl+o 切换详情";
+        readonly en: "ctrl+o for verbose output";
+    };
+    readonly 'help-shortcut-context': {
+        readonly zh: "ctrl+t 切换上下文";
+        readonly en: "ctrl+t to toggle context";
+    };
+    readonly 'help-shortcut-history': {
+        readonly zh: "ctrl+r 搜索历史";
+        readonly en: "ctrl+r to search history";
+    };
+    readonly 'help-shortcut-interrupt': {
+        readonly zh: "ctrl+c 中断";
+        readonly en: "ctrl+c to interrupt";
+    };
+    readonly 'help-shortcut-exit': {
+        readonly zh: "ctrl+d 退出";
+        readonly en: "ctrl+d to exit";
+    };
+    readonly 'help-shortcut-redraw': {
+        readonly zh: "ctrl+l 重绘";
+        readonly en: "ctrl+l to redraw";
+    };
+    readonly 'help-shortcut-show-older': {
+        readonly zh: "ctrl+g 显示/折叠旧消息";
+        readonly en: "ctrl+g to show/fold old messages";
+    };
+    readonly 'help-edit-esc': {
+        readonly zh: "esc 清空输入";
+        readonly en: "esc to clear input";
+    };
+    readonly 'help-edit-history': {
+        readonly zh: "↑/↓ 浏览历史";
+        readonly en: "↑/↓ for history";
+    };
+    readonly 'help-edit-cursor': {
+        readonly zh: "←/→ 移动光标";
+        readonly en: "←/→ to move cursor";
+    };
+    readonly 'help-edit-word': {
+        readonly zh: "ctrl+←/→ 按词跳转";
+        readonly en: "ctrl+←/→ for word jumps";
+    };
+    readonly 'help-edit-tab': {
+        readonly zh: "tab 补全命令";
+        readonly en: "tab to complete command";
+    };
+    readonly 'help-edit-permission': {
+        readonly zh: "shift+tab 循环权限";
+        readonly en: "shift+tab to cycle permission";
+    };
+    readonly 'help-edit-delete-word-left': {
+        readonly zh: "ctrl+backspace 删前词";
+        readonly en: "ctrl+backspace delete word";
+    };
+    readonly 'help-edit-delete-word-right': {
+        readonly zh: "ctrl+delete 删后词";
+        readonly en: "ctrl+delete word after";
+    };
+    readonly 'help-commands-title': {
+        readonly zh: "命令：";
+        readonly en: "commands:";
+    };
+    readonly 'help-commands-more': {
+        readonly zh: "…另有 {{count}} 个命令，输入 / 查看并补全";
+        readonly en: "…{{count}} more commands; type / to complete";
+    };
+    readonly 'suggestions-command-hint': {
+        readonly zh: "↑/↓ 选择 · tab 补全 · enter 执行 · esc 关闭";
+        readonly en: "↑/↓ select · tab complete · enter run · esc close";
+    };
+    readonly 'suggestions-file-hint': {
+        readonly zh: "↑/↓ 选择 · tab 插入 · enter 插入 · esc 仅关闭本引用";
+        readonly en: "↑/↓ select · tab insert · enter insert · esc close this reference";
+    };
+    readonly 'status-hint-selection': {
+        readonly zh: "esc 返回输入";
+        readonly en: "esc to return to input";
+    };
+    readonly 'status-hint-interrupt': {
+        readonly zh: "esc 中断";
+        readonly en: "esc to interrupt";
+    };
+    readonly 'status-hint-help': {
+        readonly zh: "? 查看快捷键";
+        readonly en: "? for shortcuts";
+    };
+    readonly 'status-cache-label': {
+        readonly zh: "缓存";
+        readonly en: "cache";
+    };
+    readonly 'search-no-matches': {
+        readonly zh: "无匹配 ";
+        readonly en: "no matches ";
+    };
+    readonly 'permissions-current-preset': {
+        readonly zh: "当前预设: {{preset}}";
+        readonly en: "Current preset: {{preset}}";
     };
     readonly 'frame-blink': {
         readonly zh: "眨眼";
@@ -714,6 +1394,10 @@ declare const dict: {
     readonly 'load-earlier': {
         readonly zh: " ↑ 加载更早消息（会话日志完整，/export 导出全文） ";
         readonly en: " ↑ load earlier messages (full session log; /export for full text) ";
+    };
+    readonly 'show-previous-messages': {
+        readonly zh: " ctrl+g 显示 {{count}} 条较早消息 ";
+        readonly en: " ctrl+g to show {{count}} previous messages ";
     };
     readonly 'resume-none-in-cwd': {
         readonly zh: "当前目录没有可恢复的历史会话";

@@ -12,7 +12,7 @@
 | `Shift+Enter` | 在光标处插入换行 |
 | `Shift+Tab` | 循环当前会话的权限级别；切到 `danger-full-access` 时仍会要求确认 |
 | `Alt/Option+Up` | 把最后一条尚未处理的消息取回输入框编辑 |
-| `Up/Down` | 菜单选择；普通输入中浏览历史或在多行文本间移动 |
+| `Up/Down` | 菜单选择；普通输入中按视觉行移动（软换行同样有效），首/末视觉行进入历史 |
 | `Ctrl+V` | 从系统剪贴板插入文本；Windows Explorer 复制的文件/图片会插入路径 |
 | `Esc` | 按当前模式关闭菜单/选区/弹窗；有输入时清空；模型工作时中断；空输入连续两次打开 rewind |
 | `Ctrl+C` | 工作时中断；空闲且有输入时清空；空输入时连续两次退出 |
@@ -21,11 +21,12 @@
 | `Ctrl+T` | 展开或折叠启动时的“已加载上下文”面板 |
 | `Ctrl+R` | 打开输入历史搜索；重复按或 `Down` 移到下一项 |
 | `Ctrl+L` | 强制清理并重绘物理终端 |
+| `Ctrl+G` | 展开或折叠长会话中隐藏的较早消息 |
 | `?` | 输入框为空时打开快捷键和命令帮助 |
 | `Shift+Up` | 进入消息选择模式；方向键移动，`Enter` 展开单条，`Esc` 退出 |
 
-`/` 有两种语义：普通输入模式中打开 slash command 补全；`Ctrl+O` 的
-transcript 模式中打开会话全文搜索。全文搜索使用 `n`/`N` 在结果间前后跳转。
+`/` 始终属于 slash command 补全；`Ctrl+O` 的 transcript 模式中全文搜索使用
+`Ctrl+F` 打开，并用 `n`/`N` 在结果间前后跳转。
 
 `/model` 会先选择模型路线（例如 Flash 或 Pro），然后显示此路线可用的推理深度。只在确认第二级后才创建新的会话 fork；选择 `Max` 时，输入框会短暂出现天蓝色动态光效。
 
@@ -34,12 +35,13 @@ transcript 模式中打开会话全文搜索。全文搜索使用 `n`/`N` 在结
 | 按键 | 行为 |
 | --- | --- |
 | `Left/Right` | 按字符移动光标 |
-| `Ctrl+Left/Right` | 按单词移动 |
+| `Ctrl+Left/Right`（或 `Alt+Left/Right`） | 按单词移动 |
 | `Home/End` | 移到当前逻辑行首/行尾 |
-| `Ctrl+A` / `Ctrl+E` | 编辑器中移到当前逻辑行首/行尾；`Ctrl+E` 还会展开或折叠长会话中隐藏的旧消息 |
+| `Ctrl+A` / `Ctrl+E` | 编辑器中移到当前逻辑行首/行尾 |
 | `Ctrl+U` | 删除光标前内容 |
 | `Ctrl+K` | 删除光标后内容 |
-| `Ctrl+W` | 删除前一个单词 |
+| `Ctrl+W` / `Ctrl+Backspace` | 删除前一个单词 |
+| `Ctrl+Delete` | 删除后一个单词 |
 
 Bracketed paste（右键或终端原生粘贴）会原样插入，包括换行，不会把粘贴内容误当
 成 Enter 提交。
@@ -52,6 +54,21 @@ Bracketed paste（右键或终端原生粘贴）会原样插入，包括换行�
 
 `Ctrl+V` 粘贴时，Windows Explorer 复制的文件/图片会直接插入为文件路径（含空格
 自动加引号），而不是粘贴路径文本本身。
+
+### 输入栏语义高亮
+
+输入框会实时着色：已识别的 `/命令` 与子命令使用主题强调色，未识别的
+斜杠前缀使用警示色，命令参数弱化显示，消息任意位置的 `@文件引用` 使用蓝色；
+普通文本保持不变。高亮只影响显示，发送内容仍是原文。
+
+### 剪贴板平台支持
+
+| 平台 | `Ctrl+V` 读取方式 |
+| --- | --- |
+| Windows | PowerShell `Get-Clipboard`，支持文件路径 |
+| macOS | `pbpaste`，文本 |
+| Linux | `wl-paste` → `xclip` → `xsel`，文本 |
+| 所有平台 | 无可用适配器时回退到 `Ctrl+Shift+V` / 右键终端原生粘贴 |
 
 ## 界面语言
 
@@ -149,7 +166,7 @@ transcript。
 | 分组 | 命令 |
 | --- | --- |
 | 会话 | `/new`、`/resume`、`/btw <问题>`、`/clear`、`/compact`、`/export` |
-| 状态 | `/status`、`/cost`、`/config`、`/doctor`、`/init`、`/agents` |
+| 状态 | `/status`、`/cost`、`/webui`、`/config`、`/doctor`、`/init`、`/agents` |
 | 模型与显示 | `/model`、`/thinking`、`/tokens`、`/activity`、`/preset`、`/theme`、`/lang` |
 | 账号与策略 | `/login`、`/logout`、`/permission`、`/permissions`、`/add-dir`、`/mcp` |
 | 打包 Skills | `/audit`、`/bug`、`/practice`、`/review`、`/pr_comments`、`/release-notes`、`/vuln-check` |
@@ -165,6 +182,8 @@ transcript。
   查看当前策略。
 - `/theme <name>` 与 `/theme status` 见主题文档。
 - `/lang` 切换中英界面语言（见「界面语言」）。
+- `/webui` 显示 WebUI 默认地址与终端启动方式（`dsh web`），不会把命令
+  内容发送给模型。
 - 启动后会后台检查 npm 新版本；发现更新时会提示。检测遵循 npm registry
   配置（`NPM_CONFIG_REGISTRY` 或 `~/.npmrc`），镜像源用户看到的就是安装源
   的最新版。`/update` 更新已安装的

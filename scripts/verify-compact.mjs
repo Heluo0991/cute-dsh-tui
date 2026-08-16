@@ -13,10 +13,15 @@
  * Run with plain node against the compiled lib: `node scripts/verify-compact.mjs`
  */
 import { createChannel } from '../lib/types/channel.js'
+import { setLang } from '../lib/types/i18n.js'
 import React from 'react'
 import { render } from '../lib/types/ui.js'
 import { MessageList } from '../lib/types/components/MessageList.js'
 import { Writable, PassThrough } from 'node:stream'
+
+// This regression asserts literal English checkpoint text; pin the active
+// language instead of coupling the test to the current default locale.
+setLang('en')
 
 let failed = 0
 function check(name, ok, extra = '') {
@@ -150,6 +155,10 @@ check(
   channel.contextSegments.prompt === 0 && channel.lastUsage?.input === sysEst,
   JSON.stringify(channel.lastUsage),
 )
+
+// Render assertions below still target the default zh copy; restore it
+// before mounting MessageList.
+setLang('zh')
 
 // ---- render-level: folded by default, full text when expanded
 function makeStreams() {

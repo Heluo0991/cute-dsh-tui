@@ -1,5 +1,5 @@
 import React from 'react'
-import { Box, Text } from '../../ui.js'
+import { Box, Text, useTerminalSize } from '../../ui.js'
 import { stringWidth } from '../../ink/stringWidth.js'
 import { useAnimationFrame } from '../../ink/hooks/use-animation-frame.js'
 import type { ToolCallView, ToolFileDiff, ToolResultView, ToolRow } from '../../channel.js'
@@ -63,19 +63,23 @@ const del = (text: string): BodyLine => ({ text, tone: 'del' })
 const dim = (text: string): BodyLine => ({ text, tone: 'dim' })
 const plain = (text: string): BodyLine => ({ text, tone: 'plain' })
 
-/** One side's text → display lines (upstream contentLines rule: empty text
- *  is zero lines; a single trailing newline is a terminator, not a line;
- *  interior blanks survive). */
-function sideLines(text: string): string[] {
+/** Text → display lines (upstream contentLines rule): empty text is zero
+ *  lines; one trailing newline is a terminator, not a line; interior blank
+ *  lines and per-line whitespace survive verbatim so multi-line code keeps
+ *  its original shape. */
+function contentTextLines(text: string): string[] {
   if (text === '') return []
-  const lines = text.split('\n')
-  if (lines[lines.length - 1] === '') lines.pop()
-  return lines
+  return (text.endsWith('\n') ? text.slice(0, -1) : text).split('\n')
 }
 
-/** Diff hunks → add/del rows. The header already carries the path for the
- *  common single-hunk case; with several hunks a path row separates files
- *  and `⋯` separates scattered hunks of one file (upstream DiffBlock). */
+/** One side's text → display lines; delegates to the shared newline rule. */
+const sideLines = contentTextLines
+
+/** Diff hunks → add/del rows with counts. Each hunk opens with a compact
+ *  `+A/-D` stat row (upstream DiffBlock's footer, folded into the hunk so a
+ *  multi-file card keeps its per-hunk attribution); larger hunks also get
+ *  `+N lines` / `-N lines` markers before their lines. With several hunks a
+ *  path row separates files and `⋯` separates scattered hunks of one file. */
 function diffLines(diffs: readonly ToolFileDiff[]): BodyLine[] {
   const out: BodyLine[] = []
   let prevPath: string | undefined
@@ -85,19 +89,26 @@ function diffLines(diffs: readonly ToolFileDiff[]): BodyLine[] {
       else out.push(dim('⋯'))
     }
     prevPath = diff.path
-    if (diff.oldText !== null) {
-      for (const line of sideLines(diff.oldText)) out.push(del(`- ${line}`))
+    const oldLines = diff.oldText === null ? [] : sideLines(diff.oldText)
+    const newLines = sideLines(diff.newText)
+    if (oldLines.length > 0 || newLines.length > 0) {
+      const stats = oldLines.length > 0
+        ? `+${newLines.length}/-${oldLines.length}`
+        : `+${newLines.length}`
+      out.push(dim(stats))
     }
-    for (const line of sideLines(diff.newText)) out.push(add(`+ ${line}`))
+    if (newLines.length > 1) out.push(add(`+${newLines.length} lines`))
+    if (oldLines.length > 1) out.push(del(`-${oldLines.length} lines`))
+    for (const line of oldLines) out.push(del(`- ${line}`))
+    for (const line of newLines) out.push(add(`+ ${line}`))
   }
   return out
 }
 
 /** Join the text blocks of a view's content payload (read/generic cards). */
 function contentLines(content: ReadonlyArray<{ readonly type: string; readonly text?: string }> | undefined): BodyLine[] {
-  const text = (content ?? []).map(block => (block.type === 'text' ? block.text ?? '' : '')).join('').trimEnd()
-  if (text === '') return []
-  return text.split('\n').map(dim)
+  const text = (content ?? []).map(block => (block.type === 'text' ? block.text ?? '' : '')).join('')
+  return contentTextLines(text).map(dim)
 }
 
 /** Per-card body lines; unknown/absent shapes yield [] so the caller falls
@@ -109,8 +120,8 @@ function viewLines(view: ToolCallView | ToolResultView): BodyLine[] {
     case 'terminal': {
       // The call-side terminal card has no output yet; only presentResult's
       // does. `in` narrows the call/result union without extra types.
-      const out = (('output' in view ? view.output : undefined) ?? '').trimEnd()
-      const lines: BodyLine[] = out === '' ? [] : out.split('\n').map(dim)
+      const output = ('output' in view ? view.output : undefined) ?? ''
+      const lines: BodyLine[] = contentTextLines(output).map(dim)
       if ('exitCode' in view && view.exitCode !== undefined && view.exitCode !== 0) {
         lines.push({ text: `Exit code ${view.exitCode}`, tone: 'error' })
       }
@@ -144,14 +155,58 @@ function viewLines(view: ToolCallView | ToolResultView): BodyLine[] {
   }
 }
 
-/** Collapsed bodies fold past the card's line budget; verbose (Ctrl+O) is
- *  always uncapped. Mirrors wrapText's "one extra line is shown directly". */
-function capLines(lines: BodyLine[], max: number, verbose: boolean): BodyLine[] {
-  if (verbose || lines.length <= max) return lines
-  if (lines.length - max === 1) return lines
+/** Rendered height of a body: one row per logical line plus the visual rows
+ *  produced by soft wrapping (CJK-safe width arithmetic). */
+function visualLineCount(lines: BodyLine[], width: number): number {
+  return lines.reduce(
+    (total, line) =>
+      total + Math.max(1, Math.ceil(stringWidth(line.text) / width)),
+    0,
+  )
+}
+
+/**
+ * Collapsed bodies fold past the card's line budget; verbose (Ctrl+O) is
+ * always uncapped. The budget counts the visual rows soft wrapping will
+ * actually paint (not just logical `\n` lines), so an overlong single-line
+ * code block still gets an explicit expand hint instead of silently filling
+ * the transcript. Mirrors wrapText's "one extra line is shown directly".
+ */
+function capLines(
+  lines: BodyLine[],
+  max: number,
+  verbose: boolean,
+  columns: number,
+): BodyLine[] {
+  if (verbose || lines.length === 0) return lines
+  // Gutter (5 cells) + the card's own horizontal chrome; never narrower
+  // than a readable ten-cell sliver on tiny terminals.
+  const bodyWidth = Math.max(10, columns - 7)
+  if (visualLineCount(lines, bodyWidth) <= max) return lines
+  // A block with few logical lines but huge soft-wrapped lines cannot be
+  // cut further — keep its text and append the expand hint.
+  if (lines.length <= max) {
+    return [...lines, dim('… (ctrl+o to expand)')]
+  }
+  let shown = 0
+  let usedRows = 0
+  for (const line of lines) {
+    const rows = Math.max(1, Math.ceil(stringWidth(line.text) / bodyWidth))
+    if (shown > 0 && usedRows + rows > max) break
+    shown += 1
+    usedRows += rows
+  }
+  // One extra SHORT logical line is shown directly (wrapText's old rule);
+  // a remaining soft-wrapped monster still gets folded behind the hint.
+  if (
+    lines.length - shown === 1 &&
+    visualLineCount(lines.slice(shown), bodyWidth) === 1
+  ) {
+    return lines
+  }
   return [
-    ...lines.slice(0, max),
-    dim(`… +${lines.length - max} lines (ctrl+o to expand)`),
+    ...lines.slice(0, shown),
+    dim(`… +${lines.length - shown} lines (ctrl+o to expand)`),
   ]
 }
 
@@ -227,6 +282,7 @@ export function AssistantToolUseMessage({
   isSelected = false,
   isExpanded = false,
 }: Props): React.ReactNode {
+  const { columns } = useTerminalSize()
   const isRunning = tool.status === 'running'
   const isError = tool.status === 'error'
   const displayArgs = verbose ? tool.argsFull ?? tool.argsText : tool.argsText
@@ -259,14 +315,14 @@ export function AssistantToolUseMessage({
   } else {
     if (view !== undefined) body = viewLines(view)
     if (body.length === 0 && result) {
-      body = result.trimEnd().split('\n').map(dim)
+      body = contentTextLines(result).map(dim)
     }
     if (isRunning && body.length === 0) {
       body = [dim(`Running… (${formatDuration(Math.max(0, Date.now() - (tool.startedAt ?? Date.now())))})`)]
     }
   }
   const cap = view?.card === 'diff' ? DIFF_BODY_MAX_LINES : TEXT_BODY_MAX_LINES
-  const lines = capLines(body, cap, verbose)
+  const lines = capLines(body, cap, verbose, columns)
 
   return (
     <Box
@@ -298,7 +354,18 @@ export function AssistantToolUseMessage({
           )}
         </Box>
         {lines.map((line, index) => (
-          <Box key={index} flexDirection="row">
+          <Box
+            key={index}
+            flexDirection="row"
+            width="100%"
+            backgroundColor={
+              line.tone === 'add'
+                ? 'diffAdded'
+                : line.tone === 'del'
+                  ? 'diffRemoved'
+                  : undefined
+            }
+          >
             <Box width={5} flexShrink={0}>
               <Text dimColor>{index === 0 ? GUTTER_FIRST : GUTTER_REST}</Text>
             </Box>

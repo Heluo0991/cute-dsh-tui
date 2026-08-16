@@ -22,6 +22,7 @@ import { writeResumeTarget } from './sessionHistory.js'
 import { migrateLegacyPreferences } from './preferences.js'
 import { checkForTuiUpdate, installedTuiVersion, isVersionNewer, resolveDshProfileName, resolveTuiUpdateTarget, runProfilePluginAndRestart, updateTuiAndRestart } from './update.js'
 import { pluginArgs, type PluginAction } from './pluginManager.js'
+import { createSessionCredentialLease, type CredentialProviderLike } from './sessionCredential.js'
 import { isLang, resolveStartupLang, setLang, t } from './i18n.js'
 import { Chat } from './screens/Chat.js'
 import { render, ThemeProvider, AlternateScreen } from './ui.js'
@@ -202,16 +203,38 @@ export async function apply(ctx: Context, config: Config): Promise<void> {
   // exposes it nowhere else, and /update must update the installation the
   // user is actually running, not a hard-coded one.
   const profile = resolveDshProfileName()
+  // Session-only /login lease: DSH has no ephemeral credential layer, so a
+  // key applied without "save" is remembered and restored on user exit.
+  const sessionCredential = createSessionCredentialLease(
+    () => ctx.get('credentials') as CredentialProviderLike | undefined,
+  )
+  const applySessionCredential = async (key: string): Promise<boolean> => {
+    try {
+      return await sessionCredential.apply(key)
+    } catch (error) {
+      ctx.logger.warn(`cute-dsh-tui: /login could not apply a session-only credential: ${error instanceof Error ? error.message : String(error)}`)
+      return false
+    }
+  }
+  const releaseSessionCredential = async (): Promise<boolean> => {
+    try {
+      return await sessionCredential.release()
+    } catch (error) {
+      ctx.logger.warn(`cute-dsh-tui: could not release the session-only credential: ${error instanceof Error ? error.message : String(error)}`)
+      return false
+    }
+  }
   // Single exit funnel: `/exit` and double Ctrl+C land here, and so does
   // the unmount triggered by a cordis context teardown — but the two must
   // not share a fate (issue #12). Teardown only unmounts the UI; user exit
   // runs the full leave sequence below (resume marker, terminal restore,
   // update handoff or resume hint).
   const funnel = createExitFunnel({
-    onUserExit: error => {
+    onUserExit: async error => {
       // Mirror the funnel's internal exited flag for the /update and
       // background-check guards that still read the outer one.
       exited = true
+      await releaseSessionCredential()
       try {
         writeResumeTarget(channel.agentId)
       } catch {
@@ -371,9 +394,7 @@ export async function apply(ctx: Context, config: Config): Promise<void> {
     },
     onForgetCredential: async () => {
       try {
-        const credentials = ctx.get('credentials') as
-          | { set(ref: string, value: string): Promise<void>; unset(ref: string): Promise<void> }
-          | undefined
+        const credentials = ctx.get('credentials') as CredentialProviderLike | undefined
         if (credentials === undefined) {
           ctx.logger.warn('cute-dsh-tui: /logout requires DSH credentials-local, but no credential provider is active')
           return false
@@ -385,6 +406,10 @@ export async function apply(ctx: Context, config: Config): Promise<void> {
         return false
       }
     },
+    // Session-only `/login`: apply now, restore the prior credential when
+    // the process exits or `/logout` releases it.
+    onApplySessionCredential: applySessionCredential,
+    onReleaseSessionCredential: releaseSessionCredential,
   })
   // fullscreen: wrap the tree in <AlternateScreen> (DEC 1049 + SGR mouse
   // tracking), which turns on in-app text selection (copy-on-select via
@@ -414,6 +439,10 @@ export async function apply(ctx: Context, config: Config): Promise<void> {
   // the process stays alive and the recomposed tree re-mounts the TUI.
   ctx.effect(() => () => {
     funnel.markTeardown()
+    // A recompose re-runs apply and would otherwise observe a session-only
+    // /login key as a durable stored credential; release it while the
+    // provider is still alive so the original state survives the reload.
+    void releaseSessionCredential()
     instance?.unmount()
   })
 
@@ -542,7 +571,9 @@ async function resolveAgent(
  * (the settle reaches `handleExit` through a microtask, so a same-tick flag
  * is always observed). Exported for scripts/verify-teardown-exit.tsx.
  */
-export function createExitFunnel(deps: { onUserExit: (error?: unknown) => void }): {
+export function createExitFunnel(deps: {
+  onUserExit: (error?: unknown) => void | Promise<void>
+}): {
   handleExit: (error?: unknown) => void
   markTeardown: () => void
 } {
@@ -556,7 +587,7 @@ export function createExitFunnel(deps: { onUserExit: (error?: unknown) => void }
       if (teardown) return
       if (exited) return
       exited = true
-      deps.onUserExit(error)
+      void deps.onUserExit(error)
     },
   }
 }

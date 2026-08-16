@@ -121,6 +121,8 @@ export function Chat({
   onPluginAction,
   onStoreCredential,
   onForgetCredential,
+  onApplySessionCredential,
+  onReleaseSessionCredential,
   profile,
   fullscreen = false,
   openResumePickerOnStart,
@@ -139,6 +141,10 @@ export function Chat({
   onStoreCredential?: (key: string) => Promise<boolean>
   /** Remove the key from that provider after explicit confirmation. */
   onForgetCredential?: () => Promise<boolean>
+  /** Apply a key for this process only, with exit-time restoration. */
+  onApplySessionCredential?: (key: string) => Promise<boolean>
+  /** Release a session-only key immediately (`/logout`). */
+  onReleaseSessionCredential?: () => Promise<boolean>
   profile?: string
   /** Alternate-screen mode can safely keep header animation after history exists. */
   fullscreen?: boolean
@@ -243,6 +249,7 @@ export function Chat({
   const [searchCount, setSearchCount] = React.useState(0)
   const [searchCurrent, setSearchCurrent] = React.useState(0)
   const [btwOpenId, setBtwOpenId] = React.useState<string | null>(null)
+  const [btwPendingId, setBtwPendingId] = React.useState<string | null>(null)
   const [btwDraft, setBtwDraft] = React.useState('')
   const [pluginConfirm, setPluginConfirm] = React.useState<PluginAction | null>(null)
   /** `/login` never uses the regular prompt, so an API key cannot hit history. */
@@ -296,7 +303,7 @@ export function Chat({
       onExit()
     } else {
       exitPendingRef.current = true
-      channel.notify('Press Ctrl+C again to exit')
+      channel.notify(t('exit-ctrl-c-again'))
       exitTimerRef.current = setTimeout(() => {
         exitPendingRef.current = false
       }, 3000)
@@ -385,7 +392,7 @@ export function Chat({
     if (yoloResumePromptedSessionsRef.current.has(sessionId)) return
     if (channel.permissions === undefined) {
       yoloResumePromptedSessionsRef.current.add(sessionId)
-      channel.notify('Yolo upgrade unavailable: permission service is not loaded', { color: 'warning' })
+      channel.notify(t('yolo-upgrade-unavailable'), { color: 'warning' })
       return
     }
     if (channel.permissions.current === 'danger-full-access') {
@@ -400,7 +407,7 @@ export function Chat({
   const requestPermission = (presetId: string, fromYoloResume = false): void => {
     const permissions = channel.permissions
     if (permissions === undefined) {
-      channel.notify('Permission switching unavailable in this profile', { color: 'warning' })
+      channel.notify(t('permission-unavailable-profile'), { color: 'warning' })
       return
     }
     if (!permissions.options.some(option => option.id === presetId)) {
@@ -419,15 +426,15 @@ export function Chat({
   const cyclePermission = (): void => {
     const permissions = channel.permissions
     if (permissions === undefined) {
-      channel.notify('Permission switching unavailable in this profile', { color: 'warning' })
+      channel.notify(t('permission-unavailable-profile'), { color: 'warning' })
       return
     }
     if (channel.working) {
-      channel.notify('Cannot switch permissions while a turn is running', { color: 'warning' })
+      channel.notify(t('permission-switch-running'), { color: 'warning' })
       return
     }
     if (permissions.options.length === 0) {
-      channel.notify('No permission presets are available in this profile', { color: 'warning' })
+      channel.notify(t('permission-no-presets'), { color: 'warning' })
       return
     }
     const current = permissions.options.findIndex(option => option.id === permissions.current)
@@ -461,6 +468,27 @@ export function Chat({
         }, remaining)
       })
   }
+
+  /**
+   * Open a BTW thread without stealing the main view while a turn is
+   * running: the child starts immediately, the pane opens once the main
+   * agent settles.
+   */
+  const openBtwWhenSettled = (id: string) => {
+    setBtwDraft('')
+    if (channel.working) {
+      setBtwPendingId(id)
+      channel.notify(t('btw-background-started'))
+    } else {
+      setBtwOpenId(id)
+    }
+  }
+  React.useEffect(() => {
+    if (btwPendingId === null || channel.working) return
+    if (!channel.btwThreads.some(thread => thread.id === btwPendingId)) return
+    setBtwOpenId(btwPendingId)
+    setBtwPendingId(null)
+  }, [btwPendingId, channel.working, channel.btwThreads])
 
   /**
    * Dispatch a slash command; false lets the input flow to the model.
@@ -621,7 +649,7 @@ export function Chat({
         // non-destructive — no CC-style "press /new again" confirmation.
         setHelpOpen(false)
         void channel.newSession().then((ok) => {
-          if (ok) channel.notify('New session started')
+          if (ok) channel.notify(t('new-session-started'))
         })
         return true
       }
@@ -703,18 +731,12 @@ export function Chat({
         const question = rawInput.trim()
         if (question === '') {
           const latest = channel.btwThreads.at(-1)
-          if (latest === undefined) channel.notify('No BTW conversation yet. Use /btw <question>.')
-          else {
-            setBtwDraft('')
-            setBtwOpenId(latest.id)
-          }
+          if (latest === undefined) channel.notify(t('btw-none-yet'))
+          else openBtwWhenSettled(latest.id)
           return true
         }
         void channel.startBtw(question).then(id => {
-          if (id !== undefined) {
-            setBtwDraft('')
-            setBtwOpenId(id)
-          }
+          if (id !== undefined) openBtwWhenSettled(id)
         })
         return true
       }
@@ -729,15 +751,15 @@ export function Chat({
             ...loaded.map(name => `loaded     ${name}`),
           ].filter(line => filter === '' || line.toLowerCase().includes(filter))
           channel.pushLocal('/plugin', lines.length === 0
-            ? ['No matching installed or loaded plugins. `/plugin search` filters this local list; it does not search npm.']
+            ? [t('plugin-no-matches')]
             : lines)
           return true
         }
         const action = parsePluginAction(input)
         if (action === undefined) {
-          channel.notify('Usage: /plugin [list|search <text>|add <spec>|remove <package>|update [package]]', { color: 'warning' })
+          channel.notify(t('plugin-usage'), { color: 'warning' })
         } else if (onPluginAction === undefined || profile === undefined) {
-          channel.notify('Plugin changes require launching with dsh --profile <name>.', { color: 'warning' })
+          channel.notify(t('plugin-profile-required'), { color: 'warning' })
         } else {
           setPluginConfirm(action)
         }
@@ -768,6 +790,21 @@ export function Chat({
         if (channel.sessionTitle) lines.push(t('status-title', { title: channel.sessionTitle }))
         setHelpOpen(false)
         channel.pushLocal('/status', lines)
+        return true
+      }
+      case 'webui': {
+        // The Web GUI is the official `dsh web` profile (a separate process
+        // sharing the same DSH_HOME/session store). The TUI cannot boot that
+        // profile in-process, so `/webui` shows the management entry only —
+        // it never submits text to the model or the conversation.
+        setHelpOpen(false)
+        channel.pushLocal('/webui', [
+          t('webui-url', { url: process.env.DSH_WEB_URL ?? 'http://127.0.0.1:3080' }),
+          t('webui-launch'),
+          t('webui-port'),
+          t('webui-host'),
+          t('webui-local-only'),
+        ])
         return true
       }
       case 'cost': {
@@ -834,8 +871,8 @@ export function Chat({
         if (inherited !== undefined && inherited !== '') {
           channel.pushLocal('/login', [
             `API key: ${inherited.slice(0, 6)}…${inherited.slice(-4)}`,
-            'Source: launch environment (read-only for this running session).',
-            'To change it, update DEEPSEEK_API_KEY in the shell and restart cdsh.',
+            t('login-inherited-source'),
+            t('login-inherited-change-hint'),
           ])
           return true
         }
@@ -845,14 +882,21 @@ export function Chat({
       }
       case 'logout':
         if (process.env.DEEPSEEK_API_KEY !== undefined && process.env.DEEPSEEK_API_KEY !== '') {
-          channel.notify('The API key came from the launch environment. Clear it in the shell and restart cdsh.', { color: 'warning' })
+          channel.notify(t('logout-env-key'), { color: 'warning' })
           return true
         }
         delete process.env.DEEPSEEK_API_KEY
+        // A `/login` key accepted for this session only is released right
+        // away; the durable saved-key question below is independent of it.
+        if (onReleaseSessionCredential !== undefined) {
+          void onReleaseSessionCredential().then(released => {
+            if (!released) channel.notify(t('login-release-failed'), { color: 'warning' })
+          })
+        }
         if (hasSavedApiKey() || onForgetCredential !== undefined) {
           setCredentialDeleteConfirm(true)
         } else {
-          channel.notify('API key cleared for this session. No CuteDshTui-saved credential was changed.')
+          channel.notify(t('logout-cleared-no-saved'))
         }
         return true
       case 'permission': {
@@ -864,7 +908,7 @@ export function Chat({
         }
         const permissions = channel.permissions
         if (permissions === undefined) {
-          channel.notify('Permission switching unavailable in this profile', { color: 'warning' })
+          channel.notify(t('permission-unavailable-profile'), { color: 'warning' })
           return true
         }
         setPermissionIndex(Math.max(0, permissions.options.findIndex(option => option.id === permissions.current)))
@@ -874,15 +918,15 @@ export function Chat({
       case 'permissions':
         setHelpOpen(false)
         if (channel.permissions === undefined) {
-          channel.pushLocal('/permissions', ['Permission switching is unavailable in this profile.'])
+          channel.pushLocal('/permissions', [t('permissions-unavailable')])
           return true
         }
         channel.pushLocal('/permissions', [
-          `Current preset: ${channel.permissions.current}`,
+          t('permissions-current-preset', { preset: channel.permissions.current }),
           ...channel.permissions.options.map(option =>
             `${option.id === channel.permissions?.current ? '✓ ' : '  '}${option.name} — ${option.description}`,
           ),
-          'Use /permission to switch the current session.',
+          t('permissions-use-hint'),
         ])
         return true
       case 'add-dir':
@@ -986,7 +1030,7 @@ export function Chat({
       .filter(row => row.kind === 'user' && row.label === undefined)
       .reverse()
     if (candidates.length === 0) {
-      channel.notify('Nothing to rewind yet')
+      channel.notify(t('rewind-none'))
       return
     }
     setRewindIndex(0)
@@ -999,7 +1043,7 @@ export function Chat({
     if (text !== null) {
       // CC puts the restored message back in the prompt for re-editing.
       setHistoryFill(text)
-      channel.notify('Rewound — edit and press Enter to resend')
+      channel.notify(t('rewound-edit-resend'))
     }
   }
 
@@ -1138,11 +1182,11 @@ export function Chat({
         const fromYoloResume = permissionConfirm.fromYoloResume
         setPermissionConfirm(null)
         void channel.switchPermission('danger-full-access').then((ok) => {
-          if (ok && fromYoloResume) channel.notify('Yolo upgrade enabled for this resumed session')
+          if (ok && fromYoloResume) channel.notify(t('yolo-enabled-resumed'))
         })
       } else if (key.escape) {
         if (permissionConfirm.fromYoloResume) {
-          channel.notify('Yolo upgrade declined; preserved this session\'s existing permission')
+          channel.notify(t('yolo-declined-preserved'))
         }
         setPermissionConfirm(null)
       }
@@ -1291,7 +1335,7 @@ export function Chat({
           // next launch opens the same session.
           setResumePickerOpen(false)
           void channel.resumeTo(session.id).then((ok) => {
-            if (ok) channel.notify('Session resumed')
+            if (ok) channel.notify(t('session-resumed'))
           })
         } else {
           setResumePickerOpen(false)
@@ -1554,7 +1598,11 @@ export function Chat({
     } else if (key.ctrl && input === 'l') {
       // CC's app:redraw — clear the physical terminal and repaint.
       instances.get(process.stdout)?.forceRedraw()
-    } else if (key.ctrl && input === 'e') {
+    } else if (key.ctrl && input === 'g') {
+      // Show/fold the older rows hidden by MessageList's virtualization
+      // window. Deliberately NOT Ctrl+E: the prompt owns Ctrl+E as
+      // readline-style end-of-line, and a shared chord made editing jump
+      // the transcript view at the same time.
       setShowAllMessages(previous => !previous)
     } else if (key.return && showPill) {
       handle?.scrollToBottom()
@@ -1677,9 +1725,9 @@ export function Chat({
         )}
         {pluginConfirm !== null && (
           <Pane color="permission">
-            <Text color="remember" bold>Confirm plugin change</Text>
+            <Text color="remember" bold>{t('plugin-confirm-title')}</Text>
             <Text>{`dsh plugin --profile ${profile} ${pluginArgs(pluginConfirm).join(' ')}`}</Text>
-            <Text dimColor>This will restart CuteDshTui and restore the current main session. Enter to continue · Esc to cancel.</Text>
+            <Text dimColor>{t('plugin-confirm-hint')}</Text>
           </Pane>
         )}
         {loginOpen && (
@@ -1689,8 +1737,15 @@ export function Chat({
               setLoginOpen(false)
               if (loginNeedsSaveConfirm) {
                 setPendingLoginKey(key)
+              } else if (onApplySessionCredential === undefined) {
+                channel.notify(t('login-session-unavailable'), { color: 'warning' })
               } else {
-                channel.notify('API key set for this CuteDshTui session only; your existing environment value was not replaced.')
+                void onApplySessionCredential(key).then(ok => {
+                  channel.notify(
+                    ok ? t('login-session-applied') : t('login-session-failed'),
+                    { color: ok ? 'success' : 'error' },
+                  )
+                })
               }
             }}
             onCancel={() => setLoginOpen(false)}
@@ -1707,15 +1762,25 @@ export function Chat({
                 const ok = saved && applied
                 channel.notify(
                   ok
-                    ? 'API key saved for future cdsh launches and applied to this session.'
-                    : 'Could not save or apply the API key. Check the terminal error message and try again.',
+                    ? t('credential-saved-applied')
+                    : t('credential-save-failed'),
                   { color: ok ? 'success' : 'error' },
                 )
               })()
             }}
             onDecline={() => {
+              const key = pendingLoginKey
               setPendingLoginKey(null)
-              channel.notify('API key will be cleared when this CuteDshTui session exits.')
+              if (key === null || onApplySessionCredential === undefined) {
+                channel.notify(t('login-session-unavailable'), { color: 'warning' })
+                return
+              }
+              void onApplySessionCredential(key).then(ok => {
+                channel.notify(
+                  ok ? t('login-session-applied-exit') : t('login-session-failed'),
+                  { color: ok ? 'success' : 'error' },
+                )
+              })
             }}
           />
         )}
@@ -1728,14 +1793,14 @@ export function Chat({
                 const forgotten = onForgetCredential === undefined ? true : await onForgetCredential()
                 const ok = removed && forgotten
                 channel.notify(
-                  ok ? 'Saved CuteDshTui credential removed.' : 'Could not remove the saved credential.',
+                  ok ? t('credential-removed') : t('credential-remove-failed'),
                   { color: ok ? 'success' : 'error' },
                 )
               })()
             }}
             onCancel={() => {
               setCredentialDeleteConfirm(false)
-              channel.notify('Session API key cleared. The saved credential was kept.')
+              channel.notify(t('logout-saved-kept'))
             }}
           />
         )}
@@ -1969,7 +2034,7 @@ function ModelPickerLoading(): React.ReactNode {
       {cursorOffset < query.length && <Text>{query.slice(cursorOffset + 1)}</Text>}
       <Box flexGrow={1} />
       {query && count === 0 ? (
-        <Text color="error">no matches </Text>
+        <Text color="error">{t('search-no-matches')}</Text>
       ) : count > 0 ? (
         <Text dimColor>
           {Math.min(current + 1, count)}/{count}{'  '}

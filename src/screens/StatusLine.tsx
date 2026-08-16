@@ -1,5 +1,6 @@
 import React from 'react'
 import { Box, Text, useTerminalSize, useTheme } from '../ui.js'
+import { t } from '../i18n.js'
 import { formatTokens } from '../cc/format.js'
 import { Byline } from '../components/design-system/Byline.js'
 import { KeyboardShortcutHint } from '../components/design-system/KeyboardShortcutHint.js'
@@ -12,11 +13,23 @@ import {
   speedColor,
 } from './StatusMetrics.js'
 
+/** Compact permission level shown in the footer: the DSH sandbox ids
+ *  `read-only` / `workspace-write` / `danger-full-access` collapse to the
+ *  familiar three-way scale. Unknown future ids pass through unchanged. */
+function permissionLevel(current: string | undefined): string | undefined {
+  switch (current) {
+    case 'read-only': return 'readonly'
+    case 'workspace-write': return 'workspace'
+    case 'danger-full-access': return 'fullaccess'
+    default: return current
+  }
+}
+
 /**
  * The footer under the prompt input, in Claude Code's PromptInputFooter
  * layout: the segmented context progress bar on its own first line, the
- * status line below (left group: model · tokens · think level · cache · tps
- * gauge/sparkline; right group: git · cwd · title, right-aligned), and the
+ * status line below (left group: brand · model · mode · permission · tps ·
+ * cache · tokens; right group: git · cwd · title, right-aligned), and the
  * mode/hint line last. The right side of the footer shows the latest
  * transient notification (errors in red, warnings in amber — CC style).
  */
@@ -49,7 +62,7 @@ export function StatusLine({
     const rate = total > 0 ? (usage.cacheRead / total) * 100 : 0
     contextParts.push(
       <Text key="cache">
-        <Text dimColor>cache </Text>
+        <Text dimColor>{t('status-cache-label')} </Text>
         <Text color="inactiveShimmer">{rate.toFixed(1)}%</Text>
       </Text>,
     )
@@ -86,12 +99,44 @@ export function StatusLine({
     }
   }
 
-  // Left group: every field sits at soft white (inactiveShimmer) instead of
-  // the previous uniform dim grey — readable against dark terminals.
+  const permission = permissionLevel(channel.permissions?.current)
+
+  // Left group: the CuteDshTui brand, the resolved model route, the live
+  // agent-preset mode (standard/code/minimal/cordis), and the compact
+  // permission level — then tps/context/token metrics. Every metric field
+  // sits at soft white (inactiveShimmer) instead of the previous uniform
+  // dim grey — readable against dark terminals.
   const leftParts = [
+    <Text key="brand" color="claude">
+      CuteDshTui
+    </Text>,
     <Text key="model" color="inactiveShimmer">
       {channel.model}
     </Text>,
+    ...(channel.agentPreset !== undefined
+      ? [
+          <Text key="mode" color="professionalBlue">
+            {channel.agentPreset}
+          </Text>,
+        ]
+      : []),
+    ...(permission !== undefined
+      ? [
+          <Text
+            key="permission"
+            color={
+              permission === 'fullaccess'
+                ? 'warning'
+                : permission === 'workspace'
+                  ? 'success'
+                  : undefined
+            }
+            dimColor={permission === 'readonly'}
+          >
+            {permission}
+          </Text>,
+        ]
+      : []),
     ...tpsParts,
     ...contextParts,
     <Text key="tokens" color="inactiveShimmer">
@@ -125,11 +170,11 @@ export function StatusLine({
   // summary (the live working line itself moves to the spinner slot above
   // the input while a turn runs, so the two never duplicate).
   const hint = selectionActive
-    ? 'esc to return to input'
+    ? t('status-hint-selection')
     : channel.working
-      ? 'esc to interrupt'
+      ? t('status-hint-interrupt')
       : !helpOpen
-        ? '? for shortcuts'
+        ? t('status-hint-help')
         : ''
   const activity = channel.workingActivity
   const showActivity =
