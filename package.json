@@ -30,6 +30,10 @@
       "types": "./lib/types/working-activity.d.ts",
       "import": "./lib/types/working-activity.js"
     },
+    "./core-bridge": {
+      "types": "./lib/types/core-bridge.d.ts",
+      "import": "./lib/types/core-bridge.js"
+    },
     "./invariant": {
       "types": "./lib/types/invariant.d.ts",
       "default": "./lib/invariant.js"
@@ -42,6 +46,7 @@
     "launch-options.js",
     "lib",
     "cordis.patch.yml",
+    "core-bridge.patch.yml",
     "cordis.yml",
     "skills",
     "docs/assets/readme-terminal-banner.svg",
@@ -71,8 +76,19 @@
     "verify:working-commands": "node --import tsx/esm scripts/verify-working-commands.tsx",
     "verify:package-exports": "node scripts/verify-package-exports.mjs",
     "verify:package-version": "node scripts/verify-package-version.mjs",
+    "verify:core-protocol": "node --import tsx/esm scripts/verify-core-protocol.ts",
+    "verify:core-bridge": "node --import tsx/esm scripts/verify-core-bridge.ts",
+    "verify:core-client": "node --import tsx/esm scripts/verify-core-client.ts",
+    "verify:core-client-request-handler": "node scripts/verify-core-client-request-handler.mjs",
+    "verify:core-bridge-interactive": "node scripts/verify-core-bridge-interactive.mjs",
+    "verify:v2-client-methods": "node scripts/verify-v2-client-methods.mjs",
+    "verify:session-event-projection": "node --import tsx/esm scripts/verify-session-event-projection.ts",
+    "verify:session-event-client": "node --import tsx/esm scripts/verify-session-event-client.ts",
+    "verify:session-open-buffer": "node --import tsx/esm scripts/verify-session-open-buffer.ts",
+    "verify:core-bridge-dsh": "pnpm run build && node --import tsx/esm scripts/verify-core-bridge-dsh.ts",
     "agent:status": "node scripts/agent-status.mjs",
     "verify:profile-manifest-recovery": "node scripts/verify-profile-manifest-recovery.mjs",
+    "verify:profile-development-link": "pnpm run build && node scripts/verify-profile-development-link.mjs",
     "verify:i18n": "node scripts/verify-i18n.mjs"
   },
   "peerDependencies": {

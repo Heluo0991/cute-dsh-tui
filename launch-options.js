@@ -13,12 +13,17 @@ export const LAUNCHER_USAGE = `Usage: dsh [launcher options] [dsh options]
   dsh --resume --last              Restore the most recently used session.
   dsh --continue, dsh -c           Alias for --resume --last.
   dsh --yolo                       Run with danger-full-access and no approvals.
+  dsh --experimental-v2            Run CuteDshTui's experimental v2 interactive session.
 
   dsh --patch <path>               Forward an extra DSH patch overlay.
   dsh --dump-config                Forward a DSH diagnostic option.
 
 Set CUTE_DSH_TUI_WORKSPACE to start from another working directory on Windows,
 macOS, or Linux.
+
+Launcher options are owned by CuteDshTui and are consumed before the official
+DSH runtime is spawned; they are not official DSH flags. If your dsh is the
+official CLI, use cute-dsh-tui or cdsh instead.
 `
 
 /**
@@ -87,6 +92,10 @@ export function parseLaunchArgs(argv, { readLastSession = readLastSessionFromDis
     if (arg === '--yolo' || arg === '--dangerously-bypass-approvals-and-sandbox') {
       environment.DSH_PERMISSION_MODE = 'danger-full-access'
       environment.CUTE_DSH_TUI_YOLO = '1'
+      continue
+    }
+    if (arg === '--experimental-v2') {
+      environment.CUTE_DSH_TUI_EXPERIMENTAL_V2 = '1'
       continue
     }
     if (arg === '--continue' || arg === '-c') {

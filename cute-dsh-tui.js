@@ -12,16 +12,18 @@ import { homedir } from 'node:os'
 import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { LAUNCHER_USAGE, applyLaunchEnvironment, parseLaunchArgs, resolveLaunchWorkspace } from './launch-options.js'
-import { bundledDshInvocation, profileDirectory, profileHasNativePty, runBundledPnpm } from './lib/types/profileManager.js'
+import { bundledDshInvocation, linkProfileDependency, profileDirectory, profileHasNativePty, reconcileProfileBundles, runBundledPnpm } from './lib/types/profileManager.js'
 
 const here = fileURLToPath(new URL('.', import.meta.url))
 const ownVersion = JSON.parse(readFileSync(join(here, 'package.json'), 'utf8')).version
 const PACKAGE = '@heluo0991/cute-dsh-tui'
 const PROFILE = 'cute-dsh-tui'
-// Set only by the repository's legacy `dsh` shim. A published executable must
-// always install the exact npm version; local development must instead load
-// the working tree, which can legitimately be ahead of npm during a release.
-const devPackagePath = process.env.CUTE_DSH_TUI_DEV_PATH
+// Set by the repository's legacy `dsh` shim or auto-detected when this file is
+// run from a development checkout. A published executable must always install
+// the exact npm version; local development must instead load the working tree,
+// which can legitimately be ahead of npm during a release.
+const isDevelopmentCheckout = existsSync(join(here, '.git')) && existsSync(join(here, 'package.json'))
+const devPackagePath = process.env.CUTE_DSH_TUI_DEV_PATH ?? (isDevelopmentCheckout ? here : undefined)
 const packageSpec = devPackagePath
   ? `link:${devPackagePath.replaceAll('\\', '/')}`
   : `${PACKAGE}@${ownVersion}`
@@ -116,6 +118,21 @@ if (profileNeedsPackageInstall) {
   }
 }
 
+// Always repair the development profile link when running from a checkout.
+// pnpm can leave a WSL-style symlink behind on Windows-backed checkouts, which
+// the native Windows Node runtime cannot resolve.
+if (devPackagePath) {
+  try {
+    linkProfileDependency(profileDir, PACKAGE, devPackagePath)
+    // `runBundledPnpm()` reconciles before the Windows link repair above;
+    // run it again so the repaired package is included as a DSH bundle.
+    reconcileProfileBundles(profileDir)
+  } catch (error) {
+    console.error(`[cute-dsh-tui] development profile link failed: ${error instanceof Error ? error.message : String(error)}`)
+    process.exit(1)
+  }
+}
+
 // Older 1.1.1 profiles were created before pnpm was explicitly permitted to
 // build node-pty.  Repair that profile before DSH loads its plugin tree, where
 // an absent pty.node would otherwise surface as an opaque shell-provider error.
@@ -147,6 +164,32 @@ if (!profileHasNativePty(profileDir)) {
     }
     console.error('If the error above is a network/registry/proxy failure, fix that first — the compiler toolchain may already be fine.')
     process.exit(rebuildCode || 1)
+  }
+}
+
+if (process.env.CUTE_DSH_TUI_EXPERIMENTAL_V2 === '1') {
+  const { runExperimentalProjection } = await import('./lib/types/experimentalProjection.js')
+  const invocation = bundledDshInvocation([
+    '--profile',
+    PROFILE,
+    '--patch',
+    join(here, 'core-bridge.patch.yml'),
+  ])
+  try {
+    await runExperimentalProjection({
+      launch: {
+        command: invocation.command,
+        args: invocation.args,
+        cwd: process.cwd(),
+        env: process.env,
+      },
+      cwd: process.cwd(),
+      sessionId: process.env.CUTE_DSH_TUI_RESUME_SESSION || undefined,
+    })
+    process.exit(0)
+  } catch (error) {
+    console.error(`[cute-dsh-tui] experimental v2 projection failed: ${error instanceof Error ? error.message : String(error)}`)
+    process.exit(1)
   }
 }
 

@@ -51,6 +51,12 @@ const parse = args => parseLaunchArgs(args, { readLastSession: () => lastSession
 }
 
 {
+  const result = parse(['--experimental-v2', '--patch', 'extra.yml'])
+  assert.equal(result.environment.CUTE_DSH_TUI_EXPERIMENTAL_V2, '1')
+  assert.deepEqual(result.dshArgs, ['--patch', 'extra.yml'])
+}
+
+{
   const target = {
     CUTE_DSH_TUI_RESUME_SESSION: 'stale-session',
     CUTE_DSH_TUI_OPEN_RESUME_PICKER: '1',

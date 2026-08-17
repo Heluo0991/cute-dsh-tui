@@ -7,6 +7,14 @@ export declare function bundledDshInvocation(args: readonly string[]): ProcessIn
 /** Resolve pnpm's JavaScript entry point so Windows never needs `shell: true`. */
 export declare function bundledPnpmInvocation(args: readonly string[]): ProcessInvocation;
 export declare function profileDirectory(dshHome: string, profile: string): string;
+/**
+ * Repair a profile dependency as an explicit directory link for local
+ * development. pnpm 10 serializes a Windows cross-volume `link:` target as a
+ * relative path, so the generated profile link can otherwise point at a
+ * literal `G:` child of the profile. This helper only replaces an existing
+ * symlink/junction; it refuses to remove a real installed package.
+ */
+export declare function linkProfileDependency(profileDir: string, packageName: string, targetDirectory: string): void;
 /** Create exactly the profile scaffold DSH's plugin command would create. */
 export declare function ensureProfile(profileDir: string): void;
 /** The profile uses pnpm's hoisted linker, so this covers both a prebuilt
