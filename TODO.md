@@ -11,10 +11,11 @@ Status: experimental read-only session-event projection is implemented and commi
 - [x] Run `pnpm verify:core-client`
 - [x] Run `pnpm verify:core-bridge`
 - [x] Run `pnpm verify:launcher`
-- [ ] In a real TTY run `cute-dsh-tui --experimental-v2` or `cdsh --experimental-v2` and confirm:
+- [x] In a real TTY launch `cute-dsh-tui --experimental-v2` or `cdsh --experimental-v2` successfully
+  - [x] TUI starts and shows the read-only projection header
   - [ ] replays existing session events
   - [ ] appends live notifications
-  - [ ] does not send prompts
+  - [x] does not send prompts
   - [ ] `q` exits cleanly and reaps the core child
 
 ## Next implementation: v2 interactive session operations (migration step 4)

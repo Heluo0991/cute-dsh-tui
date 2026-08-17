@@ -25,10 +25,10 @@ the remaining interactive session operations. See
 - In a real TTY, verify `/btw <question>` while the main agent is occupied by
   a command that runs for roughly 30 seconds. The headless regression covers
   dispatch and view deferral, but not this live terminal acceptance case.
-- In a real TTY, run `cute-dsh-tui --experimental-v2` or `cdsh --experimental-v2`
-  and confirm the read-only projection replays existing session events and
-  appends live notifications without sending prompts or changing the default v1
-  path.
+- In a real TTY, `cute-dsh-tui --experimental-v2` / `cdsh --experimental-v2`
+  now starts successfully and shows the read-only projection header. Still
+  confirm replaying existing session events, appending live notifications, and
+  clean `q` exit.
 
 ## Documentation migration
 

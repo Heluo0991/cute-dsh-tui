@@ -13,6 +13,9 @@ Commits:
 - `docs: mark v2 read-only projection committed in TODO`
 - `docs: add v2 runtime-boundary handoff report`
 - `test: include status notifications in session event client projection`
+- `docs: mark v2 verification complete and refresh handoff`
+- `docs: clarify experimental flag is CuteDshTui launcher option, not official dsh flag`
+- `fix: auto-detect dev checkout and pass --expose-internals for experimental core`
 
 ## What changed
 
@@ -47,10 +50,14 @@ Commits:
 - `pnpm verify:core-bridge` passes.
 - `pnpm verify:launcher` passes.
 - `git diff --check` passes.
+- Real TTY launch on Windows with `node bin\dsh-tui.js --experimental-v2` succeeds and shows the read-only projection header.
 
 ## Remaining before next feature work
 
-- Run `cute-dsh-tui --experimental-v2` or `cdsh --experimental-v2` in a real TTY and confirm replay, live notifications, read-only behavior, and clean exit.
+- Confirm in a real TTY:
+  - replaying existing session events (`--continue` / `--resume <session-id>`)
+  - appending live notifications during an active session
+  - pressing `q` exits cleanly and reaps the core child
 
 ## Next step
 
