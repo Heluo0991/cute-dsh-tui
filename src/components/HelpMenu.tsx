@@ -30,6 +30,7 @@ export function HelpMenu({
     'help-shortcut-exit',
     'help-shortcut-redraw',
     'help-shortcut-show-older',
+    'help-shortcut-btw',
   ] as const
   const editColumn = [
     'help-edit-esc',

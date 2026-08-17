@@ -174,8 +174,10 @@ export interface PromptInputProps {
 }
 
 /**
- * Claude Code style prompt input: rounded border box (top+bottom borders
- * only), `❯ ` prompt char (dimmed while a turn is working), the text with a
+ * Claude Code style prompt input: rounded full-border box (kept as one
+ * coherent block so external terminal output cannot visually break it into
+ * disconnected horizontal rules), `❯ ` prompt char (dimmed while a turn is
+ * working), the text with a
  * block cursor at the cursor position, and below it the slash-command
  * suggestion overlay (name column + description, selected row in the
  * `suggestion` color — ported from the leak's PromptInputFooterSuggestions).
@@ -262,7 +264,11 @@ export function PromptInput({
   const { columns } = useTerminalSize()
   // The renderer hard-wraps the prompt at this width; vertical caret movement
   // uses the same projection so soft-wrapped rows behave like physical rows.
-  const inputWidth = Math.max(10, columns - 3)
+  // The full rounded border consumes two columns (left+right), paddingX
+  // consumes two more, and the `❯ ` prompt consumes two more, so the editable
+  // text area is columns - 6; keep one extra column of slack so the last cell
+  // never touches the right border.
+  const inputWidth = Math.max(10, columns - 7)
   // Subscribe only during an eligible model switch. Once the request settles,
   // the prompt no longer receives animation frames.
   const [glowRef, glowTime] = useAnimationFrame(modelSwitching ? 60 : null)
@@ -1006,9 +1012,7 @@ export function PromptInput({
         borderBottomColor={switchBorderColors?.bottom}
         borderLeftColor={switchBorderColors?.left}
         borderStyle="round"
-        borderLeft={modelSwitching}
-        borderRight={modelSwitching}
-        borderBottom
+        paddingX={1}
         width="100%"
       >
         <Box flexDirection="row" alignItems="flex-start" width="100%">

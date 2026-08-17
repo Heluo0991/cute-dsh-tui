@@ -187,10 +187,12 @@ export function StatusLine({
     : selectionActive
       ? t('status-hint-selection')
       : channel.working
-        ? t('status-hint-interrupt')
-        : !helpOpen
-          ? t('status-hint-help')
-          : ''
+        ? (btwUnseen > 0 ? t('status-hint-interrupt-btw') : t('status-hint-interrupt'))
+        : btwUnseen > 0
+          ? t('btw-done-hint')
+          : !helpOpen
+            ? t('status-hint-help')
+            : ''
   const activity = channel.workingActivity
   const showActivity =
     !channel.working &&

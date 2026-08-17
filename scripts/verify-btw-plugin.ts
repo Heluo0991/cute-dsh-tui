@@ -35,6 +35,11 @@ assert.match(chat, /channel\.startBtw\(question\)/)
 assert.match(chat, /onPluginAction\?\.\(action\)/)
 assert.match(chat, /resumeExpandedGroups/)
 assert.match(chat, /key\.ctrl && input === 'o'/)
+// Esc in the BTW view must not switch back to main; it should match the
+// main-chat Esc semantics (interrupt while working, clear draft when idle).
+assert.doesNotMatch(chat, /key\.escape\) setBtwOpenId\(null\)/)
+assert.match(chat, /btwThread\?\.working/)
+assert.match(chat, /setBtwDraft\(''\)/)
 
 const btwPane = readFileSync(new URL('../src/components/BtwPane.tsx', import.meta.url), 'utf8')
 assert.match(btwPane, /<MessageList/)
@@ -43,5 +48,6 @@ assert.match(btwPane, /<MessageList/)
 // marker ("Forked context") so the pane stays recognizably a fork.
 const i18n = readFileSync(new URL('../src/i18n.ts', import.meta.url), 'utf8')
 assert.match(i18n, /'btw-pane-hint': \{ zh: '[^']*', en: 'Forked context[^']*' \}/)
+assert.match(i18n, /'btw-done-hint': \{ zh: 'BTW 完成 · Ctrl\+B 查看', en: 'BTW done · Ctrl\+B to view' \}/)
 
 console.log('btw, plugin, and lineage wiring verification passed')

@@ -1161,8 +1161,16 @@ export function Chat({
       return
     }
     if (btwOpenId !== null) {
-      if (key.escape) setBtwOpenId(null)
-      else if (key.ctrl && input === 'c') channel.cancelBtw(btwOpenId)
+      if (key.escape) {
+        // Match main-chat Esc semantics: interrupt a working BTW turn, or
+        // clear the BTW draft when idle. Ctrl+B is the only view switcher.
+        const btwThread = channel.btwThreads.find(thread => thread.id === btwOpenId)
+        if (btwThread?.working) {
+          channel.cancelBtw(btwOpenId)
+        } else if (btwDraft.length > 0) {
+          setBtwDraft('')
+        }
+      } else if (key.ctrl && input === 'c') channel.cancelBtw(btwOpenId)
       else if (key.ctrl && input === 'o') setExpanded(previous => !previous)
       else if (key.return) {
         if (btwDraft.trim()) {

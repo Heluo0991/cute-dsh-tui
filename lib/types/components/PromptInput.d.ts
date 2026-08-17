@@ -45,8 +45,10 @@ export interface PromptInputProps {
     active?: boolean;
 }
 /**
- * Claude Code style prompt input: rounded border box (top+bottom borders
- * only), `❯ ` prompt char (dimmed while a turn is working), the text with a
+ * Claude Code style prompt input: rounded full-border box (kept as one
+ * coherent block so external terminal output cannot visually break it into
+ * disconnected horizontal rules), `❯ ` prompt char (dimmed while a turn is
+ * working), the text with a
  * block cursor at the cursor position, and below it the slash-command
  * suggestion overlay (name column + description, selected row in the
  * `suggestion` color — ported from the leak's PromptInputFooterSuggestions).

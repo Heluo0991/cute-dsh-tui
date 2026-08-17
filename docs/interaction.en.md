@@ -18,6 +18,7 @@
 | `Ctrl+C` | Interrupt while working; clear non-empty idle input; press twice on empty input to exit |
 | `Ctrl+D` | Press twice while idle to exit |
 | `Ctrl+O` | Toggle transcript/verbose detail, including full reasoning and tool arguments/output |
+| `Ctrl+B` | Switch between the main view and the latest BTW view |
 | `Ctrl+T` | Expand or collapse the startup loaded-context panel |
 | `Ctrl+R` | Open input-history search; repeat or press `Down` for the next result |
 | `Ctrl+L` | Clear and force a physical terminal redraw |
@@ -112,6 +113,20 @@ selection is confirmed, the TUI:
 2. Creates a branch session through DSH session fork.
 3. Replays history before the boundary.
 4. Restores the original message to the editor for revision and resubmission.
+
+### BTW side conversations
+
+`/btw <question>` starts a side conversation. If the main conversation is
+working, it starts in the background and opens automatically after the current
+turn, without stealing the main view.
+
+- `Ctrl+B` switches between the main view and the latest BTW view; this is the
+  only shortcut for switching views.
+- `Esc` matches the main conversation: it stops the current BTW turn while
+  working, or clears the current draft when idle.
+- `Ctrl+C` also stops BTW; `Ctrl+O` toggles verbose/compact details.
+- When a completed BTW exists in the main view, the status line shows a
+  `Ctrl+B to view` hint.
 
 ### Model and preset
 

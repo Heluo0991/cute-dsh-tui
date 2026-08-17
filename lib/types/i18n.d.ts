@@ -359,9 +359,13 @@ declare const dict: {
         readonly zh: "BTW 完成 {{n}}";
         readonly en: "BTW done {{n}}";
     };
+    readonly 'btw-done-hint': {
+        readonly zh: "BTW 完成 · Ctrl+B 查看";
+        readonly en: "BTW done · Ctrl+B to view";
+    };
     readonly 'btw-view-hint': {
-        readonly zh: "BTW 视图 · Ctrl+B 返回主会话";
-        readonly en: "BTW view · Ctrl+B back to main";
+        readonly zh: "BTW 视图 · Ctrl+B 切换主会话";
+        readonly en: "BTW view · Ctrl+B to switch to main";
     };
     readonly 'plugin-no-matches': {
         readonly zh: "没有匹配的已安装或已加载插件。`/plugin search` 只过滤本地列表，不会搜索 npm。";
@@ -740,8 +744,8 @@ declare const dict: {
         readonly en: "BTW · side conversation";
     };
     readonly 'btw-pane-hint': {
-        readonly zh: "已复制上下文 · 主会话不受影响 · Ctrl+B/Esc 返回 · Ctrl+C 停止 · Ctrl+O 详情";
-        readonly en: "Forked context · main conversation is unchanged · Ctrl+B/Esc back · Ctrl+C stops · Ctrl+O details";
+        readonly zh: "已复制上下文 · 主会话不受影响 · Ctrl+B 切换 · Esc/Ctrl+C 停止 · Ctrl+O 详情";
+        readonly en: "Forked context · main unchanged · Ctrl+B switch · Esc/Ctrl+C stop · Ctrl+O details";
     };
     readonly 'btw-working': {
         readonly zh: "旁路会话正在工作…";
@@ -1279,6 +1283,10 @@ declare const dict: {
         readonly zh: "ctrl+g 显示/折叠旧消息";
         readonly en: "ctrl+g to show/fold old messages";
     };
+    readonly 'help-shortcut-btw': {
+        readonly zh: "ctrl+b 切换 BTW";
+        readonly en: "ctrl+b to switch BTW";
+    };
     readonly 'help-edit-esc': {
         readonly zh: "esc 清空输入";
         readonly en: "esc to clear input";
@@ -1334,6 +1342,10 @@ declare const dict: {
     readonly 'status-hint-interrupt': {
         readonly zh: "esc 中断";
         readonly en: "esc to interrupt";
+    };
+    readonly 'status-hint-interrupt-btw': {
+        readonly zh: "esc 中断 · ctrl+b BTW";
+        readonly en: "esc to interrupt · ctrl+b BTW";
     };
     readonly 'status-hint-help': {
         readonly zh: "? 查看快捷键";
