@@ -17,9 +17,8 @@ only through `cute-dsh-tui --experimental-v2` / `cdsh --experimental-v2`
 (not the official `dsh` binary) and preserves v1 as the default until feature
 parity is verified. The bridge has a real-DSH
 temporary-profile smoke test; the Windows development-profile link repair is
-separately verified. If running Windows Node against a WSL-created
-`node_modules`, reinstall dependencies on Windows first so `sharp`, `koffi`,
-and `node-pty` have win32 binaries. The next v2 increment is
+separately verified. The Windows native `node_modules` reinstall is complete, and the v1 launcher
+starts normally on Windows. The next v2 increment is
 prompt/cancellation/approval and the remaining interactive session operations. See
 `docs/architecture/v2-runtime-boundary.md`. The next-step checklist is in
 `TODO.md`.

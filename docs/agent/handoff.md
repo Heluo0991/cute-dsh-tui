@@ -59,14 +59,11 @@ Commits:
 - `pnpm verify:launcher` passes.
 - `git diff --check` passes.
 - Real TTY launch on Windows with `node bin\dsh-tui.js --experimental-v2` succeeds and shows the read-only projection header.
+- v1 launcher starts normally on Windows after reinstalling `node_modules` natively.
 
 ## Windows native note
 
-- If using Windows Node against a `node_modules` created from WSL/Linux, reinstall dependencies on Windows first so `sharp`, `koffi`, and `node-pty` get the win32 native binaries:
-  ```powershell
-  pnpm install
-  pnpm rebuild node-pty
-  ```
+- The Windows native `node_modules` reinstall is complete (`pnpm install`, `pnpm rebuild node-pty`); `sharp`, `koffi`, and `node-pty` now have win32 binaries available.
 
 ## Remaining before next feature work
 
