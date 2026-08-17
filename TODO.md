@@ -7,6 +7,7 @@ Status: experimental read-only session-event projection is implemented and commi
 
 - [x] Run `pnpm verify:session-event-projection`
 - [x] Run `pnpm verify:session-event-client`
+- [x] Run `pnpm verify:session-open-buffer`
 - [x] Run `pnpm verify:core-protocol`
 - [x] Run `pnpm verify:core-client`
 - [x] Run `pnpm verify:core-bridge`

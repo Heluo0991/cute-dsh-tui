@@ -12,7 +12,8 @@ const client = new CoreClient({
   cwd: process.cwd(),
 })
 
-// Install the listener before session/open, matching the production flow.
+// The listener must be installed before session/open so in-flight
+// notifications are buffered instead of lost.
 const buffer = createNotificationBuffer(client)
 
 assert.deepEqual(await client.start(), { name: 'fake-core-events', version: 'test' })
@@ -27,10 +28,20 @@ for (const event of opened.events ?? []) {
     initialSeqs.add((event as { seq: number }).seq)
   }
 }
-processNotificationRecords(projector, buffer.drain(), initialSeqs)
+
+const buffered = buffer.drain()
+assert.ok(
+  buffered.some(record => record.method === 'session/event'),
+  'expected session/event notifications emitted during session/open to be buffered',
+)
+processNotificationRecords(projector, buffered, initialSeqs)
 
 const lines = projector.snapshot()
-assert.ok(lines.some(line => line.kind === 'user' && line.text.includes('projected user text')))
+assert.equal(
+  lines.filter(line => line.kind === 'user' && line.text.includes('projected user text')).length,
+  1,
+  'user event from session/open response and buffered notification must not be duplicated',
+)
 assert.ok(lines.some(line => line.kind === 'assistant' && line.text.includes('projected assistant text')))
 assert.ok(lines.some(line => line.kind === 'status' && line.text.includes('idle')))
 
@@ -38,4 +49,4 @@ buffer.close()
 await client.close()
 assert.equal(client.stderrTail(), '')
 
-console.log('session event client projection verification passed')
+console.log('session open buffer verification passed')

@@ -9,8 +9,10 @@ The `refactor/runtime-boundary` branch is establishing v2's out-of-process
 core/TUI split. The transport, session-event bridge, explicit child-process
 client, and read-only session-event projection are isolated in
 `src/core-protocol.ts`, `src/core-bridge.ts`, `src/core-client.ts`,
-`src/sessionEventProjection.ts`, and `src/experimentalProjection.tsx`; none is
-called by the default v1 launcher. The experimental projection is reachable
+`src/sessionEventProjection.ts`, `src/experimentalNotificationBuffer.ts`, and
+`src/experimentalProjection.tsx`; none is called by the default v1 launcher.
+The notification listener is installed before `session/open` and buffers
+in-flight events to prevent loss. The experimental projection is reachable
 only through `cute-dsh-tui --experimental-v2` / `cdsh --experimental-v2`
 (not the official `dsh` binary) and preserves v1 as the default until feature
 parity is verified. The bridge has a real-DSH

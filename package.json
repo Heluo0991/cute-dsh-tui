@@ -81,6 +81,7 @@
     "verify:core-client": "node --import tsx/esm scripts/verify-core-client.ts",
     "verify:session-event-projection": "node --import tsx/esm scripts/verify-session-event-projection.ts",
     "verify:session-event-client": "node --import tsx/esm scripts/verify-session-event-client.ts",
+    "verify:session-open-buffer": "node --import tsx/esm scripts/verify-session-open-buffer.ts",
     "verify:core-bridge-dsh": "pnpm run build && node --import tsx/esm scripts/verify-core-bridge-dsh.ts",
     "agent:status": "node scripts/agent-status.mjs",
     "verify:profile-manifest-recovery": "node scripts/verify-profile-manifest-recovery.mjs",

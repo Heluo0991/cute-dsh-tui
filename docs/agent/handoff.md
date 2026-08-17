@@ -25,6 +25,10 @@ Commits:
   - no DSH or React dependency
   - handles user/assistant/tool/status events
   - coalesces streaming chunks without per-token React updates
+- Added `src/experimentalNotificationBuffer.ts`:
+  - installs the client notification listener before `session/open`
+  - buffers in-flight notifications so core events emitted during open are not lost
+  - suppresses duplicates already present in the `session/open` response snapshot
 - Added `src/experimentalProjection.tsx`:
   - experimental read-only TUI client
   - launches core bridge through `CoreClient`
@@ -33,6 +37,7 @@ Commits:
 - Added tests and fixtures:
   - `scripts/verify-session-event-projection.ts`
   - `scripts/verify-session-event-client.ts`
+  - `scripts/verify-session-open-buffer.ts`
   - `scripts/fixtures/fake-core-events.ts`
 - Updated docs:
   - `docs/agent/current.md`
@@ -45,6 +50,7 @@ Commits:
 - `tsc -p tsconfig.json` passes.
 - `pnpm verify:session-event-projection` passes.
 - `pnpm verify:session-event-client` passes.
+- `pnpm verify:session-open-buffer` passes.
 - `pnpm verify:core-protocol` passes.
 - `pnpm verify:core-client` passes.
 - `pnpm verify:core-bridge` passes.

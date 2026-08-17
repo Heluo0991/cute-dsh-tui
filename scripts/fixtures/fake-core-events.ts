@@ -27,6 +27,14 @@ transport.onRequest(request => {
       sessionId: 'fake-session',
       status: 'idle',
       events: [{
+        type: 'user/message',
+        seq: 1,
+        time: 1,
+        data: {
+          content: [{ type: 'text', text: 'projected user text' }],
+          source: { kind: 'user' },
+        },
+      }, {
         type: 'assistant/message',
         seq: 2,
         time: 2,

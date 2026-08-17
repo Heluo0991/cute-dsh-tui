@@ -2,6 +2,11 @@ import React, { useEffect, useState } from 'react'
 import { Box, Text, render, useApp, useInput } from './ui.js'
 import { CoreClient, type CoreLaunchSpec } from './core-client.js'
 import { SessionEventProjector, type ProjectedLine } from './sessionEventProjection.js'
+import {
+  createNotificationBuffer,
+  processNotificationRecords,
+  type NotificationBuffer,
+} from './experimentalNotificationBuffer.js'
 import type { JsonObject, JsonValue } from './core-protocol.js'
 
 export interface ExperimentalProjectionOptions {
@@ -17,6 +22,10 @@ export interface ExperimentalProjectionOptions {
  * Experimental read-only v2 projection. It owns only the TUI/client side:
  * launch the explicit core process, open a session, replay its durable events,
  * and project live session/event notifications as bounded text rows.
+ *
+ * The client notification listener is installed before `session/open` so any
+ * event emitted by the core while the session is being opened is buffered and
+ * replayed after the open response arrives.
  */
 export async function runExperimentalProjection(options: ExperimentalProjectionOptions): Promise<void> {
   if (!process.stdout.isTTY || !process.stdin.isTTY) {
@@ -24,6 +33,7 @@ export async function runExperimentalProjection(options: ExperimentalProjectionO
   }
 
   const client = new CoreClient(options.launch)
+  const buffer = createNotificationBuffer(client)
   try {
     await client.start()
     const params: JsonObject = { cwd: options.cwd ?? process.cwd() }
@@ -33,26 +43,35 @@ export async function runExperimentalProjection(options: ExperimentalProjectionO
     const opened = await client.request('session/open', params)
     const events = readEvents(opened)
     const projector = new SessionEventProjector({ limit: options.limit })
-    for (const event of events) projector.push(event)
+    const initialSeqs = new Set<number>()
+    for (const event of events) {
+      projector.push(event)
+      const seq = isObject(event) && typeof event.seq === 'number' ? event.seq : undefined
+      if (seq !== undefined) initialSeqs.add(seq)
+    }
+    // Replay anything the core emitted while session/open was in flight.
+    processNotificationRecords(projector, buffer.drain(), initialSeqs)
 
     const instance = await render(
-      <ProjectionApp client={client} projector={projector} />,
+      <ProjectionApp projector={projector} buffer={buffer} />,
       { exitOnCtrlC: true },
     )
     await instance.waitUntilExit()
+    buffer.close()
     await client.close()
   } catch (error) {
+    buffer.close()
     await client.close()
     throw error
   }
 }
 
 function ProjectionApp({
-  client,
   projector,
+  buffer,
 }: {
-  client: CoreClient
   projector: SessionEventProjector
+  buffer: NotificationBuffer
 }) {
   const { exit } = useApp()
   const [lines, setLines] = useState<readonly ProjectedLine[]>(() => projector.snapshot())
@@ -62,23 +81,16 @@ function ProjectionApp({
   })
 
   useEffect(() => {
-    return client.onNotification((method, params) => {
-      if (method === 'session/event' && isObject(params)) {
-        const event = isObject(params.event) ? params.event : undefined
-        if (event !== undefined) {
-          projector.push(event)
-          // Avoid a React update per streaming token; the final
-          // assistant/message or tool/result renders the accumulated row.
-          if (event.type !== 'assistant/chunk') setLines(projector.snapshot())
-        }
-        return
-      }
-      if (method === 'session/status' && isObject(params)) {
-        projector.pushStatus(params.sessionId, params.status)
+    const processPending = (): void => {
+      const records = buffer.drain()
+      if (records.length === 0) return
+      if (processNotificationRecords(projector, records)) {
         setLines(projector.snapshot())
       }
-    })
-  }, [client, projector])
+    }
+    processPending()
+    return buffer.subscribe(processPending)
+  }, [buffer, projector])
 
   return (
     <Box flexDirection="column" padding={1}>

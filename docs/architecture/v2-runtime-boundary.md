@@ -26,11 +26,11 @@ The official Harness main branch has an SDK JSON-RPC server with matching event 
 
 1. Transport and handshake primitives, with no v1 behavior change.
 2. Separate core bridge process that creates/attaches sessions and streams durable events. `src/core-bridge.ts` and `core-bridge.patch.yml` are the initial server; the default launcher does not select them, while the experimental projection does.
-3. Read-only TUI projection through the client transport, behind an explicit experimental launcher mode. Implemented by `src/sessionEventProjection.ts` and `src/experimentalProjection.tsx` under `--experimental-v2`; `src/core-client.ts` owns only explicit child launch, handshake, protocol transport, stderr tailing, and bounded reaping.
+3. Read-only TUI projection through the client transport, behind an explicit experimental launcher mode. Implemented by `src/sessionEventProjection.ts`, `src/experimentalNotificationBuffer.ts`, and `src/experimentalProjection.tsx` under `--experimental-v2`; the notification listener is installed before `session/open` and buffers in-flight events so none are lost. `src/core-client.ts` owns only explicit child launch, handshake, protocol transport, stderr tailing, and bounded reaping.
 4. Prompt, cancellation, approval, questions, session operations, and model/preset/permission actions.
 5. Move DSH dependencies out of the published TUI package and make managed-runtime installation the fallback only.
 6. Promote after real-TTY, Windows ConPTY, resume, uninstall, and cross-version compatibility tests pass.
 
 No stage may silently fall back from an incompatible external core to a different core for an existing session. Compatibility is checked before a session opens and reported on stderr.
 
-`verify-core-bridge-dsh.ts` exercises the current bridge against the bundled DSH runtime through a newly created temporary `DSH_HOME`; it creates no model request and removes the complete temporary profile afterwards. `verify-session-event-projection.ts` exercises the bounded client-side projection with raw JSON envelopes, and `verify-session-event-client.ts` exercises the same projection through the explicit `CoreClient` transport with a fake core.
+`verify-core-bridge-dsh.ts` exercises the current bridge against the bundled DSH runtime through a newly created temporary `DSH_HOME`; it creates no model request and removes the complete temporary profile afterwards. `verify-session-event-projection.ts` exercises the bounded client-side projection with raw JSON envelopes, `verify-session-event-client.ts` exercises the same projection through the explicit `CoreClient` transport with a fake core, and `verify-session-open-buffer.ts` covers the pre-`session/open` notification buffer and duplicate suppression.
