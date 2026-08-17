@@ -10,7 +10,8 @@ core/TUI split. The transport, session-event bridge, and explicit child-process
 client are isolated in `src/core-protocol.ts`, `src/core-bridge.ts`, and
 `src/core-client.ts`; none is called by the v1 launcher. Continue with an
 experimental read-only event projection, preserving v1 as the default until
-feature parity is verified. See
+feature parity is verified. The bridge has a real-DSH temporary-profile smoke
+test; the Windows development-profile link repair is separately verified. See
 `docs/architecture/v2-runtime-boundary.md`.
 
 ## Manual follow-up

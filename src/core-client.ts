@@ -74,7 +74,12 @@ export class CoreClient {
       this.serverInfo = parseInitializeResult(result)
       return this.serverInfo
     } catch (error) {
+      const detail = this.stderrTail().trim()
       await this.closeAfterFailedStart()
+      if (detail !== '') {
+        const message = error instanceof Error ? error.message : String(error)
+        throw new Error(`core failed during initialize: ${message}\n${detail}`, { cause: error })
+      }
       throw error
     }
   }

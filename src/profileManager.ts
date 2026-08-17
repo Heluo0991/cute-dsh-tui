@@ -1,5 +1,5 @@
 import { spawn, spawnSync } from 'node:child_process'
-import { copyFileSync, existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
+import { copyFileSync, existsSync, lstatSync, mkdirSync, readFileSync, realpathSync, symlinkSync, unlinkSync, writeFileSync } from 'node:fs'
 import { createRequire } from 'node:module'
 import { basename, dirname, join } from 'node:path'
 
@@ -63,6 +63,36 @@ export function profileDirectory(dshHome: string, profile: string): string {
     throw new Error(`invalid DSH profile name: ${JSON.stringify(profile)}`)
   }
   return join(dshHome, 'profiles', profile)
+}
+
+/**
+ * Repair a profile dependency as an explicit directory link for local
+ * development. pnpm 10 serializes a Windows cross-volume `link:` target as a
+ * relative path, so the generated profile link can otherwise point at a
+ * literal `G:` child of the profile. This helper only replaces an existing
+ * symlink/junction; it refuses to remove a real installed package.
+ */
+export function linkProfileDependency(profileDir: string, packageName: string, targetDirectory: string): void {
+  const segments = packageName.split('/')
+  if (segments.length > 2 || segments.some(segment => segment === '' || segment === '.' || segment === '..' || /[\\/]/.test(segment))) {
+    throw new Error(`invalid package name for profile link: ${JSON.stringify(packageName)}`)
+  }
+  const target = realpathSync(targetDirectory)
+  const packageDir = join(profileDir, 'node_modules', ...segments)
+  let existing: ReturnType<typeof lstatSync> | undefined
+  try {
+    existing = lstatSync(packageDir)
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code !== 'ENOENT') throw error
+  }
+  if (existing !== undefined) {
+    if (!existing.isSymbolicLink()) {
+      throw new Error(`refusing to replace non-link profile dependency: ${packageDir}`)
+    }
+    unlinkSync(packageDir)
+  }
+  mkdirSync(dirname(packageDir), { recursive: true })
+  symlinkSync(target, packageDir, process.platform === 'win32' ? 'junction' : 'dir')
 }
 
 function defaultProfileManifest(profileDir: string): ProfileManifest {

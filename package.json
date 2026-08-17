@@ -79,8 +79,10 @@
     "verify:core-protocol": "node --import tsx/esm scripts/verify-core-protocol.ts",
     "verify:core-bridge": "node --import tsx/esm scripts/verify-core-bridge.ts",
     "verify:core-client": "node --import tsx/esm scripts/verify-core-client.ts",
+    "verify:core-bridge-dsh": "pnpm run build && node --import tsx/esm scripts/verify-core-bridge-dsh.ts",
     "agent:status": "node scripts/agent-status.mjs",
     "verify:profile-manifest-recovery": "node scripts/verify-profile-manifest-recovery.mjs",
+    "verify:profile-development-link": "pnpm run build && node scripts/verify-profile-development-link.mjs",
     "verify:i18n": "node scripts/verify-i18n.mjs"
   },
   "peerDependencies": {

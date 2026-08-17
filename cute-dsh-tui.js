@@ -12,7 +12,7 @@ import { homedir } from 'node:os'
 import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { LAUNCHER_USAGE, applyLaunchEnvironment, parseLaunchArgs, resolveLaunchWorkspace } from './launch-options.js'
-import { bundledDshInvocation, profileDirectory, profileHasNativePty, runBundledPnpm } from './lib/types/profileManager.js'
+import { bundledDshInvocation, linkProfileDependency, profileDirectory, profileHasNativePty, reconcileProfileBundles, runBundledPnpm } from './lib/types/profileManager.js'
 
 const here = fileURLToPath(new URL('.', import.meta.url))
 const ownVersion = JSON.parse(readFileSync(join(here, 'package.json'), 'utf8')).version
@@ -113,6 +113,17 @@ if (profileNeedsPackageInstall) {
     console.error('[cute-dsh-tui] profile installation failed. Retry manually with:')
     console.error(`  cdsh  # then retry after checking npm registry access`)
     process.exit(addCode)
+  }
+  if (devPackagePath) {
+    try {
+      linkProfileDependency(profileDir, PACKAGE, devPackagePath)
+      // `runBundledPnpm()` reconciles before the Windows link repair above;
+      // run it again so the repaired package is included as a DSH bundle.
+      reconcileProfileBundles(profileDir)
+    } catch (error) {
+      console.error(`[cute-dsh-tui] development profile link failed: ${error instanceof Error ? error.message : String(error)}`)
+      process.exit(1)
+    }
   }
 }
 

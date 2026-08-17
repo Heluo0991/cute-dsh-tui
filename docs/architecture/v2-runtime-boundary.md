@@ -32,3 +32,5 @@ The official Harness main branch has an SDK JSON-RPC server with matching event 
 6. Promote after real-TTY, Windows ConPTY, resume, uninstall, and cross-version compatibility tests pass.
 
 No stage may silently fall back from an incompatible external core to a different core for an existing session. Compatibility is checked before a session opens and reported on stderr.
+
+`verify-core-bridge-dsh.ts` exercises the current bridge against the bundled DSH runtime through a newly created temporary `DSH_HOME`; it creates no model request and removes the complete temporary profile afterwards.
