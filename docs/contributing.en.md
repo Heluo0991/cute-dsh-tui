@@ -118,9 +118,10 @@ seam.
   pnpm install --frozen-lockfile
   ```
 
-- `pnpm-lock.yaml` is the CI lockfile. `package-lock.json` is tracked for npm
-  consumers but currently trails the package version; do not use it as the
-  dependency source of truth or rewrite it opportunistically.
+- `pnpm-lock.yaml` is the CI lockfile and dependency source of truth.
+  `package-lock.json` is tracked for npm consumers. During a release-version
+  preparation, keep only its root `version` and `packages[""].version` in
+  sync with `package.json`; do not churn its dependency tree.
 - When intentionally changing dependencies, update `pnpm-lock.yaml`, inspect
   the full lockfile diff, and avoid unrelated upgrades. Touch
   `package-lock.json` only when the task explicitly includes npm-install

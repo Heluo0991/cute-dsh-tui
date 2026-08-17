@@ -3,8 +3,6 @@ node_modules/
 .DS_Store
 *.tsbuildinfo
 *.tgz
-AGENTS.md
-
 # local user transcript/debug captures
 logs.txt
 

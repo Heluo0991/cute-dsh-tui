@@ -75,6 +75,7 @@ if [ "$target" = "all" ] || [ "$target" = "node" ]; then
   run_node scripts/verify-model-route.mjs
   run_node scripts/verify-profile-manifest-recovery.mjs
   run_node scripts/verify-i18n.mjs
+  run_node scripts/verify-package-version.mjs
 fi
 
 if [ "$target" = "all" ] || [ "$target" = "tsx" ]; then
