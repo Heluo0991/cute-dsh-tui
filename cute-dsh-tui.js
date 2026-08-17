@@ -8,7 +8,6 @@
  */
 import { spawn, spawnSync } from 'node:child_process'
 import { existsSync, readFileSync, realpathSync, statSync } from 'node:fs'
-import { createRequire } from 'node:module'
 import { homedir } from 'node:os'
 import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -117,16 +116,20 @@ if (profileNeedsPackageInstall) {
     console.error(`  cdsh  # then retry after checking npm registry access`)
     process.exit(addCode)
   }
-  if (devPackagePath) {
-    try {
-      linkProfileDependency(profileDir, PACKAGE, devPackagePath)
-      // `runBundledPnpm()` reconciles before the Windows link repair above;
-      // run it again so the repaired package is included as a DSH bundle.
-      reconcileProfileBundles(profileDir)
-    } catch (error) {
-      console.error(`[cute-dsh-tui] development profile link failed: ${error instanceof Error ? error.message : String(error)}`)
-      process.exit(1)
-    }
+}
+
+// Always repair the development profile link when running from a checkout.
+// pnpm can leave a WSL-style symlink behind on Windows-backed checkouts, which
+// the native Windows Node runtime cannot resolve.
+if (devPackagePath) {
+  try {
+    linkProfileDependency(profileDir, PACKAGE, devPackagePath)
+    // `runBundledPnpm()` reconciles before the Windows link repair above;
+    // run it again so the repaired package is included as a DSH bundle.
+    reconcileProfileBundles(profileDir)
+  } catch (error) {
+    console.error(`[cute-dsh-tui] development profile link failed: ${error instanceof Error ? error.message : String(error)}`)
+    process.exit(1)
   }
 }
 
@@ -166,21 +169,12 @@ if (!profileHasNativePty(profileDir)) {
 
 if (process.env.CUTE_DSH_TUI_EXPERIMENTAL_V2 === '1') {
   const { runExperimentalProjection } = await import('./lib/types/experimentalProjection.js')
-  const require = createRequire(import.meta.url)
-  // The DSH profile composition includes Cordis HMR, which needs Node's
-  // internal loader hooks. Keep this flag on the experimental core child
-  // only; the default v1 launch path is unchanged.
-  const invocation = {
-    command: process.execPath,
-    args: [
-      '--expose-internals',
-      require.resolve('@deepseek-ai/dsh/lib/bin.js'),
-      '--profile',
-      PROFILE,
-      '--patch',
-      join(here, 'core-bridge.patch.yml'),
-    ],
-  }
+  const invocation = bundledDshInvocation([
+    '--profile',
+    PROFILE,
+    '--patch',
+    join(here, 'core-bridge.patch.yml'),
+  ])
   try {
     await runExperimentalProjection({
       launch: {

@@ -41,7 +41,9 @@ export interface ProcessInvocation {
 export function bundledDshInvocation(args: readonly string[]): ProcessInvocation {
   return {
     command: process.execPath,
-    args: [require.resolve('@deepseek-ai/dsh/lib/bin.js'), ...args],
+    // The DSH profile composition includes Cordis HMR, which needs Node's
+    // internal loader hooks.
+    args: ['--expose-internals', require.resolve('@deepseek-ai/dsh/lib/bin.js'), ...args],
   }
 }
 
