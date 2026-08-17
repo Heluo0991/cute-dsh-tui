@@ -24,6 +24,9 @@ for (const notification of notifications) {
   if (notification.method === 'session/event' && isObject(notification.params)) {
     const params = notification.params as { event?: JsonValue }
     if (params.event !== undefined) projector.push(params.event)
+  } else if (notification.method === 'session/status' && isObject(notification.params)) {
+    const params = notification.params as { sessionId?: JsonValue; status?: JsonValue }
+    projector.pushStatus(params.sessionId, params.status)
   }
 }
 
