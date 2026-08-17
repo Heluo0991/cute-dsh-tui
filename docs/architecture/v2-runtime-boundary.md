@@ -25,7 +25,7 @@ The official Harness main branch has an SDK JSON-RPC server with matching event 
 ## Migration order
 
 1. Transport and handshake primitives, with no v1 behavior change.
-2. Separate core bridge process that creates/attaches sessions and streams durable events.
+2. Separate core bridge process that creates/attaches sessions and streams durable events. `src/core-bridge.ts` and `core-bridge.patch.yml` are the initial server; no launcher selects them yet.
 3. Read-only TUI projection through the client transport, behind an explicit experimental launcher mode.
 4. Prompt, cancellation, approval, questions, session operations, and model/preset/permission actions.
 5. Move DSH dependencies out of the published TUI package and make managed-runtime installation the fallback only.

@@ -30,6 +30,10 @@
       "types": "./lib/types/working-activity.d.ts",
       "import": "./lib/types/working-activity.js"
     },
+    "./core-bridge": {
+      "types": "./lib/types/core-bridge.d.ts",
+      "import": "./lib/types/core-bridge.js"
+    },
     "./invariant": {
       "types": "./lib/types/invariant.d.ts",
       "default": "./lib/invariant.js"
@@ -42,6 +46,7 @@
     "launch-options.js",
     "lib",
     "cordis.patch.yml",
+    "core-bridge.patch.yml",
     "cordis.yml",
     "skills",
     "docs/assets/readme-terminal-banner.svg",
@@ -72,6 +77,7 @@
     "verify:package-exports": "node scripts/verify-package-exports.mjs",
     "verify:package-version": "node scripts/verify-package-version.mjs",
     "verify:core-protocol": "node --import tsx/esm scripts/verify-core-protocol.ts",
+    "verify:core-bridge": "node --import tsx/esm scripts/verify-core-bridge.ts",
     "agent:status": "node scripts/agent-status.mjs",
     "verify:profile-manifest-recovery": "node scripts/verify-profile-manifest-recovery.mjs",
     "verify:i18n": "node scripts/verify-i18n.mjs"
