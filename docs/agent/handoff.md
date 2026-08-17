@@ -11,6 +11,8 @@ Commits:
 
 - `feat: add experimental v2 read-only session projection`
 - `docs: mark v2 read-only projection committed in TODO`
+- `docs: add v2 runtime-boundary handoff report`
+- `test: include status notifications in session event client projection`
 
 ## What changed
 
@@ -38,14 +40,16 @@ Commits:
 ## Verification performed
 
 - `tsc -p tsconfig.json` passes.
-- `node scripts/verify-launch-options.mjs` passes.
+- `pnpm verify:session-event-projection` passes.
+- `pnpm verify:session-event-client` passes.
+- `pnpm verify:core-protocol` passes.
+- `pnpm verify:core-client` passes.
+- `pnpm verify:core-bridge` passes.
+- `pnpm verify:launcher` passes.
 - `git diff --check` passes.
-- Compiled JS equivalents for the projector and `CoreClient` + fake-core integration were verified manually.
-- TSX-based `pnpm verify:*` scripts could not run in this WSL due to an `esbuild` platform mismatch in the existing `node_modules`.
 
 ## Remaining before next feature work
 
-- Run the new `pnpm verify:*` scripts in a correct Linux/CI environment.
 - Run `dsh --experimental-v2` in a real TTY and confirm replay, live notifications, read-only behavior, and clean exit.
 
 ## Next step

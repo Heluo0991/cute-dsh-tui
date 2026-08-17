@@ -5,12 +5,12 @@ Status: experimental read-only session-event projection is implemented and commi
 
 ## Immediate handoff checks
 
-- [ ] Run `pnpm verify:session-event-projection`
-- [ ] Run `pnpm verify:session-event-client`
-- [ ] Run `pnpm verify:core-protocol`
-- [ ] Run `pnpm verify:core-client`
-- [ ] Run `pnpm verify:core-bridge`
-- [ ] Run `pnpm verify:launcher`
+- [x] Run `pnpm verify:session-event-projection`
+- [x] Run `pnpm verify:session-event-client`
+- [x] Run `pnpm verify:core-protocol`
+- [x] Run `pnpm verify:core-client`
+- [x] Run `pnpm verify:core-bridge`
+- [x] Run `pnpm verify:launcher`
 - [ ] In a real TTY run `dsh --experimental-v2` and confirm:
   - [ ] replays existing session events
   - [ ] appends live notifications
