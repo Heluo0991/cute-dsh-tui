@@ -17,6 +17,7 @@ Commits:
 - `docs: clarify experimental flag is CuteDshTui launcher option, not official dsh flag`
 - `fix: auto-detect dev checkout and pass --expose-internals for experimental core`
 - `fix: buffer notifications emitted during session/open and add regression test`
+- `fix: always repair dev profile link and pass --expose-internals to all DSH children`
 
 ## What changed
 
@@ -58,6 +59,14 @@ Commits:
 - `pnpm verify:launcher` passes.
 - `git diff --check` passes.
 - Real TTY launch on Windows with `node bin\dsh-tui.js --experimental-v2` succeeds and shows the read-only projection header.
+
+## Windows native note
+
+- If using Windows Node against a `node_modules` created from WSL/Linux, reinstall dependencies on Windows first so `sharp`, `koffi`, and `node-pty` get the win32 native binaries:
+  ```powershell
+  pnpm install
+  pnpm rebuild node-pty
+  ```
 
 ## Remaining before next feature work
 

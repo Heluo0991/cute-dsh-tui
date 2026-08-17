@@ -12,6 +12,7 @@ Status: experimental read-only session-event projection is implemented and commi
 - [x] Run `pnpm verify:core-client`
 - [x] Run `pnpm verify:core-bridge`
 - [x] Run `pnpm verify:launcher`
+- [ ] If running Windows Node against a WSL-created `node_modules`, reinstall dependencies on Windows first (`pnpm install`, `pnpm rebuild node-pty`)
 - [x] In a real TTY launch `cute-dsh-tui --experimental-v2` or `cdsh --experimental-v2` successfully
   - [x] TUI starts and shows the read-only projection header
   - [ ] replays existing session events
