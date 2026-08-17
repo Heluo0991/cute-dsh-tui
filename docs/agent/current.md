@@ -7,7 +7,7 @@ state. Do not write commit hashes or package versions into this file.
 
 The `refactor/runtime-boundary` branch is establishing v2's out-of-process
 core/TUI split. The transport, session-event bridge, explicit child-process
-client, and read-only session-event projection are isolated in
+client, and the experimental session projection are isolated in
 `src/core-protocol.ts`, `src/core-bridge.ts`, `src/core-client.ts`,
 `src/sessionEventProjection.ts`, `src/experimentalNotificationBuffer.ts`, and
 `src/experimentalProjection.tsx`; none is called by the default v1 launcher.
@@ -18,8 +18,15 @@ only through `cute-dsh-tui --experimental-v2` / `cdsh --experimental-v2`
 parity is verified. The bridge has a real-DSH
 temporary-profile smoke test; the Windows development-profile link repair is
 separately verified. The Windows native `node_modules` reinstall is complete, and the v1 launcher
-starts normally on Windows. The next v2 increment is
-prompt/cancellation/approval and the remaining interactive session operations. See
+starts normally on Windows. Step 4's first increment is in progress: a typed
+TUI-client facade (`src/experimentalCoreClient.ts`), client request handling
+for core-initiated approvals/questions, and the interactive core-bridge RPC
+methods (`session/new`, `session/resume`, `session/list`, `session/rewind`,
+`model/*`, `preset/*`, `permission/*`) are implemented behind the explicit
+experimental path. The experimental TUI screen now uses the typed client
+facade: it can send prompts, cancel, answer approval/question requests, and
+run session/model/preset/permission commands interactively. Real-TTY
+acceptance for this interactive v2 path is complete. See
 `docs/architecture/v2-runtime-boundary.md`. The next-step checklist is in
 `TODO.md`.
 
@@ -30,8 +37,9 @@ prompt/cancellation/approval and the remaining interactive session operations. S
   dispatch and view deferral, but not this live terminal acceptance case.
 - In a real TTY, `cute-dsh-tui --experimental-v2` / `cdsh --experimental-v2`
   is fully accepted: starts, replays existing session events, appends live
-  notifications, does not send prompts, and exits cleanly with `q` while
-  reaping the core child.
+  notifications, sends prompts, cancels, answers approvals/questions, performs
+  session/model/preset/permission actions, and exits cleanly while reaping the
+  core child. The read-only acceptance is complete; the interactive acceptance is also complete.
 
 ## Documentation migration
 

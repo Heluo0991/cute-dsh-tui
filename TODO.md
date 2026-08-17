@@ -1,7 +1,7 @@
 # V2 runtime-boundary TODO
 
 Current branch: `refactor/runtime-boundary`
-Status: step 3 (experimental read-only session-event projection) is complete, including real TTY acceptance.
+Status: step 4 (interactive v2 session operations) is complete, including real-TTY acceptance.
 
 ## Immediate handoff checks
 
@@ -23,16 +23,21 @@ Status: step 3 (experimental read-only session-event projection) is complete, in
 
 ## Next implementation: v2 interactive session operations (migration step 4)
 
-- [ ] Design and add TUI-client methods for:
-  - [ ] `session/prompt`
-  - [ ] `session/cancel`
-  - [ ] approvals
-  - [ ] user questions
-  - [ ] session operations (new/resume/list/rewind?)
-  - [ ] model/preset/permission actions
-- [ ] Keep every new method behind the explicit experimental path; do not change v1 default launch.
-- [ ] Add focused verify scripts for each new method using fake core / bridge regressions.
-- [ ] Update `docs/agent/current.md`, `docs/agent/module-map.md`, and `docs/architecture/v2-runtime-boundary.md` after each increment.
+- [x] Design and add TUI-client methods for:
+  - [x] `session/prompt`
+  - [x] `session/cancel`
+  - [x] approvals
+  - [x] user questions
+  - [x] session operations (new/resume/list/rewind)
+  - [x] model/preset/permission actions
+- [x] Keep every new method behind the explicit experimental path; do not change v1 default launch.
+- [x] Add focused verify scripts for each new method using fake core / bridge regressions.
+- [x] Update `docs/agent/current.md`, `docs/agent/module-map.md`, and `docs/architecture/v2-runtime-boundary.md` after each increment.
+
+### Step 4 remaining (next increment)
+
+- [x] Wire the typed client methods and approval/question request handlers into the experimental TUI screen so `--experimental-v2` can send prompts, cancel, answer approvals/questions, and perform session/model/preset/permission actions interactively.
+- [x] Add real-TTY acceptance for the interactive v2 path.
 
 ## Later steps
 

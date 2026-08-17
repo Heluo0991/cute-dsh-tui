@@ -4,6 +4,7 @@ import {
   CoreProtocolClosedError,
   CoreProtocolTransport,
   type JsonObject,
+  type JsonRpcRequest,
   type JsonValue,
 } from './core-protocol.js'
 
@@ -29,6 +30,12 @@ export interface CoreClientOptions {
   shutdownTimeoutMs?: number
 }
 
+/** Handler for JSON-RPC requests initiated by the core process (e.g. approvals). */
+export type CoreClientRequestHandler = (
+  method: string,
+  params: JsonValue | undefined,
+) => JsonValue | undefined | Promise<JsonValue | undefined>
+
 /**
  * TUI-facing client for one owned core process. It knows nothing about DSH or
  * React: callers provide an explicit executable and interpret named methods.
@@ -37,6 +44,7 @@ export class CoreClient {
   private child: ChildProcessWithoutNullStreams | undefined
   private transport: CoreProtocolTransport | undefined
   private readonly notificationHandlers = new Set<(method: string, params: JsonValue | undefined) => void>()
+  private requestHandler: CoreClientRequestHandler | undefined
   private stderr = ''
   private exit: Promise<number | null> | undefined
   private started = false
@@ -68,6 +76,7 @@ export class CoreClient {
       transport.onNotification(notification => {
         for (const handler of this.notificationHandlers) handler(notification.method, notification.params)
       })
+      transport.onRequest(request => this.handleRequest(request))
       transport.start()
       await onceSpawned(child)
       const result = await transport.request('initialize', { protocolVersion: CORE_PROTOCOL_VERSION }, this.options.handshakeTimeoutMs ?? DEFAULT_HANDSHAKE_TIMEOUT_MS)
@@ -97,6 +106,14 @@ export class CoreClient {
     return () => this.notificationHandlers.delete(handler)
   }
 
+  /** Handle JSON-RPC requests initiated by the core process (approvals, questions). */
+  onRequest(handler: CoreClientRequestHandler): () => void {
+    this.requestHandler = handler
+    return () => {
+      if (this.requestHandler === handler) this.requestHandler = undefined
+    }
+  }
+
   /** Bounded stderr tail for launch and transport diagnostics. */
   stderrTail(): string {
     return this.stderr
@@ -123,6 +140,22 @@ export class CoreClient {
         child.kill('SIGTERM')
         if (!await waitForExit(this.exit, this.options.shutdownTimeoutMs ?? DEFAULT_SHUTDOWN_TIMEOUT_MS)) child.kill('SIGKILL')
       }
+    }
+  }
+
+  private async handleRequest(request: JsonRpcRequest): Promise<void> {
+    const handler = this.requestHandler
+    const transport = this.transport
+    if (handler === undefined || transport === undefined) {
+      transport?.reject(request.id, { code: -32601, message: `method not found: ${request.method}` })
+      return
+    }
+    try {
+      const result = await handler(request.method, request.params)
+      transport.respond(request.id, result === undefined ? {} : result)
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error)
+      transport.reject(request.id, { code: -32603, message })
     }
   }
 

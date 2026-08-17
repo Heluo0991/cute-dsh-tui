@@ -8,9 +8,11 @@ export interface ExperimentalProjectionOptions {
     readonly limit?: number;
 }
 /**
- * Experimental read-only v2 projection. It owns only the TUI/client side:
+ * Experimental interactive v2 projection. It owns only the TUI/client side:
  * launch the explicit core process, open a session, replay its durable events,
- * and project live session/event notifications as bounded text rows.
+ * project live session/event notifications as bounded text rows, and send
+ * prompts / cancellations / approvals / questions / session actions through
+ * the typed experimental client facade.
  *
  * The client notification listener is installed before `session/open` so any
  * event emitted by the core while the session is being opened is buffered and

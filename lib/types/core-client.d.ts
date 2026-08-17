@@ -14,6 +14,8 @@ export interface CoreClientOptions {
     handshakeTimeoutMs?: number;
     shutdownTimeoutMs?: number;
 }
+/** Handler for JSON-RPC requests initiated by the core process (e.g. approvals). */
+export type CoreClientRequestHandler = (method: string, params: JsonValue | undefined) => JsonValue | undefined | Promise<JsonValue | undefined>;
 /**
  * TUI-facing client for one owned core process. It knows nothing about DSH or
  * React: callers provide an explicit executable and interpret named methods.
@@ -24,6 +26,7 @@ export declare class CoreClient {
     private child;
     private transport;
     private readonly notificationHandlers;
+    private requestHandler;
     private stderr;
     private exit;
     private started;
@@ -36,10 +39,13 @@ export declare class CoreClient {
     request(method: string, params?: JsonValue, timeoutMs?: number): Promise<JsonValue | undefined>;
     /** Subscribe to server notifications such as session events and status changes. */
     onNotification(handler: (method: string, params: JsonValue | undefined) => void): () => void;
+    /** Handle JSON-RPC requests initiated by the core process (approvals, questions). */
+    onRequest(handler: CoreClientRequestHandler): () => void;
     /** Bounded stderr tail for launch and transport diagnostics. */
     stderrTail(): string;
     /** Gracefully ask the core to stop, then reap the owned child if needed. */
     close(): Promise<void>;
+    private handleRequest;
     private appendStderr;
     private closeAfterFailedStart;
 }

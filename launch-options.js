@@ -13,7 +13,7 @@ export const LAUNCHER_USAGE = `Usage: dsh [launcher options] [dsh options]
   dsh --resume --last              Restore the most recently used session.
   dsh --continue, dsh -c           Alias for --resume --last.
   dsh --yolo                       Run with danger-full-access and no approvals.
-  dsh --experimental-v2            Run CuteDshTui's read-only experimental v2 projection.
+  dsh --experimental-v2            Run CuteDshTui's experimental v2 interactive session.
 
   dsh --patch <path>               Forward an extra DSH patch overlay.
   dsh --dump-config                Forward a DSH diagnostic option.

@@ -19,6 +19,9 @@ const stdout = execFileSync(npmCommand, ['pack', '--dry-run', '--json'], {
   encoding: 'utf8',
   env: { ...process.env, npm_config_cache: npmCache },
   maxBuffer: 16 * 1024 * 1024,
+  // npm.cmd is a batch shim; Node's spawnSync cannot always execute .cmd
+  // directly on Windows, so route it through the shell there.
+  shell: process.platform === 'win32',
 })
 const [packed] = JSON.parse(stdout)
 const files = new Set(packed.files.map(file => file.path))
