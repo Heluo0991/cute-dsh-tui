@@ -2,7 +2,7 @@
 
 V1 runs the Cordis TUI plugin and DeepSeek Harness in one Node.js process. Its package dependency graph therefore contains both CuteDshTui's React renderer and the Harness UI dependencies. V2 separates them into a TUI client process and a core process connected only by newline-delimited JSON-RPC on stdio.
 
-The default v1 launcher remains unchanged until the v2 path reaches feature parity. The `refactor/runtime-boundary` branch contains isolated, reversible increments; each increment must retain a passing v1 build and focused regression checks.
+The default v1 launch path remains unchanged until the v2 path reaches feature parity. The `refactor/runtime-boundary` branch contains isolated, reversible increments; each increment must retain a passing v1 build and focused regression checks. The read-only experimental projection is reachable through `--experimental-v2`, never through the default path.
 
 ## Ownership
 
@@ -16,7 +16,7 @@ The default v1 launcher remains unchanged until the v2 path reaches feature pari
 
 ## Wire requirements
 
-`src/core-protocol.ts` supplies the transport primitive. It is dependency-free except for Node.js built-ins and is not yet reachable from the v1 launcher. The bridge protocol must provide an explicit version handshake, request/response correlation, server notifications, timeout/EOF handling, and no stdout output other than protocol frames.
+`src/core-protocol.ts` supplies the transport primitive. It is dependency-free except for Node.js built-ins and is not reachable from the default v1 launcher. The bridge protocol must provide an explicit version handshake, request/response correlation, server notifications, timeout/EOF handling, and no stdout output other than protocol frames.
 
 Full DSH session-event envelopes cross the wire; React rows remain a replayable, bounded client-side projection. The wire must not transport rendered rows or import DSH event classes into the TUI package.
 
@@ -25,12 +25,12 @@ The official Harness main branch has an SDK JSON-RPC server with matching event 
 ## Migration order
 
 1. Transport and handshake primitives, with no v1 behavior change.
-2. Separate core bridge process that creates/attaches sessions and streams durable events. `src/core-bridge.ts` and `core-bridge.patch.yml` are the initial server; no launcher selects them yet.
-3. Read-only TUI projection through the client transport, behind an explicit experimental launcher mode. `src/core-client.ts` owns only explicit child launch, handshake, protocol transport, stderr tailing, and bounded reaping.
+2. Separate core bridge process that creates/attaches sessions and streams durable events. `src/core-bridge.ts` and `core-bridge.patch.yml` are the initial server; the default launcher does not select them, while the experimental projection does.
+3. Read-only TUI projection through the client transport, behind an explicit experimental launcher mode. Implemented by `src/sessionEventProjection.ts` and `src/experimentalProjection.tsx` under `--experimental-v2`; `src/core-client.ts` owns only explicit child launch, handshake, protocol transport, stderr tailing, and bounded reaping.
 4. Prompt, cancellation, approval, questions, session operations, and model/preset/permission actions.
 5. Move DSH dependencies out of the published TUI package and make managed-runtime installation the fallback only.
 6. Promote after real-TTY, Windows ConPTY, resume, uninstall, and cross-version compatibility tests pass.
 
 No stage may silently fall back from an incompatible external core to a different core for an existing session. Compatibility is checked before a session opens and reported on stderr.
 
-`verify-core-bridge-dsh.ts` exercises the current bridge against the bundled DSH runtime through a newly created temporary `DSH_HOME`; it creates no model request and removes the complete temporary profile afterwards.
+`verify-core-bridge-dsh.ts` exercises the current bridge against the bundled DSH runtime through a newly created temporary `DSH_HOME`; it creates no model request and removes the complete temporary profile afterwards. `verify-session-event-projection.ts` exercises the bounded client-side projection with raw JSON envelopes, and `verify-session-event-client.ts` exercises the same projection through the explicit `CoreClient` transport with a fake core.

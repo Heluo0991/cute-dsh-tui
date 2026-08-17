@@ -161,6 +161,32 @@ if (!profileHasNativePty(profileDir)) {
   }
 }
 
+if (process.env.CUTE_DSH_TUI_EXPERIMENTAL_V2 === '1') {
+  const { runExperimentalProjection } = await import('./lib/types/experimentalProjection.js')
+  const invocation = bundledDshInvocation([
+    '--profile',
+    PROFILE,
+    '--patch',
+    join(here, 'core-bridge.patch.yml'),
+  ])
+  try {
+    await runExperimentalProjection({
+      launch: {
+        command: invocation.command,
+        args: invocation.args,
+        cwd: process.cwd(),
+        env: process.env,
+      },
+      cwd: process.cwd(),
+      sessionId: process.env.CUTE_DSH_TUI_RESUME_SESSION || undefined,
+    })
+    process.exit(0)
+  } catch (error) {
+    console.error(`[cute-dsh-tui] experimental v2 projection failed: ${error instanceof Error ? error.message : String(error)}`)
+    process.exit(1)
+  }
+}
+
 const launchInvocation = bundledDshInvocation(['--profile', PROFILE, ...launch.dshArgs])
 const child = spawn(launchInvocation.command, launchInvocation.args, {
   stdio: 'inherit',

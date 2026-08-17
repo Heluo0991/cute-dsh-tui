@@ -6,19 +6,27 @@ state. Do not write commit hashes or package versions into this file.
 ## Active work
 
 The `refactor/runtime-boundary` branch is establishing v2's out-of-process
-core/TUI split. The transport, session-event bridge, and explicit child-process
-client are isolated in `src/core-protocol.ts`, `src/core-bridge.ts`, and
-`src/core-client.ts`; none is called by the v1 launcher. Continue with an
-experimental read-only event projection, preserving v1 as the default until
-feature parity is verified. The bridge has a real-DSH temporary-profile smoke
-test; the Windows development-profile link repair is separately verified. See
-`docs/architecture/v2-runtime-boundary.md`.
+core/TUI split. The transport, session-event bridge, explicit child-process
+client, and read-only session-event projection are isolated in
+`src/core-protocol.ts`, `src/core-bridge.ts`, `src/core-client.ts`,
+`src/sessionEventProjection.ts`, and `src/experimentalProjection.tsx`; none is
+called by the default v1 launcher. The experimental projection is reachable
+only through `dsh --experimental-v2` / `cdsh --experimental-v2` and preserves
+v1 as the default until feature parity is verified. The bridge has a real-DSH
+temporary-profile smoke test; the Windows development-profile link repair is
+separately verified. The next v2 increment is prompt/cancellation/approval and
+the remaining interactive session operations. See
+`docs/architecture/v2-runtime-boundary.md`. The next-step checklist is in
+`TODO.md`.
 
 ## Manual follow-up
 
 - In a real TTY, verify `/btw <question>` while the main agent is occupied by
   a command that runs for roughly 30 seconds. The headless regression covers
   dispatch and view deferral, but not this live terminal acceptance case.
+- In a real TTY, run `dsh --experimental-v2` and confirm the read-only
+  projection replays existing session events and appends live notifications
+  without sending prompts or changing the default v1 path.
 
 ## Documentation migration
 

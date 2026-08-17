@@ -13,6 +13,7 @@ export const LAUNCHER_USAGE = `Usage: dsh [launcher options] [dsh options]
   dsh --resume --last              Restore the most recently used session.
   dsh --continue, dsh -c           Alias for --resume --last.
   dsh --yolo                       Run with danger-full-access and no approvals.
+  dsh --experimental-v2            Run the read-only experimental v2 projection.
 
   dsh --patch <path>               Forward an extra DSH patch overlay.
   dsh --dump-config                Forward a DSH diagnostic option.
@@ -87,6 +88,10 @@ export function parseLaunchArgs(argv, { readLastSession = readLastSessionFromDis
     if (arg === '--yolo' || arg === '--dangerously-bypass-approvals-and-sandbox') {
       environment.DSH_PERMISSION_MODE = 'danger-full-access'
       environment.CUTE_DSH_TUI_YOLO = '1'
+      continue
+    }
+    if (arg === '--experimental-v2') {
+      environment.CUTE_DSH_TUI_EXPERIMENTAL_V2 = '1'
       continue
     }
     if (arg === '--continue' || arg === '-c') {
