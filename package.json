@@ -78,6 +78,7 @@
     "verify:package-version": "node scripts/verify-package-version.mjs",
     "verify:core-protocol": "node --import tsx/esm scripts/verify-core-protocol.ts",
     "verify:core-bridge": "node --import tsx/esm scripts/verify-core-bridge.ts",
+    "verify:core-client": "node --import tsx/esm scripts/verify-core-client.ts",
     "agent:status": "node scripts/agent-status.mjs",
     "verify:profile-manifest-recovery": "node scripts/verify-profile-manifest-recovery.mjs",
     "verify:i18n": "node scripts/verify-i18n.mjs"

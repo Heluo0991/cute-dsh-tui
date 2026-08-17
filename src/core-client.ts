@@ -1,0 +1,166 @@
+import { spawn, type ChildProcessWithoutNullStreams } from 'node:child_process'
+import {
+  CORE_PROTOCOL_VERSION,
+  CoreProtocolClosedError,
+  CoreProtocolTransport,
+  type JsonObject,
+  type JsonValue,
+} from './core-protocol.js'
+
+const DEFAULT_HANDSHAKE_TIMEOUT_MS = 10_000
+const DEFAULT_SHUTDOWN_TIMEOUT_MS = 1_000
+const STDERR_LIMIT = 16_000
+
+/** Explicit child-process launch input. Runtime discovery belongs to the launcher. */
+export interface CoreLaunchSpec {
+  command: string
+  args: readonly string[]
+  cwd?: string
+  env?: NodeJS.ProcessEnv
+}
+
+export interface CoreServerInfo {
+  name: string
+  version: string
+}
+
+export interface CoreClientOptions {
+  handshakeTimeoutMs?: number
+  shutdownTimeoutMs?: number
+}
+
+/**
+ * TUI-facing client for one owned core process. It knows nothing about DSH or
+ * React: callers provide an explicit executable and interpret named methods.
+ */
+export class CoreClient {
+  private child: ChildProcessWithoutNullStreams | undefined
+  private transport: CoreProtocolTransport | undefined
+  private readonly notificationHandlers = new Set<(method: string, params: JsonValue | undefined) => void>()
+  private stderr = ''
+  private exit: Promise<number | null> | undefined
+  private started = false
+  private closed = false
+  private serverInfo: CoreServerInfo | undefined
+
+  constructor(
+    private readonly launch: CoreLaunchSpec,
+    private readonly options: CoreClientOptions = {},
+  ) {}
+
+  /** Start the child and complete the version handshake before returning. */
+  async start(): Promise<CoreServerInfo> {
+    if (this.serverInfo !== undefined) return this.serverInfo
+    if (this.started) throw new Error('core client is already starting')
+    this.started = true
+    try {
+      const child = spawn(this.launch.command, [...this.launch.args], {
+        cwd: this.launch.cwd,
+        env: this.launch.env,
+        stdio: ['pipe', 'pipe', 'pipe'],
+        windowsHide: true,
+      })
+      this.child = child
+      this.exit = new Promise(resolve => child.once('exit', code => resolve(code)))
+      child.stderr.on('data', (chunk: Buffer) => this.appendStderr(chunk.toString('utf8')))
+      const transport = new CoreProtocolTransport(child.stdout, child.stdin)
+      this.transport = transport
+      transport.onNotification(notification => {
+        for (const handler of this.notificationHandlers) handler(notification.method, notification.params)
+      })
+      transport.start()
+      await onceSpawned(child)
+      const result = await transport.request('initialize', { protocolVersion: CORE_PROTOCOL_VERSION }, this.options.handshakeTimeoutMs ?? DEFAULT_HANDSHAKE_TIMEOUT_MS)
+      this.serverInfo = parseInitializeResult(result)
+      return this.serverInfo
+    } catch (error) {
+      await this.closeAfterFailedStart()
+      throw error
+    }
+  }
+
+  /** Send a typed-at-the-wire-boundary request after a successful handshake. */
+  request(method: string, params?: JsonValue, timeoutMs?: number): Promise<JsonValue | undefined> {
+    if (this.serverInfo === undefined) return Promise.reject(new Error('core client has not completed initialize'))
+    if (this.closed) return Promise.reject(new CoreProtocolClosedError())
+    return this.transport!.request(method, params, timeoutMs)
+  }
+
+  /** Subscribe to server notifications such as session events and status changes. */
+  onNotification(handler: (method: string, params: JsonValue | undefined) => void): () => void {
+    this.notificationHandlers.add(handler)
+    return () => this.notificationHandlers.delete(handler)
+  }
+
+  /** Bounded stderr tail for launch and transport diagnostics. */
+  stderrTail(): string {
+    return this.stderr
+  }
+
+  /** Gracefully ask the core to stop, then reap the owned child if needed. */
+  async close(): Promise<void> {
+    if (this.closed) return
+    this.closed = true
+    const transport = this.transport
+    const child = this.child
+    if (transport !== undefined && this.serverInfo !== undefined) {
+      try {
+        await transport.request('shutdown', undefined, this.options.shutdownTimeoutMs ?? DEFAULT_SHUTDOWN_TIMEOUT_MS)
+      } catch {
+        // A failed graceful shutdown still reaches the owned-process reap below.
+      }
+    }
+    transport?.close('core client closed')
+    child?.stdin.end()
+    if (child !== undefined && this.exit !== undefined) {
+      const exited = await waitForExit(this.exit, this.options.shutdownTimeoutMs ?? DEFAULT_SHUTDOWN_TIMEOUT_MS)
+      if (!exited) {
+        child.kill('SIGTERM')
+        if (!await waitForExit(this.exit, this.options.shutdownTimeoutMs ?? DEFAULT_SHUTDOWN_TIMEOUT_MS)) child.kill('SIGKILL')
+      }
+    }
+  }
+
+  private appendStderr(chunk: string): void {
+    this.stderr = (this.stderr + chunk).slice(-STDERR_LIMIT)
+  }
+
+  private async closeAfterFailedStart(): Promise<void> {
+    this.serverInfo = undefined
+    this.closed = false
+    await this.close()
+  }
+}
+
+function onceSpawned(child: ChildProcessWithoutNullStreams): Promise<void> {
+  return new Promise((resolve, reject) => {
+    child.once('spawn', resolve)
+    child.once('error', reject)
+  })
+}
+
+function parseInitializeResult(value: JsonValue | undefined): CoreServerInfo {
+  if (!isObject(value) || value.protocolVersion !== CORE_PROTOCOL_VERSION || !isObject(value.server)) {
+    throw new Error('core returned an invalid initialize response')
+  }
+  if (typeof value.server.name !== 'string' || typeof value.server.version !== 'string') {
+    throw new Error('core returned invalid server metadata')
+  }
+  return { name: value.server.name, version: value.server.version }
+}
+
+function isObject(value: JsonValue | undefined): value is JsonObject {
+  return typeof value === 'object' && value !== null && !Array.isArray(value)
+}
+
+async function waitForExit(exit: Promise<number | null>, timeoutMs: number): Promise<boolean> {
+  let timer: ReturnType<typeof setTimeout> | undefined
+  const completed = await Promise.race([
+    exit.then(() => true),
+    new Promise<false>(resolve => {
+      timer = setTimeout(() => resolve(false), timeoutMs)
+    }),
+  ])
+  if (timer !== undefined) clearTimeout(timer)
+  return completed
+}

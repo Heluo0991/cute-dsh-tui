@@ -6,10 +6,11 @@ state. Do not write commit hashes or package versions into this file.
 ## Active work
 
 The `refactor/runtime-boundary` branch is establishing v2's out-of-process
-core/TUI split. The initial JSON-RPC line transport and the session-event
-bridge are isolated in `src/core-protocol.ts` and `src/core-bridge.ts`; neither
-is called by the v1 launcher. Continue with an experimental read-only event
-projection, preserving v1 as the default until feature parity is verified. See
+core/TUI split. The transport, session-event bridge, and explicit child-process
+client are isolated in `src/core-protocol.ts`, `src/core-bridge.ts`, and
+`src/core-client.ts`; none is called by the v1 launcher. Continue with an
+experimental read-only event projection, preserving v1 as the default until
+feature parity is verified. See
 `docs/architecture/v2-runtime-boundary.md`.
 
 ## Manual follow-up
