@@ -1,7 +1,7 @@
 # V2 runtime-boundary TODO
 
 Current branch: `refactor/runtime-boundary`
-Status: experimental read-only session-event projection is implemented and committed locally; the session/open notification-loss risk is fixed with a regression test.
+Status: step 3 (experimental read-only session-event projection) is complete, including real TTY acceptance.
 
 ## Immediate handoff checks
 
@@ -16,10 +16,10 @@ Status: experimental read-only session-event projection is implemented and commi
 - [x] v1 launcher starts normally on Windows
 - [x] In a real TTY launch `cute-dsh-tui --experimental-v2` or `cdsh --experimental-v2` successfully
   - [x] TUI starts and shows the read-only projection header
-  - [ ] replays existing session events
-  - [ ] appends live notifications
+  - [x] replays existing session events
+  - [x] appends live notifications
   - [x] does not send prompts
-  - [ ] `q` exits cleanly and reaps the core child
+  - [x] `q` exits cleanly and reaps the core child
 
 ## Next implementation: v2 interactive session operations (migration step 4)
 

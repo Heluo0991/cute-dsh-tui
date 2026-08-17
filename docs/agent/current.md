@@ -29,9 +29,9 @@ prompt/cancellation/approval and the remaining interactive session operations. S
   a command that runs for roughly 30 seconds. The headless regression covers
   dispatch and view deferral, but not this live terminal acceptance case.
 - In a real TTY, `cute-dsh-tui --experimental-v2` / `cdsh --experimental-v2`
-  now starts successfully and shows the read-only projection header. Still
-  confirm replaying existing session events, appending live notifications, and
-  clean `q` exit.
+  is fully accepted: starts, replays existing session events, appends live
+  notifications, does not send prompts, and exits cleanly with `q` while
+  reaping the core child.
 
 ## Documentation migration
 

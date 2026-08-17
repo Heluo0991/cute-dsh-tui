@@ -5,7 +5,7 @@ Branch: `refactor/runtime-boundary`
 
 ## Status
 
-Experimental read-only session-event projection is implemented and committed locally.
+Step 3 (experimental read-only session-event projection) is complete: implemented, committed, automated tests pass, and real TTY acceptance is done.
 
 Commits:
 
@@ -59,6 +59,7 @@ Commits:
 - `pnpm verify:launcher` passes.
 - `git diff --check` passes.
 - Real TTY launch on Windows with `node bin\dsh-tui.js --experimental-v2` succeeds and shows the read-only projection header.
+- Real TTY acceptance is complete: replay, live notifications, read-only behavior, and clean `q` exit with core child reaping all confirmed.
 - v1 launcher starts normally on Windows after reinstalling `node_modules` natively.
 
 ## Windows native note
@@ -67,10 +68,11 @@ Commits:
 
 ## Remaining before next feature work
 
-- Confirm in a real TTY:
-  - replaying existing session events (`--continue` / `--resume <session-id>`)
-  - appending live notifications during an active session
-  - pressing `q` exits cleanly and reaps the core child
+None for step 3. Real TTY acceptance is complete:
+
+- replaying existing session events (`--continue` / `--resume <session-id>`)
+- appending live notifications during an active session
+- pressing `q` exits cleanly and reaps the core child
 
 ## Next step
 
