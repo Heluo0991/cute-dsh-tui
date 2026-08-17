@@ -1,7 +1,7 @@
 # V2 runtime-boundary TODO
 
 Current branch: `refactor/runtime-boundary`
-Status: experimental read-only session-event projection is implemented but uncommitted.
+Status: experimental read-only session-event projection is implemented and committed locally.
 
 ## Immediate handoff checks
 
@@ -38,5 +38,5 @@ Status: experimental read-only session-event projection is implemented but uncom
 
 ## Housekeeping
 
-- [ ] Commit the current experimental read-only projection work when the user authorizes it.
+- [x] Commit the current experimental read-only projection work when the user authorizes it.
 - [ ] Keep `lib/types/` build artifacts in sync after every `src/` change.
