@@ -8,6 +8,7 @@
  */
 import { spawn, spawnSync } from 'node:child_process'
 import { existsSync, readFileSync, realpathSync, statSync } from 'node:fs'
+import { createRequire } from 'node:module'
 import { homedir } from 'node:os'
 import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -18,10 +19,12 @@ const here = fileURLToPath(new URL('.', import.meta.url))
 const ownVersion = JSON.parse(readFileSync(join(here, 'package.json'), 'utf8')).version
 const PACKAGE = '@heluo0991/cute-dsh-tui'
 const PROFILE = 'cute-dsh-tui'
-// Set only by the repository's legacy `dsh` shim. A published executable must
-// always install the exact npm version; local development must instead load
-// the working tree, which can legitimately be ahead of npm during a release.
-const devPackagePath = process.env.CUTE_DSH_TUI_DEV_PATH
+// Set by the repository's legacy `dsh` shim or auto-detected when this file is
+// run from a development checkout. A published executable must always install
+// the exact npm version; local development must instead load the working tree,
+// which can legitimately be ahead of npm during a release.
+const isDevelopmentCheckout = existsSync(join(here, '.git')) && existsSync(join(here, 'package.json'))
+const devPackagePath = process.env.CUTE_DSH_TUI_DEV_PATH ?? (isDevelopmentCheckout ? here : undefined)
 const packageSpec = devPackagePath
   ? `link:${devPackagePath.replaceAll('\\', '/')}`
   : `${PACKAGE}@${ownVersion}`
@@ -163,12 +166,21 @@ if (!profileHasNativePty(profileDir)) {
 
 if (process.env.CUTE_DSH_TUI_EXPERIMENTAL_V2 === '1') {
   const { runExperimentalProjection } = await import('./lib/types/experimentalProjection.js')
-  const invocation = bundledDshInvocation([
-    '--profile',
-    PROFILE,
-    '--patch',
-    join(here, 'core-bridge.patch.yml'),
-  ])
+  const require = createRequire(import.meta.url)
+  // The DSH profile composition includes Cordis HMR, which needs Node's
+  // internal loader hooks. Keep this flag on the experimental core child
+  // only; the default v1 launch path is unchanged.
+  const invocation = {
+    command: process.execPath,
+    args: [
+      '--expose-internals',
+      require.resolve('@deepseek-ai/dsh/lib/bin.js'),
+      '--profile',
+      PROFILE,
+      '--patch',
+      join(here, 'core-bridge.patch.yml'),
+    ],
+  }
   try {
     await runExperimentalProjection({
       launch: {
