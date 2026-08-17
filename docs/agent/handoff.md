@@ -16,6 +16,7 @@ Commits:
 - `docs: mark v2 verification complete and refresh handoff`
 - `docs: clarify experimental flag is CuteDshTui launcher option, not official dsh flag`
 - `fix: auto-detect dev checkout and pass --expose-internals for experimental core`
+- `fix: buffer notifications emitted during session/open and add regression test`
 
 ## What changed
 

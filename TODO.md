@@ -1,7 +1,7 @@
 # V2 runtime-boundary TODO
 
 Current branch: `refactor/runtime-boundary`
-Status: experimental read-only session-event projection is implemented and committed locally.
+Status: experimental read-only session-event projection is implemented and committed locally; the session/open notification-loss risk is fixed with a regression test.
 
 ## Immediate handoff checks
 
