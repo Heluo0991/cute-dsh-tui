@@ -42,6 +42,8 @@ jobs:
 
       - run: node scripts/verify-package-exports.mjs
 
+      - run: node scripts/verify-package-version.mjs
+
       # 带断言的回归：提问面板内联输入（issue #9）+ 工具卡排版
       # （⎿ 缩进、diff 红绿行、信封剥离），失败即非零退出。
       - run: node --import tsx/esm scripts/repro-askpanel.tsx

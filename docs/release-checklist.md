@@ -32,5 +32,5 @@
 ## 发布
 
 - [ ] `package.json.version` 已更新，`git tag v<version>` 与之完全一致。
-- [ ] 不更新 `package-lock.json`（仓库约定：pnpm-lock 是依赖真源）。
+- [ ] 纯版本发布时，`package-lock.json` 仅同步顶层 `version` 与 `packages[""].version`；不要改动其依赖树。依赖变更仍以 `pnpm-lock.yaml` 为真源。
 - [ ] 标签推送后关注 `publish.yml` 的 npm provenance 输出。

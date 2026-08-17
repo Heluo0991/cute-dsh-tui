@@ -1,6 +1,6 @@
 {
   "name": "@heluo0991/cute-dsh-tui",
-  "version": "1.2.0",
+  "version": "1.3.0",
   "description": "Claude Code style interactive TUI front door for DeepSeek Harness agents, built on the ported Ink core.",
   "license": "MIT",
   "repository": {
@@ -70,6 +70,8 @@
     "verify:input-highlight-render": "node --import tsx/esm scripts/verify-input-highlight-render.tsx",
     "verify:working-commands": "node --import tsx/esm scripts/verify-working-commands.tsx",
     "verify:package-exports": "node scripts/verify-package-exports.mjs",
+    "verify:package-version": "node scripts/verify-package-version.mjs",
+    "agent:status": "node scripts/agent-status.mjs",
     "verify:profile-manifest-recovery": "node scripts/verify-profile-manifest-recovery.mjs",
     "verify:i18n": "node scripts/verify-i18n.mjs"
   },
