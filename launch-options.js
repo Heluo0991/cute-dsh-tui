@@ -13,13 +13,17 @@ export const LAUNCHER_USAGE = `Usage: dsh [launcher options] [dsh options]
   dsh --resume --last              Restore the most recently used session.
   dsh --continue, dsh -c           Alias for --resume --last.
   dsh --yolo                       Run with danger-full-access and no approvals.
-  dsh --experimental-v2            Run the read-only experimental v2 projection.
+  dsh --experimental-v2            Run CuteDshTui's read-only experimental v2 projection.
 
   dsh --patch <path>               Forward an extra DSH patch overlay.
   dsh --dump-config                Forward a DSH diagnostic option.
 
 Set CUTE_DSH_TUI_WORKSPACE to start from another working directory on Windows,
 macOS, or Linux.
+
+Launcher options are owned by CuteDshTui and are consumed before the official
+DSH runtime is spawned; they are not official DSH flags. If your dsh is the
+official CLI, use cute-dsh-tui or cdsh instead.
 `
 
 /**

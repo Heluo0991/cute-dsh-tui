@@ -11,7 +11,7 @@ Status: experimental read-only session-event projection is implemented and commi
 - [x] Run `pnpm verify:core-client`
 - [x] Run `pnpm verify:core-bridge`
 - [x] Run `pnpm verify:launcher`
-- [ ] In a real TTY run `dsh --experimental-v2` and confirm:
+- [ ] In a real TTY run `cute-dsh-tui --experimental-v2` or `cdsh --experimental-v2` and confirm:
   - [ ] replays existing session events
   - [ ] appends live notifications
   - [ ] does not send prompts

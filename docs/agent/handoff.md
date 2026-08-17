@@ -50,7 +50,7 @@ Commits:
 
 ## Remaining before next feature work
 
-- Run `dsh --experimental-v2` in a real TTY and confirm replay, live notifications, read-only behavior, and clean exit.
+- Run `cute-dsh-tui --experimental-v2` or `cdsh --experimental-v2` in a real TTY and confirm replay, live notifications, read-only behavior, and clean exit.
 
 ## Next step
 
