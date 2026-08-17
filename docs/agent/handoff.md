@@ -5,84 +5,88 @@ Branch: `refactor/runtime-boundary`
 
 ## Status
 
-Step 3 (experimental read-only session-event projection) is complete: implemented, committed, automated tests pass, and real TTY acceptance is done.
+Step 4 (interactive v2 session operations) is complete: implemented, committed,
+automated tests pass, and real TTY acceptance is done.
 
-Commits:
+## Branch map
 
-- `feat: add experimental v2 read-only session projection`
-- `docs: mark v2 read-only projection committed in TODO`
-- `docs: add v2 runtime-boundary handoff report`
-- `test: include status notifications in session event client projection`
-- `docs: mark v2 verification complete and refresh handoff`
-- `docs: clarify experimental flag is CuteDshTui launcher option, not official dsh flag`
-- `fix: auto-detect dev checkout and pass --expose-internals for experimental core`
-- `fix: buffer notifications emitted during session/open and add regression test`
-- `fix: always repair dev profile link and pass --expose-internals to all DSH children`
+- v2 development: `refactor/runtime-boundary`
+- v1 maintenance: `personal/customization`
+- The v2 branch was created from `personal/customization` (`72da7de`).
 
-## What changed
+When v1 maintenance has moved forward and v2 work resumes:
 
-- Added `--experimental-v2` launcher flag; default v1 launch path is unchanged.
-- Added `src/sessionEventProjection.ts`:
-  - bounded client-side session-event projector
-  - no DSH or React dependency
-  - handles user/assistant/tool/status events
-  - coalesces streaming chunks without per-token React updates
-- Added `src/experimentalNotificationBuffer.ts`:
-  - installs the client notification listener before `session/open`
-  - buffers in-flight notifications so core events emitted during open are not lost
-  - suppresses duplicates already present in the `session/open` response snapshot
-- Added `src/experimentalProjection.tsx`:
-  - experimental read-only TUI client
-  - launches core bridge through `CoreClient`
-  - opens/resumes a session, replays initial events, subscribes to live notifications
-  - does not send prompts
-- Added tests and fixtures:
-  - `scripts/verify-session-event-projection.ts`
-  - `scripts/verify-session-event-client.ts`
-  - `scripts/verify-session-open-buffer.ts`
-  - `scripts/fixtures/fake-core-events.ts`
-- Updated docs:
+```bash
+git switch refactor/runtime-boundary
+git merge personal/customization
+```
+
+## Step 3 background
+
+Step 3 established the experimental read-only session-event projection:
+
+- `src/sessionEventProjection.ts`
+- `src/experimentalNotificationBuffer.ts`
+- `src/experimentalProjection.tsx` (read-only at that point)
+- `--experimental-v2` launcher flag; default v1 path unchanged.
+
+## What changed in Step 4
+
+- `src/core-client.ts`:
+  - added `onRequest()` so the TUI client can answer core-initiated JSON-RPC requests
+- `src/experimentalCoreClient.ts` (new):
+  - typed TUI-client facade for `session/prompt`, `session/cancel`, approvals, user questions, session operations, model/preset/permission actions
+  - `onApprovalRequest()` / `onUserQuestion()` convenience handlers
+- `src/core-bridge.ts`:
+  - added interactive RPC methods: `session/new`, `session/resume`, `session/list`, `session/rewind`, `model/list`, `model/switch`, `preset/list`, `preset/switch`, `permission/list`, `permission/switch`
+  - forwards DSH `approval/request` and `userQuestions.ask` to the TUI client
+  - applies agent-preset composition on create/resume/rewind/model-switch so preset tools such as `ask_user_question` are mounted
+- `src/experimentalProjection.tsx`:
+  - upgraded from read-only projection to an interactive v2 TUI
+  - supports prompts, cancellation, approval panel, question panel, pickers, and slash commands
+- Verification scripts and fixtures:
+  - `scripts/verify-core-client-request-handler.mjs`
+  - `scripts/verify-core-bridge-interactive.mjs`
+  - `scripts/verify-v2-client-methods.mjs`
+  - `scripts/fixtures/fake-core-request.mjs`
+  - `scripts/fixtures/fake-core-interactive.mjs`
+- Docs:
   - `docs/agent/current.md`
   - `docs/agent/module-map.md`
   - `docs/architecture/v2-runtime-boundary.md`
-- Added `TODO.md` for the remaining v2 work.
+  - `TODO.md`
 
 ## Verification performed
 
 - `tsc -p tsconfig.json` passes.
-- `pnpm verify:session-event-projection` passes.
-- `pnpm verify:session-event-client` passes.
-- `pnpm verify:session-open-buffer` passes.
-- `pnpm verify:core-protocol` passes.
-- `pnpm verify:core-client` passes.
-- `pnpm verify:core-bridge` passes.
+- `pnpm verify:core-client-request-handler` passes.
+- `pnpm verify:core-bridge-interactive` passes.
+- `pnpm verify:v2-client-methods` passes.
 - `pnpm verify:launcher` passes.
+- `pnpm verify:package-exports` passes.
 - `git diff --check` passes.
-- Real TTY launch on Windows with `node bin\dsh-tui.js --experimental-v2` succeeds and shows the read-only projection header.
-- Real TTY acceptance is complete: replay, live notifications, read-only behavior, and clean `q` exit with core child reaping all confirmed.
-- v1 launcher starts normally on Windows after reinstalling `node_modules` natively.
+- Real TTY acceptance is complete:
+  - `--experimental-v2` starts and shows the interactive v2 TUI
+  - replays existing session events
+  - sends prompts and appends live notifications
+  - cancels
+  - answers approval requests with the approval panel
+  - answers `ask_user_question` with the interactive question panel
+  - performs session/model/preset/permission actions
+  - exits cleanly and reaps the core child
 
-## Windows native note
+## Known limitations before v2 promotion
 
-- The Windows native `node_modules` reinstall is complete (`pnpm install`, `pnpm rebuild node-pty`); `sharp`, `koffi`, and `node-pty` now have win32 binaries available.
-
-## Remaining before next feature work
-
-None for step 3. Real TTY acceptance is complete:
-
-- replaying existing session events (`--continue` / `--resume <session-id>`)
-- appending live notifications during an active session
-- pressing `q` exits cleanly and reaps the core child
+- The experimental TUI is a simplified front end; it does not yet have full v1 UI parity (full Markdown/tool-card rendering, status line, themes, i18n, advanced scrolling/virtualization).
+- `--experimental-v2` still needs provider/model to be supplied (for example via `CUTE_DSH_TUI_CORE_PROVIDER` / `CUTE_DSH_TUI_CORE_MODEL`) unless later model-route resolution is wired into the bridge.
+- Default launcher remains v1.
 
 ## Next step
 
-Continue with `TODO.md` -> migration step 4:
+Continue with `TODO.md`:
 
-- prompt
-- cancellation
-- approvals
-- user questions
-- session operations
-- model/preset/permission actions
+- Step 5: move DSH dependencies out of the published TUI package; managed-runtime installation becomes the fallback only.
+- Step 6: pass real-TTY, Windows ConPTY, resume, uninstall, and cross-version compatibility tests before promoting v2.
+- Step 7: decide when to switch the default launcher to v2 (only after feature parity).
 
 Keep all new v2 methods behind the explicit experimental path; do not change the default v1 launcher.
