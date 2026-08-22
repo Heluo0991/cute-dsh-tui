@@ -2243,6 +2243,7 @@ export function createChannel(
         const execution = await commandService.execute(
           agent,
           `/permission ${presetId}`,
+          [],
           new AbortController().signal,
         )
         if (execution === undefined) {
@@ -2444,6 +2445,7 @@ export function createChannel(
         const execution = await commandService.execute(
           agent,
           `/${name}${rawInput}`,
+          [],
           new AbortController().signal,
         )
         // `undefined` = not registered; a handler error surfaces as its

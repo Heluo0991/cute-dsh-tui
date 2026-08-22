@@ -7,12 +7,19 @@
 - Node.js `^22.19 || >=24`.
 - An interactive terminal TTY; the TUI cannot run with stdout redirected.
 - A DeepSeek API key, plus `DEEPSEEK_BASE_URL` for a compatible endpoint when needed.
+- The DeepSeek Harness kernel (`@deepseek-ai/dsh`) installed so `dsh` is on
+  `PATH`, and `pnpm` on `PATH`. CuteDshTui runs your locally-installed kernel
+  rather than shipping its own; a pinned override is available via
+  `CUTE_DSH_TUI_DSH_BIN` / `CUTE_DSH_TUI_PNPM`.
 
 ## Recommended deployment: `cdsh`
 
-On Windows, Linux, and macOS, install once and run `cdsh` from any directory. It does not take over the official `dsh` command, need a global pnpm install, or require copied launch scripts.
+On Windows, Linux, and macOS, install the kernel and CuteDshTui once, then run
+`cdsh` from any directory. It does not take over the official `dsh` command or
+require copied launch scripts.
 
 ```sh
+npm install -g @deepseek-ai/dsh pnpm
 npm install -g @heluo0991/cute-dsh-tui
 cdsh
 ```
@@ -34,7 +41,7 @@ cdsh
 
 The launcher permits and retries this native build automatically; no manual pnpm command is required.
 
-The first launch creates `$DSH_HOME/profiles/cute-dsh-tui` (normally `~/.dsh/profiles/cute-dsh-tui`) and installs the current version with the bundled DSH/pnpm runtime. Thereafter, enter a project directory and run `cdsh`; that directory is the Agent workspace.
+The first launch creates `$DSH_HOME/profiles/cute-dsh-tui` (normally `~/.dsh/profiles/cute-dsh-tui`) and installs the current version into it with your local DSH/pnpm runtime. The profile plugin resolves the DSH packages it needs from that same locally-installed kernel. Thereafter, enter a project directory and run `cdsh`; that directory is the Agent workspace.
 
 `cute-dsh-tui` remains a compatibility alias, but new documentation uses `cdsh`.
 

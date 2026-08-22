@@ -33,9 +33,14 @@ long-lived fact changes.
 CuteDshTui owns the launcher, Cordis profile overlay, TUI, event projection,
 preferences, packaged skills, and terminal renderer. DeepSeek Harness owns
 the Agent, tools, model execution, session persistence, credentials, and
-permission services. The package ships a pinned DSH dependency baseline and
-creates an isolated `cute-dsh-tui` profile under `DSH_HOME`; it shares DSH
-sessions and credentials only when both launches use the same `DSH_HOME`.
+permission services. The package runs the user's locally-installed DSH kernel
+(resolved from `PATH`, or pinned via `CUTE_DSH_TUI_DSH_BIN`) and creates an
+isolated `cute-dsh-tui` profile under `DSH_HOME`; the profile plugin resolves
+its DSH runtime packages from that same kernel through the profile-boot heal
+step, so DSH-scoped packages are declared as optional peer dependencies rather
+than shipped. It shares DSH sessions and credentials only when both launches
+use the same `DSH_HOME`.
 
-The package does not automatically follow a caller's globally installed DSH
-version. Upstream compatibility is an explicit maintenance concern.
+Because the runtime kernel is the caller's local install, upstream
+compatibility is an explicit maintenance concern: the DSH-scoped peer ranges
+must track the kernel version the TUI is validated against.

@@ -1,9 +1,15 @@
 import { spawn, spawnSync } from 'node:child_process'
-import { copyFileSync, existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
+import { copyFileSync, existsSync, mkdirSync, readFileSync, realpathSync, writeFileSync } from 'node:fs'
 import { createRequire } from 'node:module'
-import { basename, dirname, join } from 'node:path'
+import { basename, delimiter, dirname, join } from 'node:path'
+import { fileURLToPath } from 'node:url'
 
-const require = createRequire(import.meta.url)
+/** Optional override pointing at the DSH runtime entry: either the kernel's
+ *  `bin.js`/`bin.cjs` directly, or the installed `@deepseek-ai/dsh` package
+ *  directory. Lets a caller pin a kernel without relying on PATH. */
+const DSH_BIN_OVERRIDE = 'CUTE_DSH_TUI_DSH_BIN'
+/** Optional override pointing at pnpm's `pnpm.cjs` entry. */
+const PNPM_ENTRY_OVERRIDE = 'CUTE_DSH_TUI_PNPM'
 
 const PROFILE_PATCH_TEMPLATE = `# Your patch layer for this dsh profile, applied after every bundle layer:\n# a top-level YAML array of loader patch entries (id-targeted config\n# overrides, disables, and insert lists; \`!!js\` expressions allowed).\n[]\n`
 const PROFILE_PNPM_WORKSPACE = `packages:\n  - .\n\nnodeLinker: hoisted\nautoInstallPeers: false\n`
@@ -37,24 +43,141 @@ export interface ProcessInvocation {
   args: string[]
 }
 
-/** Resolve the packaged DSH executable instead of looking up the user's `dsh`. */
-export function bundledDshInvocation(args: readonly string[]): ProcessInvocation {
-  return {
-    command: process.execPath,
-    args: [require.resolve('@deepseek-ai/dsh/lib/bin.js'), ...args],
+/** Locate an executable on PATH, honoring Windows executable extensions.
+ *  Returns the first existing match, or `undefined` when nothing is found. */
+function findOnPath(command: string): string | undefined {
+  const pathValue = process.env.PATH ?? process.env.Path ?? ''
+  const extensions = process.platform === 'win32'
+    ? (process.env.PATHEXT ?? '.COM;.EXE;.BAT;.CMD').split(';').filter(part => part !== '')
+    : []
+  for (const directory of pathValue.split(delimiter)) {
+    if (directory === '') continue
+    for (const extension of ['', ...extensions]) {
+      const candidate = join(directory, command + extension)
+      if (existsSync(candidate)) return candidate
+    }
+  }
+  return undefined
+}
+
+function realpathOrSelf(target: string): string {
+  try {
+    return realpathSync(target)
+  } catch {
+    return target
   }
 }
 
-/** Resolve pnpm's JavaScript entry point so Windows never needs `shell: true`. */
+function looksLikeJsEntry(target: string): boolean {
+  return /\.[cm]?js$/i.test(target)
+}
+
+/** Derive `@deepseek-ai/dsh`'s bin entry from an install anchor directory
+ *  (the folder a `require` would resolve modules from). Returns `undefined`
+ *  when the kernel is not installed under that anchor. */
+function resolveDshFromAnchor(anchorDir: string): string | undefined {
+  try {
+    const anchored = createRequire(join(anchorDir, '__cute-dsh-tui-anchor__.js'))
+    const manifestPath = anchored.resolve('@deepseek-ai/dsh/package.json')
+    const manifest = JSON.parse(readFileSync(manifestPath, 'utf8')) as { bin?: string | Record<string, string> }
+    const binField = typeof manifest.bin === 'string' ? manifest.bin : manifest.bin?.dsh
+    const entry = join(dirname(manifestPath), binField ?? 'lib/bin.js')
+    return existsSync(entry) ? entry : undefined
+  } catch {
+    return undefined
+  }
+}
+
+/** Interpret a `CUTE_DSH_TUI_DSH_BIN` hint: a direct JS entry, a package
+ *  directory, or a shim whose sibling holds the kernel package. */
+function resolveDshFromHint(hint: string): string {
+  const real = realpathOrSelf(hint)
+  if (looksLikeJsEntry(real) && existsSync(real)) return real
+  const fromHint = resolveDshFromAnchor(real) ?? resolveDshFromAnchor(dirname(real))
+  if (fromHint !== undefined) return fromHint
+  throw new Error(`${DSH_BIN_OVERRIDE} does not point at a usable DSH runtime: ${hint}`)
+}
+
+/**
+ * Resolve the JavaScript entry of the user's locally-installed DSH kernel.
+ * Order: explicit `CUTE_DSH_TUI_DSH_BIN` override, `dsh` on PATH (realpath'd
+ * on POSIX, sibling-package resolved from a Windows shim), then a
+ * dev-checkout dependency fallback for source runs.
+ */
+function resolveDshBinJs(): string {
+  const override = process.env[DSH_BIN_OVERRIDE]
+  if (override !== undefined && override !== '') return resolveDshFromHint(override)
+  const onPath = findOnPath('dsh')
+  if (onPath !== undefined) {
+    const real = realpathOrSelf(onPath)
+    // POSIX shims are symlinks straight to lib/bin.js; a Windows .cmd/.ps1
+    // wrapper is not JavaScript, so resolve the kernel package beside it.
+    if (looksLikeJsEntry(real) && existsSync(real)) return real
+    const sibling = resolveDshFromAnchor(dirname(onPath))
+    if (sibling !== undefined) return sibling
+  }
+  // Source-checkout fallback: resolve from this package's own dependency tree.
+  const local = resolveDshFromAnchor(dirname(fileURLToPath(import.meta.url)))
+  if (local !== undefined) return local
+  throw new Error(
+    'DSH runtime not found. Install the DeepSeek Harness kernel so `dsh` is on '
+    + `PATH (npm install -g @deepseek-ai/dsh), or set ${DSH_BIN_OVERRIDE} to its bin.js.`,
+  )
+}
+
+/** Derive pnpm's `pnpm.cjs` entry from an install anchor directory. */
+function resolvePnpmFromAnchor(anchorDir: string): string | undefined {
+  try {
+    const anchored = createRequire(join(anchorDir, '__cute-dsh-tui-anchor__.js'))
+    // pnpm exports only its manifest, so `resolve('pnpm')` lands on
+    // package.json; the shipped bin sits at bin/pnpm.cjs beside it.
+    const entry = join(dirname(anchored.resolve('pnpm')), 'bin', 'pnpm.cjs')
+    return existsSync(entry) ? entry : undefined
+  } catch {
+    return undefined
+  }
+}
+
+/** Resolve pnpm's JavaScript entry from the user's environment. */
+function resolvePnpmEntry(): string {
+  const override = process.env[PNPM_ENTRY_OVERRIDE]
+  if (override !== undefined && override !== '') {
+    const real = realpathOrSelf(override)
+    if (existsSync(real)) return real
+    throw new Error(`${PNPM_ENTRY_OVERRIDE} does not point at a pnpm entry: ${override}`)
+  }
+  const onPath = findOnPath('pnpm')
+  if (onPath !== undefined) {
+    const real = realpathOrSelf(onPath)
+    if (looksLikeJsEntry(real) && existsSync(real)) return real
+    const sibling = resolvePnpmFromAnchor(dirname(onPath))
+    if (sibling !== undefined) return sibling
+  }
+  const local = resolvePnpmFromAnchor(dirname(fileURLToPath(import.meta.url)))
+  if (local !== undefined) return local
+  throw new Error(
+    `pnpm not found. Install pnpm so it is on PATH, or set ${PNPM_ENTRY_OVERRIDE} to its pnpm.cjs.`,
+  )
+}
+
+/** Invoke the user's locally-installed DSH runtime by its JS entry so no
+ *  shell shim is needed on any platform. */
+export function bundledDshInvocation(args: readonly string[]): ProcessInvocation {
+  return {
+    command: process.execPath,
+    args: [resolveDshBinJs(), ...args],
+  }
+}
+
+/** Invoke the user's pnpm by its JavaScript entry so Windows never needs
+ *  `shell: true`. */
 export function bundledPnpmInvocation(args: readonly string[]): ProcessInvocation {
   const reporter = args.some(arg => arg.startsWith('--reporter'))
     ? []
     : ['--reporter=append-only']
   return {
     command: process.execPath,
-    // pnpm exports only its package manifest; derive the shipped bin from
-    // that public entry instead of reaching through an unexported subpath.
-    args: [join(dirname(require.resolve('pnpm')), 'bin', 'pnpm.cjs'), ...reporter, ...args],
+    args: [resolvePnpmEntry(), ...reporter, ...args],
   }
 }
 
@@ -244,14 +367,14 @@ export function runBundledPnpm(profileDir: string, args: readonly string[]): num
   })
   if (result.error !== undefined) {
     if ((result.error as NodeJS.ErrnoException).code === 'ETIMEDOUT') {
-      throw new Error(`bundled pnpm timed out after ${PNPM_TIMEOUT_MS / 1000}s; check the registry/proxy and retry`)
+      throw new Error(`pnpm timed out after ${PNPM_TIMEOUT_MS / 1000}s; check the registry/proxy and retry`)
     }
     throw result.error
   }
   const code = result.status ?? 1
   writePnpmOutput(result.stdout ?? '', result.stderr ?? '', result.status)
   if (result.signal !== null && result.signal !== undefined) {
-    process.stderr.write(`cute-dsh-tui: bundled pnpm was stopped by signal ${result.signal}\n`)
+    process.stderr.write(`cute-dsh-tui: pnpm was stopped by signal ${result.signal}\n`)
     return 124
   }
   if (code === 0) reconcileProfileBundles(profileDir)
@@ -285,14 +408,14 @@ export function runBundledPnpmAsync(profileDir: string, args: readonly string[])
     child.stderr?.on('data', (chunk: Buffer) => collect('stderr', chunk))
     child.once('error', error => {
       clearTimeout(timer)
-      process.stderr.write(`cute-dsh-tui: failed to run bundled pnpm: ${error.message}\n`)
+      process.stderr.write(`cute-dsh-tui: failed to run pnpm: ${error.message}\n`)
       resolve(127)
     })
     child.once('close', code => {
       clearTimeout(timer)
       const exitCode = timedOut ? 124 : (code ?? 1)
       if (timedOut) {
-        stderr += `\ncute-dsh-tui: bundled pnpm timed out after ${PNPM_TIMEOUT_MS / 1000}s\n`
+        stderr += `\ncute-dsh-tui: pnpm timed out after ${PNPM_TIMEOUT_MS / 1000}s\n`
       }
       if (exitCode === 0) {
         try {
@@ -309,7 +432,8 @@ export function runBundledPnpmAsync(profileDir: string, args: readonly string[])
   })
 }
 
-/** The directory holding a resolved package script, useful for diagnostics. */
+/** The directory holding the resolved DSH runtime entry, useful for
+ *  diagnostics. */
 export function bundledRuntimeDirectory(): string {
-  return dirname(require.resolve('@deepseek-ai/dsh/lib/bin.js'))
+  return dirname(resolveDshBinJs())
 }

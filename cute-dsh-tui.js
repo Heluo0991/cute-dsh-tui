@@ -2,9 +2,10 @@
 /**
  * Portable CuteDshTui launcher.
  *
- * It uses its packaged DSH runtime, creates the cute-dsh-tui profile on first use, handles
- * TUI-owned launch flags, then forwards the remaining arguments to
- * `dsh --profile cute-dsh-tui`.
+ * It runs the user's locally-installed DSH runtime (resolved from PATH, or
+ * pinned via CUTE_DSH_TUI_DSH_BIN), creates the cute-dsh-tui profile on first
+ * use, handles TUI-owned launch flags, then forwards the remaining arguments
+ * to `dsh --profile cute-dsh-tui`.
  */
 import { spawn, spawnSync } from 'node:child_process'
 import { existsSync, readFileSync, realpathSync, statSync } from 'node:fs'
@@ -40,10 +41,16 @@ if (launch.error !== undefined) {
   process.exit(2)
 }
 if (launch.showVersion) {
-  const invocation = bundledDshInvocation(['--version'])
+  let invocation
+  try {
+    invocation = bundledDshInvocation(['--version'])
+  } catch (error) {
+    console.error(`[cute-dsh-tui] ${error instanceof Error ? error.message : String(error)}`)
+    process.exit(1)
+  }
   const version = spawnSync(invocation.command, invocation.args, { stdio: 'inherit' })
   if (version.error) {
-    console.error(`[cute-dsh-tui] failed to run the bundled DSH runtime: ${version.error.message}`)
+    console.error(`[cute-dsh-tui] failed to run the DSH runtime: ${version.error.message}`)
     process.exit(1)
   }
   process.exit(version.status ?? 1)
@@ -62,12 +69,19 @@ try {
   process.exit(2)
 }
 
-// Verify the bundled DSH runtime before attempting profile bootstrap.
-const probeInvocation = bundledDshInvocation(['--version'])
+// Verify the user's DSH runtime before attempting profile bootstrap.
+let probeInvocation
+try {
+  probeInvocation = bundledDshInvocation(['--version'])
+} catch (error) {
+  console.error(`[cute-dsh-tui] ${error instanceof Error ? error.message : String(error)}`)
+  process.exit(1)
+}
 const probe = spawnSync(probeInvocation.command, probeInvocation.args, { stdio: 'pipe' })
 if (probe.error || probe.status !== 0) {
-  console.error('[cute-dsh-tui] bundled DSH runtime was not available. Reinstall CuteDshTui:')
-  console.error(`  npm install -g ${PACKAGE}`)
+  console.error('[cute-dsh-tui] the DSH runtime could not be started. Install the DeepSeek Harness kernel:')
+  console.error('  npm install -g @deepseek-ai/dsh')
+  console.error('or point CUTE_DSH_TUI_DSH_BIN at an existing dsh bin.js.')
   process.exit(1)
 }
 
@@ -106,7 +120,7 @@ if (profileNeedsPackageInstall) {
   try {
     addCode = runBundledPnpm(profileDir, ['add', packageSpec])
   } catch (error) {
-    console.error(`[cute-dsh-tui] bundled profile installation failed: ${error instanceof Error ? error.message : String(error)}`)
+    console.error(`[cute-dsh-tui] profile installation failed: ${error instanceof Error ? error.message : String(error)}`)
     process.exit(1)
   }
   if (addCode !== 0) {
@@ -150,7 +164,13 @@ if (!profileHasNativePty(profileDir)) {
   }
 }
 
-const launchInvocation = bundledDshInvocation(['--profile', PROFILE, ...launch.dshArgs])
+let launchInvocation
+try {
+  launchInvocation = bundledDshInvocation(['--profile', PROFILE, ...launch.dshArgs])
+} catch (error) {
+  console.error(`[cute-dsh-tui] ${error instanceof Error ? error.message : String(error)}`)
+  process.exit(1)
+}
 const child = spawn(launchInvocation.command, launchInvocation.args, {
   stdio: 'inherit',
   env: process.env,

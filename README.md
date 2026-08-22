@@ -39,9 +39,10 @@
 
 ### 新用户：一条安装命令即可
 
-前提：Node.js `^22.19 || >=24` 与交互式 TTY。CuteDshTui 自带其所需的 DSH 与 pnpm 运行时，不会覆盖官方 `dsh` 命令。
+前提：Node.js `^22.19 || >=24` 与交互式 TTY，且已安装 DeepSeek Harness 内核（`dsh` 在 PATH 上）与 `pnpm`。CuteDshTui 运行你本地安装的 DSH/pnpm 运行时，不再自带内核，也不会覆盖官方 `dsh` 命令。
 
 ```sh
+npm install -g @deepseek-ai/dsh pnpm
 npm install -g @heluo0991/cute-dsh-tui
 cdsh
 ```

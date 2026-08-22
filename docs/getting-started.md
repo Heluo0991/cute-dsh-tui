@@ -7,12 +7,16 @@
 - Node.js `^22.19 || >=24`。
 - 支持交互输入的终端 TTY；不能把 stdout 重定向后运行 TUI。
 - DeepSeek API key，或兼容端点所需的 `DEEPSEEK_BASE_URL`。
+- 已安装 DeepSeek Harness 内核（`@deepseek-ai/dsh`）使 `dsh` 在 `PATH` 上，且
+  `pnpm` 在 `PATH` 上。CuteDshTui 运行你本地安装的内核，而不再自带内核；如需
+  固定，可用 `CUTE_DSH_TUI_DSH_BIN` / `CUTE_DSH_TUI_PNPM` 覆盖。
 
 ## 推荐部署：`cdsh`
 
-无论 Windows、Linux 还是 macOS，安装后均可从任意目录直接运行 `cdsh`。它不会占用官方 `dsh` 命令，也不要求手动安装 pnpm 或复制启动脚本。
+无论 Windows、Linux 还是 macOS，先安装内核与 CuteDshTui，然后即可从任意目录直接运行 `cdsh`。它不会占用官方 `dsh` 命令，也不要求复制启动脚本。
 
 ```sh
+npm install -g @deepseek-ai/dsh pnpm
 npm install -g @heluo0991/cute-dsh-tui
 cdsh
 ```
@@ -32,7 +36,7 @@ cdsh
 
 启动器已允许并自动重试该原生构建；不需要手动运行 pnpm。
 
-第一次执行会在 `$DSH_HOME/profiles/cute-dsh-tui`（默认 `~/.dsh/profiles/cute-dsh-tui`）创建 profile，并使用包内 DSH/pnpm 运行时安装本版本。之后进入项目目录后运行 `cdsh` 即可；当前目录会成为 Agent 工作区。
+第一次执行会在 `$DSH_HOME/profiles/cute-dsh-tui`（默认 `~/.dsh/profiles/cute-dsh-tui`）创建 profile，并使用你本地的 DSH/pnpm 运行时安装本版本；profile 插件所需的 DSH 包由本地安装的内核解析。之后进入项目目录后运行 `cdsh` 即可；当前目录会成为 Agent 工作区。
 
 `cute-dsh-tui` 仍可用作兼容命令，但新文档和支持流程一律使用 `cdsh`。
 

@@ -2,9 +2,11 @@ export interface ProcessInvocation {
     command: string;
     args: string[];
 }
-/** Resolve the packaged DSH executable instead of looking up the user's `dsh`. */
+/** Invoke the user's locally-installed DSH runtime by its JS entry so no
+ *  shell shim is needed on any platform. */
 export declare function bundledDshInvocation(args: readonly string[]): ProcessInvocation;
-/** Resolve pnpm's JavaScript entry point so Windows never needs `shell: true`. */
+/** Invoke the user's pnpm by its JavaScript entry so Windows never needs
+ *  `shell: true`. */
 export declare function bundledPnpmInvocation(args: readonly string[]): ProcessInvocation;
 export declare function profileDirectory(dshHome: string, profile: string): string;
 /** Create exactly the profile scaffold DSH's plugin command would create. */
@@ -21,6 +23,7 @@ export declare function reconcileProfileBundles(profileDir: string): void;
 export declare function runBundledPnpm(profileDir: string, args: readonly string[]): number;
 /** Async counterpart used by in-TUI plugin management after unmounting. */
 export declare function runBundledPnpmAsync(profileDir: string, args: readonly string[]): Promise<number>;
-/** The directory holding a resolved package script, useful for diagnostics. */
+/** The directory holding the resolved DSH runtime entry, useful for
+ *  diagnostics. */
 export declare function bundledRuntimeDirectory(): string;
 //# sourceMappingURL=profileManager.d.ts.map

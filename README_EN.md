@@ -34,9 +34,13 @@ This is a real captured first screen; the mascot and wordmark are rendered by th
 
 ### New user
 
-Requires Node.js `^22.19 || >=24` and an interactive terminal. CuteDshTui packages the DSH and pnpm runtime it needs and does not overwrite the official `dsh` command.
+Requires Node.js `^22.19 || >=24`, an interactive terminal, and the DeepSeek
+Harness kernel (`dsh` on PATH) plus `pnpm`. CuteDshTui runs your
+locally-installed DSH/pnpm runtime instead of shipping its own, and does not
+overwrite the official `dsh` command.
 
 ```sh
+npm install -g @deepseek-ai/dsh pnpm
 npm install -g @heluo0991/cute-dsh-tui
 cdsh
 ```
